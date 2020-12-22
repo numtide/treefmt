@@ -1,6 +1,6 @@
 # fmt is the universal code formatter - https://github.com/numtide/fmt
-[formats.Haskell]
-includes = [ "*.hs" ]
+[formatters.ormolu]
+includes = [ "./haskell" ]
 excludes = []
 command = "ormolu"
 args = [
@@ -11,8 +11,8 @@ args = [
   "--check-idempotence"
 ]
 
-[formats.Go]
-includes = [ "*.go" ]
+[formatters.rustfmt]
+includes = [ "./rust" ]
 excludes = []
-command = "gofmt"
+command = "rustfmt"
 args = []
