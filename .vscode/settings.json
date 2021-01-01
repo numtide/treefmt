@@ -1,0 +1,4 @@
+{
+    "nixEnvSelector.nixShellConfig": "${workspaceRoot}/shell.nix",
+    "files.trimFinalNewlines": true
+}
