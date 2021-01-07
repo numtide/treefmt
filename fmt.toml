@@ -1,7 +1,0 @@
-# fmt is the universal code formatter - https://github.com/numtide/fmt
-[formats.<Language>]
-includes = [ "*.<language-extension>" ]
-excludes = []
-command = ""
-args = []
-    

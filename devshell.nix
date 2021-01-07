@@ -10,7 +10,7 @@ mkDevShell {
   motd = ''
     Welcome to the allfmt development environment.
   '';
-  env = { };
+  commands = [ ];
 
   bash = {
     extra = ''
@@ -20,17 +20,11 @@ mkDevShell {
     '';
   };
 
-  commands = [ ];
+  env = { };
 
   packages = [
     # Build tools
     allfmt.rust
-    binutils
-    gcc
-    openssl
-    openssl.dev
-    pkgconfig
-    zlib
 
     # Code formatters
     haskellPackages.ormolu

@@ -13,23 +13,21 @@ extern crate chrono;
 extern crate curl;
 extern crate dialoguer;
 extern crate log;
+extern crate serde;
 extern crate toml;
 extern crate walkdir;
-extern crate serde_derive;
 
 pub mod command;
 pub mod customlog;
 pub mod emoji;
-pub mod install;
+pub mod formatters;
 // pub mod license;
 // pub mod lockfile;
 
 use command::run_all_fmt;
-use serde_derive::Deserialize;
-use std::env;
-use std::fs::{read_to_string};
-use std::path::{Path, PathBuf};
-use xshell::{cmd, pushd, pushenv};
+use formatters::Root;
+use std::fs::read_to_string;
+use std::path::PathBuf;
 
 use customlog::{CustomLogOutput, LogLevel};
 
@@ -66,7 +64,7 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let mut cwd = match cli.files {
+    let cwd = match cli.files {
         Some(path) => path,
         None => PathBuf::from("."),
     };
@@ -78,69 +76,20 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         println!("set path to {}/", cwd.to_str().unwrap_or(""));
         let open_file = match read_to_string(fmt_toml.as_path()) {
             Ok(file) => file,
-            Err(err) => return Err(anyhow::Error::new(err))
+            Err(err) => return Err(anyhow::Error::new(err)),
         };
         let toml_content: Root = toml::from_str(&open_file)?;
-        let rustdir = toml_content.rustfmt
-        .and_then(|config| config.includes).unwrap_or(Vec::new());
+        println!("{:#?}", toml_content);
+        // let rustdir = toml_content.rustfmt
+        // .and_then(|config| config.includes).unwrap_or(Vec::new());
 
-        for dir in rustdir {
-            cwd.push(Path::new(&dir));
-            run_rustfmt(Mode::Overwrite, cwd.clone())?;
-        }
+        // for dir in rustdir {
+        //     cwd.push(Path::new(&dir));
+        //     run_rustfmt(Mode::Overwrite, cwd.clone())?;
+        // }
     } else {
         println!("file fmt.toml couldn't be found. Run `--init` to generate the default setting");
     }
 
     Ok(())
-}
-
-/// Make sure that rustfmt exists. This also for other formatter
-fn check_rustfmt() -> anyhow::Result<()> {
-    let out = cmd!("rustfmt --version").read()?;
-    if !out.contains("stable") && !out.contains("nightly"){
-        anyhow::bail!(
-            "Failed to run rustfmt from toolchain 'stable'. \
-             Please make sure it is available in your PATH",
-        )
-    }
-    Ok(())
-}
-
-/// Running rustfmt
-pub fn run_rustfmt(mode: Mode, path: PathBuf) -> anyhow::Result<()> {
-    let _dir = pushd(path)?;
-    let _e = pushenv("RUSTUP_TOOLCHAIN", "stable");
-    check_rustfmt()?;
-    let check = match mode {
-        Mode::Overwrite => &[][..],
-        Mode::Verify => &["--", "--check"],
-    };
-    cmd!("cargo fmt {check...}").run()?;
-    Ok(())
-}
-
-/// Formatter mode
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Mode {
-    /// Start the formatting process
-    Overwrite,
-    /// Trying to check the project using formatter. This maybe helpful to --dry-run
-    Verify,
-}
-
-/// fmt.toml structure
-#[derive(Debug, Deserialize)]
-struct Root {
-    ormolu: Option<FmtConfig>,
-    rustfmt: Option<FmtConfig>
-}
-
-/// Config for each formatters
-#[derive(Debug, Deserialize)]
-struct FmtConfig {
-    includes: Option<Vec<String>>,
-    excludes: Option<Vec<String>>,
-    command: Option<String>,
-    args: Option<Vec<String>>
 }
