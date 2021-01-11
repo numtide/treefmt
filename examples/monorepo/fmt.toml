@@ -12,9 +12,9 @@ args = [
   "--check-idempotence"
 ]
 
-[formatters.rustfmt]
-files = [ "*.hs" ]
+[formatters.cargo]
+files = [ "*.rs" ]
 includes = [ "rust/" ]
 excludes = []
-command = "rustfmt"
-args = []
+command = "cargo"
+args = [ "fmt", "--" ]

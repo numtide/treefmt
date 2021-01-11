@@ -31,5 +31,9 @@ mkDevShell {
     haskellPackages.cabal-install
     haskellPackages.ghc
     nixpkgs-fmt
+    go
+    # gopls
+    # gopkgs
+    # gocode
   ];
 }

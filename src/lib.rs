@@ -21,13 +21,13 @@ pub mod command;
 pub mod customlog;
 pub mod emoji;
 pub mod formatters;
-// pub mod license;
-// pub mod lockfile;
 
 use command::run_all_fmt;
-use formatters::Root;
+use formatters::tool::{check_fmt, glob_to_path, run_fmt, Root};
+use glob::Paths;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::vec;
 
 use customlog::{CustomLogOutput, LogLevel};
 
@@ -69,20 +69,63 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         None => PathBuf::from("."),
     };
 
-    let fmt_toml = cwd.clone().as_path().join("fmt.toml");
+    let fmt_toml = cwd.as_path().join("fmt.toml");
 
     if let true = fmt_toml.as_path().exists() {
         println!("found fmt.toml");
-        println!("set path to {}/", cwd.to_str().unwrap_or(""));
+        println!("set path to {}", cwd.to_str().unwrap_or(""));
         let open_file = match read_to_string(fmt_toml.as_path()) {
             Ok(file) => file,
             Err(err) => return Err(anyhow::Error::new(err)),
         };
         let toml_content: Root = toml::from_str(&open_file)?;
-        println!("{:#?}", toml_content);
-        // let rustdir = toml_content.rustfmt
-        // .and_then(|config| config.includes).unwrap_or(Vec::new());
 
+        let commands = toml_content
+            .formatters
+            .values()
+            .map(|c| c.command.clone().unwrap_or("".into()));
+
+        let args = toml_content.formatters.values().map(|c| {
+            let arg = match c.args.clone() {
+                Some(vstr) => vstr,
+                None => Vec::new(),
+            };
+            arg
+        });
+
+        let all_files = toml_content
+            .formatters
+            .values()
+            .map(|f| f.files.clone())
+            .filter_map(|glob| glob_to_path(cwd.clone(), glob).ok());
+
+        for cmd in commands.clone() {
+            check_fmt(cmd)?;
+        }
+
+        let cmd_args = commands.zip(args).zip(all_files);
+
+        // TODO: implement `filtered_files: Vec<Paths>` for `[includes]` and `[exclude]`
+        println!("===========================");
+        for ((cmd, args), paths) in cmd_args.clone() {
+            println!("Command: {}", cmd);
+            println!("Files:");
+            for f in paths {
+                println!(" - {}", f?.display());
+            }
+            println!("===========================");
+        }
+
+        for ((cmd, args), paths) in cmd_args.clone() {
+            for f in paths {
+                let path = f?;
+                run_fmt(&cmd.clone(), &args, path)?
+            }
+        }
+
+        println!("Format successful");
+
+        // .and_then(|config| config.includes).unwrap_or(Vec::new());
         // for dir in rustdir {
         //     cwd.push(Path::new(&dir));
         //     run_rustfmt(Mode::Overwrite, cwd.clone())?;
