@@ -37,9 +37,9 @@
           };
         in
         {
-          legacyPackages = pkgs.allfmt;
+          legacyPackages = pkgs.prjfmt;
 
-          packages = flake-utils.lib.flattenTree pkgs.allfmt;
+          packages = flake-utils.lib.flattenTree pkgs.prjfmt;
 
           devShell = import ./devshell.nix { inherit pkgs; };
 

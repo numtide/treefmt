@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
-/// The log level for allfmt
+/// The log level for prjfmt
 // Important! the least verbose must be at
 // the top and the most verbose at the bottom
 pub enum LogLevel {
@@ -66,7 +66,7 @@ impl CustomLogOutput {
         (level as u8) <= self.log_level.load(Ordering::SeqCst)
     }
 
-    /// Sets the log level for allfmt
+    /// Sets the log level for prjfmt
     pub fn set_log_level(&self, log_level: LogLevel) {
         self.log_level.store(log_level as u8, Ordering::SeqCst);
     }
@@ -101,7 +101,7 @@ impl CustomLogOutput {
     pub fn error(&self, message: &str) {
         if self.is_log_enabled(LogLevel::Error) {
             let err = format!(
-                "{}{}: {}",
+                "{} {}: {}",
                 emoji::ERROR,
                 style("[ERR]").bold().dim(),
                 message

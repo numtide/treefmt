@@ -1,6 +1,6 @@
 final: prev:
 {
-  allfmt = rec {
+  prjfmt = rec {
     rust = prev.callPackage ./rust { };
   };
 }

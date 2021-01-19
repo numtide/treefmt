@@ -6,9 +6,9 @@ with pkgs;
 #
 # Documentation: https://github.com/numtide/devshell
 mkDevShell {
-  name = "allfmt";
+  name = "prjfmt";
   motd = ''
-    Welcome to the allfmt development environment.
+    Welcome to the prjfmt development environment.
   '';
   commands = [ ];
 
@@ -17,6 +17,8 @@ mkDevShell {
       export LD_INCLUDE_PATH="$DEVSHELL_DIR/include"
       export LD_LIBRARY_PATH="$DEVSHELL_DIR/lib"
       export PKG_CONFIG_PATH="$DEVSHELL_DIR/lib/pkgconfig"
+      export GO111MODULE=on
+      unset GOPATH GOROOT
     '';
   };
 
@@ -24,7 +26,7 @@ mkDevShell {
 
   packages = [
     # Build tools
-    allfmt.rust
+    prjfmt.rust
 
     # Code formatters
     haskellPackages.ormolu
@@ -32,8 +34,8 @@ mkDevShell {
     haskellPackages.ghc
     nixpkgs-fmt
     go
-    # gopls
-    # gopkgs
-    # gocode
+    gopls
+    gopkgs
+    gocode
   ];
 }
