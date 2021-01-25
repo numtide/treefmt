@@ -1,5 +1,4 @@
 module Main where
 
 main :: IO ()
-main =
-  putStrLn "Hello, Haskell!"
+main = putStrLn "Hello, Riyan!"

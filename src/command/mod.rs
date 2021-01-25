@@ -3,34 +3,28 @@
 
 mod init;
 
-use self::init::init_fmt;
+use self::init::init_prjfmt;
+use std::path::PathBuf;
 
 use log::info;
 
-#[derive(Debug)]
-struct Initialize {}
-
 #[derive(Debug, StructOpt)]
-/// The various kinds of commands that `allfmt` can execute.
+/// The various kinds of commands that `prjfmt` can execute.
 pub enum Command {
     #[structopt(name = "--init")]
     ///  init a new project with a default config
-    Init,
-    #[structopt(name = "--dry-run")]
-    /// creating formating plan
-    Dry,
+    Init {
+        /// path to file or folder
+        path: Option<PathBuf>,
+    },
 }
 
 /// Run a command with the given logger!
-pub fn run_all_fmt(command: Command) -> anyhow::Result<()> {
+pub fn run_prjfmt_cli(command: Command) -> anyhow::Result<()> {
     match command {
-        Command::Init => {
-            info!("creating fmt.toml");
-            init_fmt()
-        }
-        Command::Dry => {
-            println!("running dry-run");
-            Ok(())
+        Command::Init { path } => {
+            info!("creating prjfmt.toml");
+            init_prjfmt(path)
         }
     }
 }

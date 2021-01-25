@@ -1,27 +1,23 @@
-use crate::emoji;
-use console::style;
-
-// use super::tools;
-use anyhow::{anyhow, Result};
-use glob::{glob, Paths};
-use serde::Deserialize;
-use std::collections::BTreeMap;
+use super::manifest::create_prjfmt_manifest;
+use crate::formatters::check::check_prjfmt;
+use crate::formatters::manifest::{read_prjfmt_manifest, RootManifest};
+use crate::{emoji, CLOG};
+use anyhow::{anyhow, Error, Result};
+use filetime::FileTime;
+use glob;
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fs::{metadata, read_to_string};
 use std::iter::Iterator;
 use std::path::PathBuf;
-use std::vec::IntoIter;
-// use tools::{
-//     go::{deserialize_go, Gfmt},
-//     haskell::{deserialize_haskell, Hfmt},
-//     rust::{deserialize_rust, Rfmt},
-// };
 use xshell::cmd;
 
-// TODO: This module provides functions to install all formatter
-// that is not available in user's $PATH
-/// Make sure that rustfmt exists. This also for other formatter
-pub fn check_fmt(command: String) -> Result<()> {
+/// Make sure that formatter binary exists. This also for other formatter
+pub fn check_bin(command: &str) -> Result<()> {
     let cmd_bin = command.split_ascii_whitespace().next().unwrap_or("");
     if let Ok(str) = cmd!("which {cmd_bin}").read() {
+        CLOG.info(&format!("Found {} at {}", cmd_bin, str));
         return Ok(());
     }
     anyhow::bail!(
@@ -31,70 +27,188 @@ pub fn check_fmt(command: String) -> Result<()> {
     )
 }
 
-/// Running the fmt
-pub fn run_fmt(cmd_arg: &str, args: &Vec<String>, path: PathBuf) -> anyhow::Result<()> {
-    cmd!("{cmd_arg} {args...} {path}").run()?;
+/// Run the prjfmt
+pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
+    let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
+
+    // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
+    // it will try to scan the manifest and passed it into check_prjfmt function
+    let manifest: RootManifest = read_prjfmt_manifest(&prjfmt_toml, &cache_dir)?;
+    let old_ctx = create_command_context(&prjfmt_toml)?;
+    let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &manifest)?;
+
+    let context = if manifest.manifest.is_empty() && ctxs.is_empty() {
+        &old_ctx
+    } else {
+        &ctxs
+    };
+
+    if !prjfmt_toml.as_path().exists() {
+        return Err(anyhow!(
+            "{}prjfmt.toml not found, please run --init command",
+            emoji::ERROR
+        ));
+    }
+
+    for c in context {
+        check_bin(&c.command)?;
+    }
+
+    println!("===========================");
+    for c in context {
+        if !c.metadata.is_empty() {
+            println!("Command: {}", c.command);
+            println!("Files:");
+            for m in &c.metadata {
+                let path = &m.path;
+                println!(" - {}", path.display());
+            }
+            println!("===========================");
+        }
+    }
+
+    for c in context {
+        for m in &c.metadata {
+            let arg = &c.args;
+            let cmd_arg = &c.command;
+            let path = &m.path;
+            cmd!("{cmd_arg} {arg...} {path}").read()?;
+        }
+    }
+
+    let new_ctx: Vec<CmdContext> = old_ctx
+        .iter()
+        .flat_map(|octx| {
+            ctxs.iter().clone().map(move |c| {
+                if c.command == octx.command {
+                    CmdContext {
+                        command: c.command.clone(),
+                        args: c.args.clone(),
+                        metadata: octx.metadata.union(&c.metadata).cloned().collect(),
+                    }
+                } else {
+                    octx.clone()
+                }
+            })
+        })
+        .collect();
+
+    if manifest.manifest.is_empty() || ctxs.is_empty() {
+        create_prjfmt_manifest(prjfmt_toml, cache_dir, old_ctx)?;
+    } else {
+        println!("Format successful");
+        println!("capturing formatted file's state...");
+        create_prjfmt_manifest(prjfmt_toml, cache_dir, new_ctx)?;
+    }
+
     Ok(())
 }
 
 /// Convert glob pattern into list of pathBuf
-pub fn glob_to_path(cwd: PathBuf, extensions: FileExtensions) -> Result<Paths> {
+pub fn glob_to_path(
+    cwd: &PathBuf,
+    extensions: &FileExtensions,
+    _includes: &Option<Vec<String>>,
+    _excludes: &Option<Vec<String>>,
+) -> anyhow::Result<Vec<PathBuf>> {
+    let dir = cwd.to_str().unwrap_or("");
+
+    let glob_ext = |extension| -> anyhow::Result<_> {
+        let pat = format!("{}/**/{}", dir, extension);
+        let globs = glob::glob(&pat).map_err(|err| {
+            anyhow::anyhow!(
+                "{} Error at position: {} due to {}",
+                emoji::ERROR,
+                err.pos,
+                err.msg
+            )
+        })?;
+
+        Ok(globs.map(|glob_res| Ok(glob_res?)))
+    };
+
     match extensions {
-        FileExtensions::SingleFile(sfile) => {
-            let dir = cwd.as_path().to_str().unwrap_or("");
-            let pat = format!("{}**/{}", dir, &sfile);
-            match glob(&pat) {
-                Ok(paths) => Ok(paths),
-                Err(err) => {
-                    anyhow::bail!(
-                        "{} Error at position: {} due to {}",
-                        emoji::ERROR,
-                        err.pos,
-                        err.msg
-                    )
-                }
-            }
-        }
+        FileExtensions::SingleFile(sfile) => glob_ext(sfile)?.collect(),
         FileExtensions::MultipleFile(strs) => {
-            let files = strs
-                .into_iter()
-                .map(|str| {
-                    let dir = cwd.as_path().to_str().unwrap_or("");
-                    let pat = format!("{}**/{}", dir, &str);
-                    match glob(&pat) {
-                        Ok(paths) => Ok(paths),
-                        Err(err) => {
-                            anyhow::bail!(
-                                "{} Error at position: {} due to {}",
-                                emoji::ERROR,
-                                err.pos,
-                                err.msg
-                            )
-                        }
+            strs.iter()
+                .map(glob_ext)
+                .try_fold(Vec::new(), |mut v, globs| {
+                    for glob in globs? {
+                        v.push(glob?)
                     }
+                    Ok(v)
                 })
-                .flatten()
-                .nth(0);
-            match files {
-                Some(paths) => Ok(paths),
-                None => {
-                    anyhow::bail!("{} Blob not found", emoji::ERROR)
-                }
-            }
         }
     }
 }
 
-/// Convert glob's Paths into list of PathBuf
-pub fn paths_to_pathbuf(
-    inc: Vec<String>,
-    excl: Vec<String>,
-    paths_list: Vec<Paths>,
-) -> Vec<PathBuf> {
-    Vec::new()
+/// Convert each PathBuf into FileMeta
+/// FileMeta consist of file's path and its modification times
+pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
+    let mut filemeta = BTreeSet::new();
+    for p in paths {
+        let metadata = metadata(&p)?;
+        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        if !filemeta.insert(FileMeta {
+            mtimes: mtime,
+            path: p.clone(),
+        }) {
+            CLOG.warn(&format!("Duplicated file detected:"));
+            CLOG.warn(&format!(" - {:?} ", p.display()));
+            CLOG.warn(&format!(
+                "Maybe you want to format one file with different formatter?"
+            ));
+            // return Err(anyhow!("prjfmt failed to run."));
+        }
+    }
+    Ok(filemeta)
 }
 
-/// fmt.toml structure
+/// Creating command configuration based on prjfmt.toml
+pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
+    let open_prjfmt = match read_to_string(prjfmt_toml.as_path()) {
+        Ok(file) => file,
+        Err(err) => {
+            return Err(anyhow!(
+                "cannot open {} due to {}.",
+                prjfmt_toml.display(),
+                err
+            ))
+        }
+    };
+
+    let cwd = match prjfmt_toml.parent() {
+        Some(path) => path,
+        None => {
+            return Err(anyhow!(
+                "{}prjfmt.toml not found, please run --init command",
+                emoji::ERROR
+            ))
+        }
+    };
+
+    let toml_content: Root = toml::from_str(&open_prjfmt)?;
+    let cmd_context: Vec<CmdContext> = toml_content
+        .formatters
+        .values()
+        .map(|config| {
+            let list_files = glob_to_path(
+                &cwd.to_path_buf(),
+                &config.files,
+                &config.includes,
+                &config.excludes,
+            )?;
+            Ok(CmdContext {
+                command: config.command.clone().unwrap_or_default(),
+                args: config.args.clone().unwrap_or_default(),
+                metadata: path_to_filemeta(list_files)?,
+            })
+        })
+        .collect::<Result<Vec<CmdContext>, Error>>()?;
+    Ok(cmd_context)
+}
+
+/// prjfmt.toml structure
 #[derive(Debug, Deserialize)]
 pub struct Root {
     /// Map of formatters into the config
@@ -126,3 +240,49 @@ pub enum FileExtensions {
     /// List of file type
     MultipleFile(Vec<String>),
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+/// Each context of the formatter config
+pub struct CmdContext {
+    /// formatter command to run
+    pub command: String,
+    /// formatter arguments or flags
+    pub args: Vec<String>,
+    /// formatter target path
+    pub metadata: BTreeSet<FileMeta>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+/// File metadata created after the first prjfmt run
+pub struct FileMeta {
+    /// Last modification time listed in the file's metadata
+    pub mtimes: i64,
+    /// Path to the formatted file
+    pub path: PathBuf,
+}
+
+impl Ord for FileMeta {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.eq(other) {
+            return Ordering::Equal;
+        }
+        if self.mtimes.eq(&other.mtimes) {
+            return self.path.cmp(&other.path);
+        }
+        self.mtimes.cmp(&other.mtimes)
+    }
+}
+
+impl PartialOrd for FileMeta {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for FileMeta {
+    fn eq(&self, other: &Self) -> bool {
+        self.mtimes == other.mtimes && self.path == other.path
+    }
+}
+
+impl Eq for FileMeta {}
