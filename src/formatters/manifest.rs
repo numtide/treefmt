@@ -18,8 +18,6 @@ pub fn create_prjfmt_manifest(
     cache_dir: PathBuf,
     cmd_ctx: Vec<CmdContext>,
 ) -> Result<()> {
-    cmd!("mkdir -p {cache_dir}").run()?;
-
     let hash_toml = create_prjfmt_hash(&prjfmt_toml)?;
 
     let mut f = File::create(cache_dir.as_path().join(hash_toml))?;
@@ -72,11 +70,9 @@ pub fn read_prjfmt_manifest(prjfmt_toml: &PathBuf, path: &PathBuf) -> Result<Roo
         Ok(manifest_content)
     } else {
         CLOG.warn(&format!("{} not found!", hash_toml));
-        CLOG.warn(&format!(
-            "Please delete the '{}/' folder and rerun the prjfmt",
-            path.display()
-        ));
-        Err(anyhow!("prjfmt failed to run."))
+        Ok(RootManifest {
+            manifest: BTreeMap::new(),
+        })
     }
 }
 

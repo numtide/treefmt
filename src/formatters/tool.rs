@@ -28,19 +28,19 @@ pub fn check_bin(command: &str) -> Result<()> {
 }
 
 /// Run the prjfmt
-pub fn run_prjfmt(
-    cwd: PathBuf,
-    cache_dir: PathBuf,
-    opt_ctx: Option<(Vec<CmdContext>, Option<Vec<CmdContext>>)>,
-) -> anyhow::Result<()> {
+pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
 
-    let (cached_cmd_contexts, new_cmd_contexts) = match opt_ctx {
-        Some(x) => x,
-        None => {
-            let cmd_context = create_command_context(&prjfmt_toml)?;
-            (cmd_context, None)
-        }
+    // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
+    // it will try to scan the manifest and passed it into check_prjfmt function
+    let manifest: RootManifest = read_prjfmt_manifest(&prjfmt_toml, &cache_dir)?;
+    let old_ctx = create_command_context(&prjfmt_toml)?;
+    let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &manifest)?;
+
+    let context = if manifest.manifest.is_empty() && ctxs.is_empty() {
+        &old_ctx
+    } else {
+        &ctxs
     };
 
     if !prjfmt_toml.as_path().exists() {
@@ -50,37 +50,56 @@ pub fn run_prjfmt(
         ));
     }
 
-    for ctx in &cached_cmd_contexts {
-        check_bin(&ctx.command)?;
+    for c in context {
+        check_bin(&c.command)?;
     }
 
     println!("===========================");
-    for ctx in &cached_cmd_contexts {
-        println!("Command: {}", ctx.command);
-        println!("Files:");
-        for m in &ctx.metadata {
-            let path = &m.path;
-            println!(" - {}", path.display());
-        }
-        println!("===========================");
-    }
-
-    for ctx in &cached_cmd_contexts {
-        for m in &ctx.metadata {
-            let arg = &ctx.args;
-            let cmd_arg = &ctx.command;
-            let path = &m.path;
-            cmd!("{cmd_arg} {arg...} {path}").run()?;
+    for c in context {
+        if !c.metadata.is_empty() {
+            println!("Command: {}", c.command);
+            println!("Files:");
+            for m in &c.metadata {
+                let path = &m.path;
+                println!(" - {}", path.display());
+            }
+            println!("===========================");
         }
     }
 
-    println!("Format successful");
-    println!("capturing formatted file's state...");
-    if let Some(ctx) = new_cmd_contexts {
-        create_prjfmt_manifest(prjfmt_toml, cache_dir, ctx)?;
-        return Ok(());
+    for c in context {
+        for m in &c.metadata {
+            let arg = &c.args;
+            let cmd_arg = &c.command;
+            let path = &m.path;
+            cmd!("{cmd_arg} {arg...} {path}").read()?;
+        }
     }
-    create_prjfmt_manifest(prjfmt_toml, cache_dir, cached_cmd_contexts)?;
+
+    let new_ctx: Vec<CmdContext> = old_ctx
+        .iter()
+        .flat_map(|octx| {
+            ctxs.iter().clone().map(move |c| {
+                if c.command == octx.command {
+                    CmdContext {
+                        command: c.command.clone(),
+                        args: c.args.clone(),
+                        metadata: octx.metadata.union(&c.metadata).cloned().collect(),
+                    }
+                } else {
+                    octx.clone()
+                }
+            })
+        })
+        .collect();
+
+    if manifest.manifest.is_empty() || ctxs.is_empty() {
+        create_prjfmt_manifest(prjfmt_toml, cache_dir, old_ctx)?;
+    } else {
+        println!("Format successful");
+        println!("capturing formatted file's state...");
+        create_prjfmt_manifest(prjfmt_toml, cache_dir, new_ctx)?;
+    }
 
     Ok(())
 }

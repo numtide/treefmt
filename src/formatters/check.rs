@@ -10,30 +10,18 @@ use std::vec::Vec;
 /// Checking content of cache's file and current prjfmt runs
 pub fn check_prjfmt(
     prjfmt_toml: &PathBuf,
+    cmd_context: &Vec<CmdContext>,
     cache: &RootManifest,
-) -> Result<(Vec<CmdContext>, Option<Vec<CmdContext>>)> {
-    let cmd_context = create_command_context(&prjfmt_toml)?;
+) -> Result<Vec<CmdContext>> {
     let cache_context = cache.manifest.values().map(|b| b).into_iter();
-    let results = cmd_context.clone().into_iter().zip(cache_context);
+    let results = cmd_context.into_iter().zip(cache_context);
 
     let cache_context: Vec<CmdContext> = results
         .clone()
         .map(|(a, b)| {
-            if a.command != b.command {
-                CLOG.warn(&format!(
-                    "Command has changed! Please remove .prjfmt folder"
-                ));
-                return Err(anyhow!("prjfmt failed to run."));
-            }
-            if a.args.len() != b.args.len() {
-                CLOG.warn(&format!(
-                    "Arguments has changed! Please remove .prjfmt folder"
-                ));
-                return Err(anyhow!("prjfmt failed to run."));
-            }
             Ok(CmdContext {
-                command: a.command,
-                args: a.args,
+                command: a.command.clone(),
+                args: a.args.clone(),
                 metadata: a.metadata.difference(&b.metadata).cloned().collect(),
             })
         })
@@ -41,30 +29,8 @@ pub fn check_prjfmt(
 
     if cache_context.iter().all(|f| f.metadata.is_empty()) {
         CLOG.warn(&format!("No changes found in {}", prjfmt_toml.display()));
-        return Ok((cmd_context, None));
+        return Ok(Vec::new());
     }
-
-    let updated_context = results
-        .map(|(a, b)| {
-            if a.command != b.command {
-                CLOG.warn(&format!(
-                    "Command has changed! Please remove .prjfmt folder"
-                ));
-                return Err(anyhow!("prjfmt failed to run."));
-            }
-            if a.args.len() != b.args.len() {
-                CLOG.warn(&format!(
-                    "Arguments has changed! Please remove .prjfmt folder"
-                ));
-                return Err(anyhow!("prjfmt failed to run."));
-            }
-            Ok(CmdContext {
-                command: a.command,
-                args: a.args,
-                metadata: a.metadata.union(&b.metadata).cloned().collect(),
-            })
-        })
-        .collect::<Result<Vec<CmdContext>, Error>>()?;
 
     CLOG.warn(&format!("The following file has changed or newly added:"));
     for cmd in &cache_context {
@@ -79,5 +45,5 @@ pub fn check_prjfmt(
         }
     }
     // return Err(anyhow!("prjfmt failed to run."));
-    Ok((cache_context, Some(updated_context)))
+    Ok(cache_context)
 }

@@ -24,14 +24,16 @@ pub mod customlog;
 pub mod emoji;
 pub mod formatters;
 
+use anyhow::anyhow;
 use command::run_prjfmt_cli;
 use formatters::check::check_prjfmt;
 use formatters::manifest::{read_prjfmt_manifest, RootManifest};
-use formatters::tool::run_prjfmt;
+use formatters::tool::{run_prjfmt, CmdContext};
 use std::env;
 use std::path::{Path, PathBuf};
 
 use customlog::{CustomLogOutput, LogLevel};
+use xshell::cmd;
 
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
@@ -89,19 +91,8 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         ));
         CLOG.info(&format!("Change current directory into: {}", cwd.display()));
         let cache_dir = Path::new(&xdg_cache_dir).join("prjfmt/eval-cache");
-        if let true = cache_dir.as_path().exists() {
-            // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
-            // it will try to scan the manifest and passed it into check_prjfmt function
-            let manifest: RootManifest = read_prjfmt_manifest(&prjfmt_toml, &cache_dir)?;
-            let ctx = check_prjfmt(&prjfmt_toml, &manifest)?;
-
-            run_prjfmt(cwd, cache_dir, Some(ctx))?;
-        } else {
-            // If prjfmt cannot find the $XDG_CACHE_DIR/prjfmt/eval-cache/, then it assumes
-            // that all files are never get formatted.
-            println!("First time formatting with prjfmt.");
-            run_prjfmt(cwd, cache_dir, None)?;
-        }
+        cmd!("mkdir -p {cache_dir}").read()?;
+        run_prjfmt(cwd, cache_dir)?;
     } else {
         println!(
             "file prjfmt.toml couldn't be found. Run `--init` to generate the default setting"
