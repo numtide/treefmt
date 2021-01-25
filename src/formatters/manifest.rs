@@ -38,7 +38,15 @@ pub fn create_prjfmt_manifest(
     let manifest_toml = RootManifest {
         manifest: map_manifest,
     };
-    f.write_all(toml::to_string_pretty(&manifest_toml)?.as_bytes())?;
+    f.write_all(
+        format!(
+            "# {} DO NOT HAND EDIT THIS FILE {}\n\n{}",
+            emoji::WARN,
+            emoji::WARN,
+            toml::to_string_pretty(&manifest_toml)?
+        )
+        .as_bytes(),
+    )?;
     Ok(())
 }
 
@@ -47,7 +55,7 @@ pub fn read_prjfmt_manifest(prjfmt_toml: &PathBuf, path: &PathBuf) -> Result<Roo
     let hash_toml = create_prjfmt_hash(&prjfmt_toml)?;
     let manifest_toml = path.as_path().join(&hash_toml);
 
-    if let true = manifest_toml.as_path().exists() {
+    if manifest_toml.as_path().exists() {
         CLOG.info(&format!("Found {} in: {}", hash_toml, path.display()));
         let open_file = match read_to_string(manifest_toml.as_path()) {
             Ok(file) => file,

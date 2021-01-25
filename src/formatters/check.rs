@@ -1,6 +1,6 @@
 use super::tool::FileMeta;
 use crate::formatters::manifest::RootManifest;
-use crate::formatters::tool::create_command_context;
+use crate::formatters::tool::{create_command_context, CmdContext};
 use crate::CLOG;
 use anyhow::{anyhow, Error, Result};
 use std::collections::BTreeSet;
@@ -8,39 +8,76 @@ use std::path::PathBuf;
 use std::vec::Vec;
 
 /// Checking content of cache's file and current prjfmt runs
-pub fn check_prjfmt(prjfmt_toml: PathBuf, cache: &RootManifest) -> Result<()> {
-    let cmd_context = create_command_context(&prjfmt_toml)?
-        .into_iter()
-        .map(|a| a.metadata);
-    let cache_context = cache
-        .manifest
-        .values()
-        .map(|b| Ok(&b.metadata))
-        .collect::<Result<Vec<&BTreeSet<FileMeta>>, Error>>()?;
+pub fn check_prjfmt(
+    prjfmt_toml: &PathBuf,
+    cache: &RootManifest,
+) -> Result<(Vec<CmdContext>, Option<Vec<CmdContext>>)> {
+    let cmd_context = create_command_context(&prjfmt_toml)?;
+    let cache_context = cache.manifest.values().map(|b| b).into_iter();
+    let results = cmd_context.clone().into_iter().zip(cache_context);
 
-    let results: Vec<(BTreeSet<FileMeta>, &BTreeSet<FileMeta>)> =
-        cmd_context.zip(cache_context).collect();
+    let cache_context: Vec<CmdContext> = results
+        .clone()
+        .map(|(a, b)| {
+            if a.command != b.command {
+                CLOG.warn(&format!(
+                    "Command has changed! Please remove .prjfmt folder"
+                ));
+                return Err(anyhow!("prjfmt failed to run."));
+            }
+            if a.args.len() != b.args.len() {
+                CLOG.warn(&format!(
+                    "Arguments has changed! Please remove .prjfmt folder"
+                ));
+                return Err(anyhow!("prjfmt failed to run."));
+            }
+            Ok(CmdContext {
+                command: a.command,
+                args: a.args,
+                metadata: a.metadata.difference(&b.metadata).cloned().collect(),
+            })
+        })
+        .collect::<Result<Vec<CmdContext>, Error>>()?;
 
-    let mut new_vec: Vec<FileMeta> = Vec::new();
-
-    for (a, b) in results {
-        let mut match_meta: Vec<FileMeta> = a.difference(b).cloned().collect();
-        if let false = match_meta.is_empty() {
-            new_vec.append(&mut match_meta)
-        }
+    if cache_context.iter().all(|f| f.metadata.is_empty()) {
+        CLOG.warn(&format!("No changes found in {}", prjfmt_toml.display()));
+        return Ok((cmd_context, None));
     }
 
-    if let false = new_vec.is_empty() {
-        CLOG.warn(&format!("The following file has changed or newly added:"));
-        for p in new_vec {
-            CLOG.warn(&format!(
-                " - {} last modification time: {}",
-                p.path.display(),
-                p.mtimes
-            ));
-        }
-        return Err(anyhow!("prjfmt failed to run."));
-    }
+    let updated_context = results
+        .map(|(a, b)| {
+            if a.command != b.command {
+                CLOG.warn(&format!(
+                    "Command has changed! Please remove .prjfmt folder"
+                ));
+                return Err(anyhow!("prjfmt failed to run."));
+            }
+            if a.args.len() != b.args.len() {
+                CLOG.warn(&format!(
+                    "Arguments has changed! Please remove .prjfmt folder"
+                ));
+                return Err(anyhow!("prjfmt failed to run."));
+            }
+            Ok(CmdContext {
+                command: a.command,
+                args: a.args,
+                metadata: a.metadata.union(&b.metadata).cloned().collect(),
+            })
+        })
+        .collect::<Result<Vec<CmdContext>, Error>>()?;
 
-    Ok(())
+    CLOG.warn(&format!("The following file has changed or newly added:"));
+    for cmd in &cache_context {
+        if !cmd.metadata.is_empty() {
+            for p in &cmd.metadata {
+                CLOG.warn(&format!(
+                    " - {} last modification time: {}",
+                    p.path.display(),
+                    p.mtimes
+                ));
+            }
+        }
+    }
+    // return Err(anyhow!("prjfmt failed to run."));
+    Ok((cache_context, Some(updated_context)))
 }

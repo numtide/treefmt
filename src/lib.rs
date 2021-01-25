@@ -81,22 +81,26 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         }
     };
 
-    if let true = prjfmt_toml.as_path().exists() {
-        CLOG.info(&format!("Found {} at {}", prjfmt_toml.display(), cwd.display()));
+    if prjfmt_toml.as_path().exists() {
+        CLOG.info(&format!(
+            "Found {} at {}",
+            prjfmt_toml.display(),
+            cwd.display()
+        ));
         CLOG.info(&format!("Change current directory into: {}", cwd.display()));
         let cache_dir = Path::new(&xdg_cache_dir).join("prjfmt/eval-cache");
-
         if let true = cache_dir.as_path().exists() {
             // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
             // it will try to scan the manifest and passed it into check_prjfmt function
             let manifest: RootManifest = read_prjfmt_manifest(&prjfmt_toml, &cache_dir)?;
-            check_prjfmt(prjfmt_toml, &manifest)?;
-            run_prjfmt(cwd, cache_dir)?;
+            let ctx = check_prjfmt(&prjfmt_toml, &manifest)?;
+
+            run_prjfmt(cwd, cache_dir, Some(ctx))?;
         } else {
             // If prjfmt cannot find the $XDG_CACHE_DIR/prjfmt/eval-cache/, then it assumes
             // that all files are never get formatted.
             println!("First time formatting with prjfmt.");
-            run_prjfmt(cwd, cache_dir)?;
+            run_prjfmt(cwd, cache_dir, None)?;
         }
     } else {
         println!(

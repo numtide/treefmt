@@ -1,4 +1,6 @@
 use super::manifest::create_prjfmt_manifest;
+use crate::formatters::check::check_prjfmt;
+use crate::formatters::manifest::{read_prjfmt_manifest, RootManifest};
 use crate::{emoji, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
@@ -25,25 +27,35 @@ pub fn check_bin(command: &str) -> Result<()> {
     )
 }
 
-/// Running the prjfmt
-// TODO: make run_prjfmt only takes 1 argument &FmtConfig
-pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
+/// Run the prjfmt
+pub fn run_prjfmt(
+    cwd: PathBuf,
+    cache_dir: PathBuf,
+    opt_ctx: Option<(Vec<CmdContext>, Option<Vec<CmdContext>>)>,
+) -> anyhow::Result<()> {
     let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
-    if let false = prjfmt_toml.as_path().exists() {
+
+    let (cached_cmd_contexts, new_cmd_contexts) = match opt_ctx {
+        Some(x) => x,
+        None => {
+            let cmd_context = create_command_context(&prjfmt_toml)?;
+            (cmd_context, None)
+        }
+    };
+
+    if !prjfmt_toml.as_path().exists() {
         return Err(anyhow!(
             "{}prjfmt.toml not found, please run --init command",
             emoji::ERROR
         ));
     }
 
-    let cmd_contexts = create_command_context(&prjfmt_toml)?;
-
-    for ctx in &cmd_contexts {
+    for ctx in &cached_cmd_contexts {
         check_bin(&ctx.command)?;
     }
 
     println!("===========================");
-    for ctx in &cmd_contexts {
+    for ctx in &cached_cmd_contexts {
         println!("Command: {}", ctx.command);
         println!("Files:");
         for m in &ctx.metadata {
@@ -53,7 +65,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         println!("===========================");
     }
 
-    for ctx in &cmd_contexts {
+    for ctx in &cached_cmd_contexts {
         for m in &ctx.metadata {
             let arg = &ctx.args;
             let cmd_arg = &ctx.command;
@@ -64,13 +76,16 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 
     println!("Format successful");
     println!("capturing formatted file's state...");
-    create_prjfmt_manifest(prjfmt_toml, cache_dir, cmd_contexts)?;
+    if let Some(ctx) = new_cmd_contexts {
+        create_prjfmt_manifest(prjfmt_toml, cache_dir, ctx)?;
+        return Ok(());
+    }
+    create_prjfmt_manifest(prjfmt_toml, cache_dir, cached_cmd_contexts)?;
 
     Ok(())
 }
 
 /// Convert glob pattern into list of pathBuf
-/// TODO: Implement includes and exclude filter
 pub fn glob_to_path(
     cwd: &PathBuf,
     extensions: &FileExtensions,
@@ -115,7 +130,7 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
     for p in paths {
         let metadata = metadata(&p)?;
         let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
-        if let false = filemeta.insert(FileMeta {
+        if !filemeta.insert(FileMeta {
             mtimes: mtime,
             path: p.clone(),
         }) {
@@ -229,10 +244,10 @@ pub struct FileMeta {
 
 impl Ord for FileMeta {
     fn cmp(&self, other: &Self) -> Ordering {
-        if let true = self.eq(other) {
+        if self.eq(other) {
             return Ordering::Equal;
         }
-        if let true = self.mtimes.eq(&other.mtimes) {
+        if self.mtimes.eq(&other.mtimes) {
             return self.path.cmp(&other.path);
         }
         self.mtimes.cmp(&other.mtimes)
