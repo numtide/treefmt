@@ -26,9 +26,7 @@ pub mod formatters;
 
 use anyhow::anyhow;
 use command::run_prjfmt_cli;
-use formatters::check::check_prjfmt;
-use formatters::manifest::{read_prjfmt_manifest, RootManifest};
-use formatters::tool::{run_prjfmt, CmdContext};
+use formatters::tool::run_prjfmt;
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -78,8 +76,17 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         Ok(path) => path,
         Err(err) => {
             CLOG.warn(&format!("{}", err));
-            CLOG.warn(&format!("Set the $XDG_CACHE_DIR to {}", cwd.display()));
-            cwd.as_path().display().to_string()
+            match env::var("HOME") {
+                Ok(h) => {
+                    let home_cache = Path::new(&h).join(".cache");
+                    CLOG.warn(&format!(
+                        "Set the $XDG_CACHE_DIR to {}",
+                        home_cache.display()
+                    ));
+                    home_cache.as_path().display().to_string()
+                }
+                Err(err) => return Err(anyhow!("cannot open HOME due to {}.", err)),
+            }
         }
     };
 

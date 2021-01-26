@@ -1,9 +1,7 @@
-use super::tool::FileMeta;
 use crate::formatters::manifest::RootManifest;
-use crate::formatters::tool::{create_command_context, CmdContext};
+use crate::formatters::tool::CmdContext;
 use crate::CLOG;
-use anyhow::{anyhow, Error, Result};
-use std::collections::BTreeSet;
+use anyhow::{Error, Result};
 use std::path::PathBuf;
 use std::vec::Vec;
 

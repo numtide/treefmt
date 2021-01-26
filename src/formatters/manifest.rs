@@ -10,7 +10,6 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 use std::str;
-use xshell::cmd;
 
 /// Create <hex(hash(path-to-prjfmt))>.toml and put it in $XDG_CACHE_DIR/prjfmt/eval-cache/
 pub fn create_prjfmt_manifest(
