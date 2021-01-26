@@ -5,6 +5,7 @@ use crate::{emoji, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use glob;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -67,14 +68,18 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         }
     }
 
-    for c in context {
-        for m in &c.metadata {
-            let arg = &c.args;
-            let cmd_arg = &c.command;
-            let path = &m.path;
-            cmd!("{cmd_arg} {arg...} {path}").read()?;
-        }
-    }
+    // TODO: report errors (both Err(_), and Ok(bad status))
+    let _outputs: Vec<xshell::Result<std::process::Output>> = context
+        .par_iter()
+        .flat_map(|c| {
+            c.metadata.par_iter().cloned().map(move |m| {
+                let arg = &c.args;
+                let cmd_arg = &c.command;
+                let path = &m.path;
+                cmd!("{cmd_arg} {arg...} {path}").output()
+            })
+        })
+        .collect::<Vec<xshell::Result<std::process::Output>>>();
 
     let new_ctx: Vec<CmdContext> = old_ctx
         .iter()
