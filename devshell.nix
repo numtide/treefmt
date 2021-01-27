@@ -27,6 +27,7 @@ mkDevShell {
   packages = [
     # Build tools
     prjfmt.rust
+    clang
 
     # Code formatters
     haskellPackages.ormolu
