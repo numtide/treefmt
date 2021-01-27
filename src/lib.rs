@@ -5,18 +5,13 @@
 extern crate anyhow;
 extern crate console;
 extern crate glob;
-extern crate parking_lot;
-extern crate which;
 #[macro_use]
 extern crate structopt;
-extern crate chrono;
-extern crate dialoguer;
 extern crate hex;
 extern crate log;
 extern crate serde;
 extern crate sha1;
 extern crate toml;
-extern crate walkdir;
 
 pub mod command;
 pub mod customlog;

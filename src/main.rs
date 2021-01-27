@@ -2,11 +2,9 @@
 
 extern crate anyhow;
 extern crate env_logger;
-extern crate human_panic;
 extern crate log;
 extern crate prjfmt;
 extern crate structopt;
-extern crate which;
 
 use prjfmt::{run_cli, Cli, CLOG};
 use structopt::StructOpt;
