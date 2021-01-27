@@ -79,7 +79,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
                 cmd!("{cmd_arg} {arg...} {path}").output()
             })
         })
-        .collect::<Vec<xshell::Result<std::process::Output>>>();
+        .collect();
 
     let new_ctx: Vec<CmdContext> = old_ctx
         .iter()
