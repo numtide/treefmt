@@ -4,9 +4,8 @@ final: prev:
     bin = prev.rustPlatform.buildRustPackage rec {
       pname = "prjfmt";
       version = "0.0.1";
-
       src = ./.;
-      cargoSha256 = "sha256-99ioLTIQ2PbfEtrCu89aLnrxN3frx7vHD9D40bHWhbc=";
+      cargoSha256 = "sha256-98M9OPWil9bKknam8ys4dNP6/iZObW0RrAC7PxiHxYI=";
       doCheck = false;
       nativeBuildInputs = [ ];
       buildInputs = [ ];

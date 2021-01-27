@@ -5,6 +5,7 @@ mod init;
 
 use self::init::init_prjfmt;
 use std::path::PathBuf;
+use structopt::StructOpt;
 
 use log::info;
 
