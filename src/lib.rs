@@ -2,23 +2,6 @@
 
 #![deny(missing_docs)]
 
-extern crate anyhow;
-extern crate console;
-extern crate glob;
-extern crate parking_lot;
-extern crate which;
-#[macro_use]
-extern crate structopt;
-extern crate chrono;
-extern crate curl;
-extern crate dialoguer;
-extern crate hex;
-extern crate log;
-extern crate serde;
-extern crate sha1;
-extern crate toml;
-extern crate walkdir;
-
 pub mod command;
 pub mod customlog;
 pub mod emoji;
@@ -29,6 +12,7 @@ use command::run_prjfmt_cli;
 use formatters::tool::run_prjfmt;
 use std::env;
 use std::path::{Path, PathBuf};
+use structopt::StructOpt;
 
 use customlog::{CustomLogOutput, LogLevel};
 use xshell::cmd;
