@@ -5,25 +5,25 @@ with pkgs;
 # Configure your development environment.
 #
 # Documentation: https://github.com/numtide/devshell
-mkShell {
-    name = "prjfmt";
-    motd = ''
-        Welcome to the prjfmt development environment.
-      '';
-    commands = [ ];
-    packages = [
-        # Build tools
-        rust-bin.stable.latest.rust
-        clang
+devshell.mkShell {
+  name = "prjfmt";
+  motd = ''
+    Welcome to the prjfmt development environment.
+  '';
+  commands = [ ];
+  packages = [
+    # Build tools
+    rust-bin.stable.latest.rust
+    clang
 
-        # Code formatters
-        haskellPackages.ormolu
-        haskellPackages.cabal-install
-        haskellPackages.ghc
-        nixpkgs-fmt
-        go
-        gopls
-        gopkgs
-        gocode
-    ];
+    # Code formatters
+    haskellPackages.ormolu
+    haskellPackages.cabal-install
+    haskellPackages.ghc
+    nixpkgs-fmt
+    go
+    gopls
+    gopkgs
+    gocode
+  ];
 }
