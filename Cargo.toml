@@ -10,7 +10,6 @@ edition = "2018"
 anyhow = "1.0"
 chrono = "0.4"
 console = "0.13"
-curl = "0.4"
 dialoguer = "0.7"
 env_logger = { version = "0.8", default-features = false }
 filetime = "0.2"

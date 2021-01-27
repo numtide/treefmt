@@ -10,7 +10,6 @@ extern crate which;
 #[macro_use]
 extern crate structopt;
 extern crate chrono;
-extern crate curl;
 extern crate dialoguer;
 extern crate hex;
 extern crate log;
