@@ -123,12 +123,12 @@ pub fn glob_to_path(
         for include in includes {
             // Remove trailing `/` as we add one explicitly in the override
             let include = include.trim_end_matches('/');
-            for extension in extensions.clone().into_iter() {
+            for extension in extensions.into_iter() {
                 overrides_builder.add(&format!("{}/**/{}", include, extension))?;
             }
         }
     } else {
-        for extension in extensions.clone().into_iter() {
+        for extension in extensions.into_iter() {
             overrides_builder.add(&extension)?;
         }
     }
@@ -255,14 +255,14 @@ pub enum FileExtensions {
     MultipleFile(Vec<String>),
 }
 
-impl IntoIterator for FileExtensions {
-    type Item = String;
-    type IntoIter = either::Either<std::iter::Once<String>, std::vec::IntoIter<String>>;
+impl<'a> IntoIterator for &'a FileExtensions {
+    type Item = &'a String;
+    type IntoIter = either::Either<std::iter::Once<&'a String>, std::slice::Iter<'a, String>>;
 
     fn into_iter(self) -> Self::IntoIter {
         match self {
             FileExtensions::SingleFile(glob) => either::Either::Left(std::iter::once(glob)),
-            FileExtensions::MultipleFile(globs) => either::Either::Right(globs.into_iter()),
+            FileExtensions::MultipleFile(globs) => either::Either::Right(globs.iter()),
         }
     }
 }
