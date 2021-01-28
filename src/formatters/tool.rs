@@ -135,7 +135,7 @@ pub fn glob_to_path(
 
     if let Some(excludes) = excludes {
         for exclude in excludes {
-            overrides_builder.add(&format!("!/{}", exclude))?;
+            overrides_builder.add(&format!("!{}", exclude))?;
         }
     }
 
@@ -261,8 +261,7 @@ impl IntoIterator for FileExtensions {
 
     fn into_iter(self) -> Self::IntoIter {
         match self {
-            FileExtensions::SingleFile(glob) =>
-                either::Either::Left(std::iter::once(glob)),
+            FileExtensions::SingleFile(glob) => either::Either::Left(std::iter::once(glob)),
             FileExtensions::MultipleFile(globs) => either::Either::Right(globs.into_iter()),
         }
     }
