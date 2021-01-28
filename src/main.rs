@@ -1,11 +1,5 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-extern crate anyhow;
-extern crate env_logger;
-extern crate log;
-extern crate prjfmt;
-extern crate structopt;
-
 use prjfmt::{run_cli, Cli, CLOG};
 use structopt::StructOpt;
 
