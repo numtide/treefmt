@@ -4,13 +4,12 @@ use crate::formatters::manifest::{read_prjfmt_manifest, RootManifest};
 use crate::{emoji, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
-use glob;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{metadata, read_to_string};
-use std::iter::Iterator;
+use std::iter::{IntoIterator, Iterator};
 use std::path::PathBuf;
 use xshell::cmd;
 
@@ -113,38 +112,48 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 pub fn glob_to_path(
     cwd: &PathBuf,
     extensions: &FileExtensions,
-    _includes: &Option<Vec<String>>,
-    _excludes: &Option<Vec<String>>,
+    includes: &Option<Vec<String>>,
+    excludes: &Option<Vec<String>>,
 ) -> anyhow::Result<Vec<PathBuf>> {
-    let dir = cwd.to_str().unwrap_or("");
+    use ignore::{overrides::OverrideBuilder, WalkBuilder};
 
-    let glob_ext = |extension| -> anyhow::Result<_> {
-        let pat = format!("{}/**/{}", dir, extension);
-        let globs = glob::glob(&pat).map_err(|err| {
-            anyhow::anyhow!(
-                "{} Error at position: {} due to {}",
-                emoji::ERROR,
-                err.pos,
-                err.msg
-            )
-        })?;
+    let mut overrides_builder = OverrideBuilder::new(cwd);
 
-        Ok(globs.map(|glob_res| Ok(glob_res?)))
-    };
-
-    match extensions {
-        FileExtensions::SingleFile(sfile) => glob_ext(sfile)?.collect(),
-        FileExtensions::MultipleFile(strs) => {
-            strs.iter()
-                .map(glob_ext)
-                .try_fold(Vec::new(), |mut v, globs| {
-                    for glob in globs? {
-                        v.push(glob?)
-                    }
-                    Ok(v)
-                })
+    if let Some(includes) = includes {
+        for include in includes {
+            // Remove trailing `/` as we add one explicitly in the override
+            let include = include.trim_end_matches('/');
+            for extension in extensions.into_iter() {
+                overrides_builder.add(&format!("{}/**/{}", include, extension))?;
+            }
+        }
+    } else {
+        for extension in extensions.into_iter() {
+            overrides_builder.add(&extension)?;
         }
     }
+
+    if let Some(excludes) = excludes {
+        for exclude in excludes {
+            overrides_builder.add(&format!("!{}", exclude))?;
+        }
+    }
+
+    let overrides = overrides_builder.build()?;
+
+    Ok(WalkBuilder::new(cwd)
+        .overrides(overrides)
+        .build()
+        .filter_map(|e| {
+            e.ok().and_then(|e| {
+                match e.file_type() {
+                    // Skip directory entries
+                    Some(t) if t.is_dir() => None,
+                    _ => Some(e.into_path()),
+                }
+            })
+        })
+        .collect())
 }
 
 /// Convert each PathBuf into FileMeta
@@ -244,6 +253,18 @@ pub enum FileExtensions {
     SingleFile(String),
     /// List of file type
     MultipleFile(Vec<String>),
+}
+
+impl<'a> IntoIterator for &'a FileExtensions {
+    type Item = &'a String;
+    type IntoIter = either::Either<std::iter::Once<&'a String>, std::slice::Iter<'a, String>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        match self {
+            FileExtensions::SingleFile(glob) => either::Either::Left(std::iter::once(glob)),
+            FileExtensions::MultipleFile(globs) => either::Either::Right(globs.iter()),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

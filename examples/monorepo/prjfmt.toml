@@ -1,8 +1,7 @@
 # fmt is the universal code formatter - https://github.com/numtide/fmt
 [formatters.ormolu]
 files = "*.hs" # / "*.hs" / "Makefile" mandatory
-#includes = [ "haskell/" ] # "haskell-frontend/*.hs" treat it like whitelist, and haskell-frontend will be ignored. only if `includes` exists.
-#excludes = [] # blacklisted folder/files.
+excludes = [ "haskell/" ] # blacklisted folder/files.
 command = "ormolu"
 args = [
   "--ghc-opt", "-XBangPatterns",
