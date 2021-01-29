@@ -316,7 +316,6 @@ impl Eq for FileMeta {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::formatters::tool::FileExtensions::SingleFile;
     use std::collections::BTreeSet;
 
     /// Transforming glob into file path
@@ -335,10 +334,12 @@ mod tests {
     #[test]
     fn test_path_to_filemeta() -> Result<()> {
         let file_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let metadata = metadata(&file_path)?;
+        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
-            mtimes: 1610965530,
+            mtimes: mtime,
             path: PathBuf::from(r"examples/monorepo/rust/src/main.rs")
         };
         let mut set_filemeta = BTreeSet::new();
