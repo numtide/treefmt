@@ -76,6 +76,10 @@ This section describes the integration between a single formatter and
 * `args`: A list of extra arguments to add to the command. This is typically
     project-specific arguments.
 
+NOTE: Formatters SHOULD adhere to the [formatter
+spec](docs/formatter_spec.md). If they don't, the best is to create a wrapper
+script that transforms the usage to match that spec.
+
 ## Use cases
 
 ### CLI usage
