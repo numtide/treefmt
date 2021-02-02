@@ -278,6 +278,14 @@ pub struct CmdContext {
     pub metadata: BTreeSet<FileMeta>,
 }
 
+impl PartialEq for CmdContext {
+    fn eq(&self, other: &Self) -> bool {
+        self.command== other.command && self.args == other.args && self.metadata == other.metadata
+    }
+}
+
+impl Eq for CmdContext {}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// File metadata created after the first prjfmt run
 pub struct FileMeta {
@@ -340,7 +348,7 @@ mod tests {
         vec_path.push(file_path);
         let file_meta = FileMeta {
             mtimes: mtime,
-            path: PathBuf::from(r"examples/monorepo/rust/src/main.rs")
+            path: PathBuf::from(r"examples/monorepo/rust/src/main.rs"),
         };
         let mut set_filemeta = BTreeSet::new();
         set_filemeta.insert(file_meta);
