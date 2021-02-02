@@ -17,8 +17,7 @@ Where
     provide.
 * `[...<files>]` is one or more files that the formatter should process.
 
-Whenever the program is invoked with the list of files, it MUST process all
-of those and format them.
+Whenever the program is invoked with the list of files, it MUST only process all the files that are passed and format them. Files that are not passed should never be formatted.
 
 If, and only if, a file format has changed, the formatter MUST write the new
 content in place of the original file.
