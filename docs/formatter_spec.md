@@ -36,6 +36,9 @@ semantic must never be broken by the formatter.
 A formatted file SHOULD be idempotent. Meaning that if the formatter it run
 twice on a file, the file should not change on the second invocation.
 
+The formatter MUST NOT do file traversal when a list of files is passed to it.
+This is the responsibility of `prjfmt`.
+
 ## Design notes
 
 We assume that the code is stored in source control, which is why it's fine to
