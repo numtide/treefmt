@@ -13,7 +13,9 @@ devshell.mkShell {
   commands = [ ];
   packages = [
     # Build tools
-    rust-bin.stable.latest.rust
+    (rust-bin.stable.latest.rust.override {
+      extensions = [ "rust-src" ];
+    })
     clang
 
     # Code formatters
