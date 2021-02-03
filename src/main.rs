@@ -12,15 +12,15 @@ fn main() {
 }
 
 fn run() -> anyhow::Result<()> {
-    let args = Cli::from_args();
+    let options = Cli::from_args();
 
-    CLOG.set_log_level(args.log_level);
+    CLOG.set_log_level(options.log_level);
 
-    if args.quiet {
+    if options.quiet {
         CLOG.set_quiet(true);
     }
 
-    run_cli(args)?;
+    run_cli(options)?;
 
     Ok(())
 }

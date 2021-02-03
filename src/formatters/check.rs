@@ -19,7 +19,7 @@ pub fn check_prjfmt(
         .map(|(a, b)| {
             Ok(CmdContext {
                 command: a.command.clone(),
-                args: a.args.clone(),
+                options: a.options.clone(),
                 metadata: a.metadata.difference(&b.metadata).cloned().collect(),
             })
         })

@@ -26,7 +26,7 @@ pub fn create_prjfmt_manifest(
             let prjfmt = cmd.command;
             let manifest = CmdContext {
                 command: prjfmt.to_string(),
-                args: cmd.args,
+                options: cmd.options,
                 metadata: cmd.metadata,
             };
             (prjfmt.to_string(), manifest)

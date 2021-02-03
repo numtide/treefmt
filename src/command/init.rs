@@ -21,7 +21,7 @@ pub fn init_prjfmt(path: Option<PathBuf>) -> anyhow::Result<()> {
 includes = [ "*.<language-extension>" ]
 excludes = []
 command = ""
-args = []
+options = []
     "#,
     )
     .with_context(|| {
