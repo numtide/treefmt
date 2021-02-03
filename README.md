@@ -70,10 +70,10 @@ This section describes the integration between a single formatter and
     full filenames can be passed. Eg: `[ "Makefile" ]`.
 
 * `command`: A list of arguments to execute the formatter. This will be
-    composed with the `args` attribute during invocation. The first argument
+    composed with the `options` attribute during invocation. The first argument
     is the name of the executable to run.
 
-* `args`: A list of extra arguments to add to the command. This is typically
+* `options`: A list of extra arguments to add to the command. This is typically
     project-specific arguments.
 
 NOTE: Formatters SHOULD adhere to the [formatter
@@ -135,7 +135,7 @@ Example:
 In the `prjfmt.toml` file of the project:
 ```toml
 [formatters.ormolu]
-args = [
+options = [
   "--ghc-opt", "-XBangPatterns",
   "--ghc-opt", "-XPatternSynonyms",
 ]
@@ -146,7 +146,7 @@ contains:
 ```toml
 command = ["ormolu", "--mode", "inplace"]
 files = ["*.hs"]
-args = []
+options = []
 ```
 
 The project will first load `prjfmt.toml`, take note of the ormolu formatter,
@@ -157,12 +157,12 @@ this in their config:
 [formatters.ormolu]
 command = ["ormolu", "--mode", "inplace"]
 files = ["*.hs"]
-args = [
+options = [
   "--ghc-opt", "-XBangPatterns",
   "--check-idempotence"
 ]
 ```
-Note how the empty ormolu `args` got overwritten by the project `args`.
+Note how the empty ormolu `options` got overwritten by the project `options`.
 
 ## Related projects
 

@@ -72,7 +72,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         .par_iter()
         .flat_map(|c| {
             c.metadata.par_iter().cloned().map(move |m| {
-                let arg = &c.args;
+                let arg = &c.options;
                 let cmd_arg = &c.command;
                 let path = &m.path;
                 cmd!("{cmd_arg} {arg...} {path}").output()
@@ -87,7 +87,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
                 if c.command == octx.command {
                     CmdContext {
                         command: c.command.clone(),
-                        args: c.args.clone(),
+                        options: c.options.clone(),
                         metadata: octx.metadata.union(&c.metadata).cloned().collect(),
                     }
                 } else {
@@ -214,7 +214,7 @@ pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> 
             )?;
             Ok(CmdContext {
                 command: config.command.clone().unwrap_or_default(),
-                args: config.args.clone().unwrap_or_default(),
+                options: config.options.clone().unwrap_or_default(),
                 metadata: path_to_filemeta(list_files)?,
             })
         })
@@ -241,7 +241,7 @@ pub struct FmtConfig {
     /// Command formatter to run
     pub command: Option<String>,
     /// Argument for formatter
-    pub args: Option<Vec<String>>,
+    pub options: Option<Vec<String>>,
 }
 
 /// File extensions can be single string (e.g. "*.hs") or
@@ -273,7 +273,7 @@ pub struct CmdContext {
     /// formatter command to run
     pub command: String,
     /// formatter arguments or flags
-    pub args: Vec<String>,
+    pub options: Vec<String>,
     /// formatter target path
     pub metadata: BTreeSet<FileMeta>,
 }

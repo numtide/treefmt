@@ -3,7 +3,7 @@
 files = "*.hs" # / "*.hs" / "Makefile" mandatory
 excludes = [ "haskell/" ] # blacklisted folder/files.
 command = "ormolu"
-args = [
+options = [
   "--ghc-opt", "-XBangPatterns",
   "--ghc-opt", "-XPatternSynonyms",
   "--ghc-opt", "-XTypeApplications",
@@ -16,4 +16,4 @@ files = [ "*.rs" ]
 includes = [ "rust/" ]
 excludes = []
 command = "cargo"
-args = [ "fmt", "--" ]
+options = [ "fmt", "--" ]
