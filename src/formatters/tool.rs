@@ -280,7 +280,7 @@ pub struct CmdContext {
 
 impl PartialEq for CmdContext {
     fn eq(&self, other: &Self) -> bool {
-        self.command== other.command && self.args == other.args && self.metadata == other.metadata
+        self.command == other.command && self.options == other.options && self.metadata == other.metadata
     }
 }
 
