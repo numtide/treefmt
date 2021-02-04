@@ -11,6 +11,13 @@ devshell.mkShell {
     Welcome to the prjfmt development environment.
   '';
   commands = [ ];
+  bash = {
+    extra = ''
+      export LD_INCLUDE_PATH="$DEVSHELL_DIR/include"
+      export LD_LIB_PATH="$DEVSHELL_DIR/lib"
+    '';
+    interactive = '''';
+  };
   packages = [
     # Build tools
     (rust-bin.stable.latest.rust.override {
@@ -26,6 +33,7 @@ devshell.mkShell {
     go
     gopls
     gopkgs
-    gocode
+    python3.pkgs.black
+    nodePackages.prettier
   ];
 }
