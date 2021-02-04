@@ -19,6 +19,7 @@ devshell.mkShell {
     clang
 
     # Code formatters
+    elmPackages.elm-format
     haskellPackages.ormolu
     haskellPackages.cabal-install
     haskellPackages.ghc
