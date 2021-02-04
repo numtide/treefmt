@@ -278,6 +278,14 @@ pub struct CmdContext {
     pub metadata: BTreeSet<FileMeta>,
 }
 
+impl PartialEq for CmdContext {
+    fn eq(&self, other: &Self) -> bool {
+        self.command == other.command && self.options == other.options && self.metadata == other.metadata
+    }
+}
+
+impl Eq for CmdContext {}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// File metadata created after the first prjfmt run
 pub struct FileMeta {
@@ -312,3 +320,39 @@ impl PartialEq for FileMeta {
 }
 
 impl Eq for FileMeta {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    /// Transforming glob into file path
+    #[test]
+    fn test_glob_to_path() -> Result<()> {
+        let cwd = PathBuf::from(r"examples/monorepo");
+        let file_ext = FileExtensions::SingleFile("*.rs".to_string());
+        let glob_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let mut vec_path = Vec::new();
+        vec_path.push(glob_path);
+        assert_eq!(glob_to_path(&cwd, &file_ext, &None, &None)?, vec_path);
+        Ok(())
+    }
+
+    /// Transforming path into FileMeta
+    #[test]
+    fn test_path_to_filemeta() -> Result<()> {
+        let file_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let metadata = metadata(&file_path)?;
+        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mut vec_path = Vec::new();
+        vec_path.push(file_path);
+        let file_meta = FileMeta {
+            mtimes: mtime,
+            path: PathBuf::from(r"examples/monorepo/rust/src/main.rs"),
+        };
+        let mut set_filemeta = BTreeSet::new();
+        set_filemeta.insert(file_meta);
+        assert_eq!(path_to_filemeta(vec_path)?, set_filemeta);
+        Ok(())
+    }
+}

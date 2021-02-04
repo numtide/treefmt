@@ -45,3 +45,22 @@ pub fn check_prjfmt(
     // return Err(anyhow!("prjfmt failed to run."));
     Ok(cache_context)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    /// Every same path produce same hash
+    #[test]
+    fn test_check_prjfmt() -> Result<()> {
+        let prjfmt_path = PathBuf::from(r"examples/monorepo/prjfmt.toml");
+        let cache: RootManifest = RootManifest {
+            manifest: BTreeMap::new(),
+        };
+        let cmd_context: Vec<CmdContext> = Vec::new();
+
+        assert_eq!(check_prjfmt(&prjfmt_path, &cmd_context, &cache)?, cmd_context);
+        Ok(())
+    }
+}

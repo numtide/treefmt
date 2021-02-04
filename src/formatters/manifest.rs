@@ -92,3 +92,17 @@ pub struct RootManifest {
     /// Map of manifests config based on its formatter
     pub manifest: BTreeMap<String, CmdContext>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every same path produce same hash
+    #[test]
+    fn test_create_prjfmt_hash() -> Result<()> {
+        let file_path = PathBuf::from(r"examples/monorepo/prjfmt.toml");
+        let prjfmt_hash = "02e97bc0a67b5d61f3152c184690216085ef0c03.toml";
+        assert_eq!(create_prjfmt_hash(&file_path)?, prjfmt_hash);
+        Ok(())
+    }
+}
