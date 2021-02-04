@@ -25,9 +25,10 @@ devshell.mkShell {
     haskellPackages.ghc
     nixpkgs-fmt
     go
-    gopls
     gopkgs
-    python3.pkgs.black
+    gopls
     nodePackages.prettier
+    python3.pkgs.black
+    shfmt
   ];
 }
