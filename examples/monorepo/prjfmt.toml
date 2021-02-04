@@ -5,12 +5,10 @@ files = [ "*.py" ]
 command = "black"
 options = [ ]
 
-[formatters.rustfmt]
-files = [ "*.rs" ]
-includes = [ "rust/" ]
-excludes = []
-command = "rustfmt"
-options = [ "--edition", "2018" ]
+[formatters.elm-format]
+files = [ "*.elm" ]
+command = "elm-format"
+options = [ "--yes" ]
 
 [formatters.gofmt]
 files = [ "*.go" ]
@@ -33,3 +31,10 @@ options = [
 files = [ "*.js" ]
 command = "prettier"
 options = [ "--write" ]
+
+[formatters.rustfmt]
+files = [ "*.rs" ]
+includes = [ "rust/" ]
+excludes = []
+command = "rustfmt"
+options = [ "--edition", "2018" ]
