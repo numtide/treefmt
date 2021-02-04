@@ -5,12 +5,12 @@ files = [ "*.py" ]
 command = "black"
 options = [ ]
 
-[formatters.cargo]
+[formatters.rustfmt]
 files = [ "*.rs" ]
 includes = [ "rust/" ]
 excludes = []
-command = "cargo"
-options = [ "fmt", "--" ]
+command = "rustfmt"
+options = [ "--edition", "2018" ]
 
 [formatters.gofmt]
 files = [ "*.go" ]
@@ -18,8 +18,8 @@ command = "gofmt"
 options = [ "-w" ]
 
 [formatters.ormolu]
-files = "*.hs" # / "*.hs" / "Makefile" mandatory
-excludes = [ "haskell/" ] # blacklisted folder/files.
+files = "*.hs"
+excludes = [ "haskell/" ]
 command = "ormolu"
 options = [
   "--ghc-opt", "-XBangPatterns",
