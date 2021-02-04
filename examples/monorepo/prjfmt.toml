@@ -1,7 +1,23 @@
 # fmt is the universal code formatter - https://github.com/numtide/fmt
+
+[formatters.black]
+files = [ "*.py" ]
+command = "black"
+options = [ ]
+
+[formatters.elm-format]
+files = [ "*.elm" ]
+command = "elm-format"
+options = [ "--yes" ]
+
+[formatters.gofmt]
+files = [ "*.go" ]
+command = "gofmt"
+options = [ "-w" ]
+
 [formatters.ormolu]
-files = "*.hs" # / "*.hs" / "Makefile" mandatory
-excludes = [ "haskell/" ] # blacklisted folder/files.
+files = "*.hs"
+excludes = [ "haskell/" ]
 command = "ormolu"
 options = [
   "--ghc-opt", "-XBangPatterns",
@@ -11,14 +27,14 @@ options = [
   "--check-idempotence"
 ]
 
-[formatters.cargo]
+[formatters.prettier]
+files = [ "*.js" ]
+command = "prettier"
+options = [ "--write" ]
+
+[formatters.rustfmt]
 files = [ "*.rs" ]
 includes = [ "rust/" ]
 excludes = []
-command = "cargo"
-options = [ "fmt", "--" ]
-
-[formatters.elm-format]
-files = [ "*.elm" ]
-command = "elm-format"
-options = [ "--yes" ]
+command = "rustfmt"
+options = [ "--edition", "2018" ]

@@ -27,6 +27,7 @@ devshell.mkShell {
     go
     gopls
     gopkgs
-    gocode
+    python3.pkgs.black
+    nodePackages.prettier
   ];
 }
