@@ -38,3 +38,14 @@ includes = [ "rust/" ]
 excludes = []
 command = "rustfmt"
 options = [ "--edition", "2018" ]
+
+[formatters.shfmt]
+files = [ "*.sh" ]
+includes = [ "shell/" ]
+excludes = []
+command = "shfmt"
+options = [
+  "-i", "2", # indent 2
+  "-s", # simplify the code
+  "-w", # write back to the file
+]
