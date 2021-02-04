@@ -17,3 +17,8 @@ includes = [ "rust/" ]
 excludes = []
 command = "cargo"
 options = [ "fmt", "--" ]
+
+[formatters.elm-format]
+files = [ "*.elm" ]
+command = "elm-format"
+options = [ "--yes" ]
