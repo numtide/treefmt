@@ -70,13 +70,11 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     // TODO: report errors (both Err(_), and Ok(bad status))
     let _outputs: Vec<xshell::Result<std::process::Output>> = context
         .par_iter()
-        .flat_map(|c| {
-            c.metadata.par_iter().cloned().map(move |m| {
-                let arg = &c.options;
-                let cmd_arg = &c.command;
-                let path = &m.path;
-                cmd!("{cmd_arg} {arg...} {path}").output()
-            })
+        .map(|c| {
+            let arg = &c.options;
+            let cmd_arg = &c.command;
+            let paths = c.metadata.iter().map(|f| &f.path);
+            cmd!("{cmd_arg} {arg...} {paths...}").output()
         })
         .collect();
 
