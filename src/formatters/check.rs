@@ -16,11 +16,16 @@ pub fn check_prjfmt(
 
     let cache_context: Vec<CmdContext> = results
         .clone()
-        .map(|(a, b)| {
+        .map(|(new, old)| {
             Ok(CmdContext {
-                command: a.command.clone(),
-                options: a.options.clone(),
-                metadata: a.metadata.difference(&b.metadata).cloned().collect(),
+                command: new.command.clone(),
+                options: new.options.clone(),
+                metadata: if new.command != old.command || new.options != old.options {
+                    // If either the command or the options have changed, invalidate old entries
+                    new.metadata.clone()
+                } else {
+                    new.metadata.difference(&old.metadata).cloned().collect()
+                },
             })
         })
         .collect::<Result<Vec<CmdContext>, Error>>()?;
