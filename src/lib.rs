@@ -11,11 +11,11 @@ use anyhow::anyhow;
 use command::run_prjfmt_cli;
 use formatters::tool::run_prjfmt;
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 use customlog::{CustomLogOutput, LogLevel};
-use xshell::cmd;
 
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
@@ -82,7 +82,7 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         ));
         CLOG.info(&format!("Change current directory into: {}", cwd.display()));
         let cache_dir = Path::new(&xdg_cache_dir).join("prjfmt/eval-cache");
-        cmd!("mkdir -p {cache_dir}").read()?;
+        fs::create_dir_all(&cache_dir)?;
         run_prjfmt(cwd, cache_dir)?;
     } else {
         println!(
