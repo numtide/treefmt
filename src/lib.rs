@@ -35,7 +35,7 @@ pub struct Cli {
     /// No output printed to stdout
     pub quiet: bool,
 
-    #[structopt(long = "log-level", default_value = "info")]
+    #[structopt(long = "log-level", default_value = "debug")]
     /// The maximum level of messages that should be logged by prjfmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
 
@@ -59,11 +59,11 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     let xdg_cache_dir = match env::var("XDG_CACHE_DIR") {
         Ok(path) => path,
         Err(err) => {
-            CLOG.warn(&format!("{}", err));
+            CLOG.debug(&format!("{}", err));
             match env::var("HOME") {
                 Ok(h) => {
                     let home_cache = Path::new(&h).join(".cache");
-                    CLOG.warn(&format!(
+                    CLOG.debug(&format!(
                         "Set the $XDG_CACHE_DIR to {}",
                         home_cache.display()
                     ));
@@ -75,18 +75,18 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     };
 
     if prjfmt_toml.as_path().exists() {
-        CLOG.info(&format!(
+        CLOG.debug(&format!(
             "Found {} at {}",
             prjfmt_toml.display(),
             cwd.display()
         ));
-        CLOG.info(&format!("Change current directory into: {}", cwd.display()));
+        CLOG.debug(&format!("Change current directory into: {}", cwd.display()));
         let cache_dir = Path::new(&xdg_cache_dir).join("prjfmt/eval-cache");
         fs::create_dir_all(&cache_dir)?;
         run_prjfmt(cwd, cache_dir)?;
     } else {
-        println!(
-            "file prjfmt.toml couldn't be found. Run `--init` to generate the default setting"
+        CLOG.error(
+            "file prjfmt.toml couldn't be found. Run `--init` to generate the default setting",
         );
     }
     Ok(())

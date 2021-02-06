@@ -2,12 +2,10 @@ use crate::emoji;
 use crate::CLOG;
 use anyhow::Context;
 use console::style;
-use log::info;
 use std::fs;
 use std::path::PathBuf;
 
 pub fn init_prjfmt(path: Option<PathBuf>) -> anyhow::Result<()> {
-    info!("Creating new prjfmt configuration...");
     let file = match path {
         Some(loc) => loc,
         None => PathBuf::from("."),
@@ -33,7 +31,9 @@ options = []
         )
     })?;
 
-    let msg = format!("Generated prjfmt template at {}", file_path.display());
-    CLOG.info(&msg);
+    CLOG.info(&format!(
+        "Generated prjfmt template at {}",
+        file_path.display()
+    ));
     Ok(())
 }

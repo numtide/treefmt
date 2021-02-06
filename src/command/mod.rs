@@ -7,8 +7,6 @@ use self::init::init_prjfmt;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-use log::info;
-
 #[derive(Debug, StructOpt)]
 /// The various kinds of commands that `prjfmt` can execute.
 pub enum Command {
@@ -23,9 +21,6 @@ pub enum Command {
 /// Run a command with the given logger!
 pub fn run_prjfmt_cli(command: Command) -> anyhow::Result<()> {
     match command {
-        Command::Init { path } => {
-            info!("creating prjfmt.toml");
-            init_prjfmt(path)
-        }
+        Command::Init { path } => init_prjfmt(path),
     }
 }

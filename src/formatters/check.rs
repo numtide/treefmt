@@ -31,15 +31,15 @@ pub fn check_prjfmt(
         .collect::<Result<Vec<CmdContext>, Error>>()?;
 
     if cache_context.iter().all(|f| f.metadata.is_empty()) {
-        CLOG.warn(&format!("No changes found in {}", prjfmt_toml.display()));
+        CLOG.debug(&format!("No changes found in {}", prjfmt_toml.display()));
         return Ok(Vec::new());
     }
 
-    CLOG.warn(&format!("The following file has changed or newly added:"));
+    CLOG.info(&format!("The following file has changed or newly added:"));
     for cmd in &cache_context {
         if !cmd.metadata.is_empty() {
             for p in &cmd.metadata {
-                CLOG.warn(&format!(
+                CLOG.info(&format!(
                     " - {} last modification time: {}",
                     p.path.display(),
                     p.mtimes
@@ -65,7 +65,10 @@ mod tests {
         };
         let cmd_context: Vec<CmdContext> = Vec::new();
 
-        assert_eq!(check_prjfmt(&prjfmt_path, &cmd_context, &cache)?, cmd_context);
+        assert_eq!(
+            check_prjfmt(&prjfmt_path, &cmd_context, &cache)?,
+            cmd_context
+        );
         Ok(())
     }
 }

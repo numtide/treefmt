@@ -6,7 +6,7 @@ use structopt::StructOpt;
 fn main() {
     env_logger::init();
     if let Err(e) = run() {
-        eprintln!("Error: {}", e);
+        CLOG.error(&format!("{}", e));
         ::std::process::exit(1);
     }
 }
