@@ -12,12 +12,13 @@ use std::fs::{metadata, read_to_string};
 use std::iter::{IntoIterator, Iterator};
 use std::path::PathBuf;
 use xshell::cmd;
+use which::which;
 
 /// Make sure that formatter binary exists. This also for other formatter
 pub fn check_bin(command: &str) -> Result<()> {
     let cmd_bin = command.split_ascii_whitespace().next().unwrap_or("");
-    if let Ok(str) = cmd!("which {cmd_bin}").read() {
-        CLOG.info(&format!("Found {} at {}", cmd_bin, str));
+    if let Ok(path) = which(cmd_bin) {
+        CLOG.info(&format!("Found {} at {}", cmd_bin, path.display()));
         return Ok(());
     }
     anyhow::bail!(
