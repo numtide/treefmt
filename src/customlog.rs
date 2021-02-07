@@ -15,8 +15,10 @@ pub enum LogLevel {
     Error,
     /// Logs only warn and error
     Warn,
-    /// Logs everything
+    /// Logs warn, error and info
     Info,
+    /// Logs everything
+    Debug,
 }
 
 impl std::str::FromStr for LogLevel {
@@ -26,6 +28,7 @@ impl std::str::FromStr for LogLevel {
             "error" => Ok(LogLevel::Error),
             "warn" => Ok(LogLevel::Warn),
             "info" => Ok(LogLevel::Info),
+            "debug" => Ok(LogLevel::Debug),
             _ => anyhow::bail!("Unknown log-level: {}", s),
         }
     }
@@ -69,6 +72,19 @@ impl CustomLogOutput {
     /// Sets the log level for prjfmt
     pub fn set_log_level(&self, log_level: LogLevel) {
         self.log_level.store(log_level as u8, Ordering::SeqCst);
+    }
+
+    /// Add debug message.
+    pub fn debug(&self, message: &str) {
+        if !self.quiet() && self.is_log_enabled(LogLevel::Debug) {
+            let debug = format!(
+                "{} {}: {}",
+                emoji::DEBUG,
+                style("[DEBUG]").bold().dim(),
+                message,
+            );
+            self.message(&debug);
+        }
     }
 
     /// Add an informational message.

@@ -53,12 +53,12 @@ pub fn read_prjfmt_manifest(prjfmt_toml: &PathBuf, path: &PathBuf) -> Result<Roo
     let manifest_toml = path.as_path().join(&hash_toml);
 
     if manifest_toml.as_path().exists() {
-        CLOG.info(&format!("Found {} in: {}", hash_toml, path.display()));
+        CLOG.debug(&format!("Found {} in: {}", hash_toml, path.display()));
         let open_file = match read_to_string(manifest_toml.as_path()) {
             Ok(file) => file,
             Err(err) => {
                 return Err(anyhow!(
-                    "cannot open {} due to {}.",
+                    "Cannot open {} due to {}.",
                     manifest_toml.display(),
                     err
                 ))
@@ -68,7 +68,7 @@ pub fn read_prjfmt_manifest(prjfmt_toml: &PathBuf, path: &PathBuf) -> Result<Roo
         let manifest_content: RootManifest = toml::from_str(&open_file)?;
         Ok(manifest_content)
     } else {
-        CLOG.warn(&format!("{} not found!", hash_toml));
+        CLOG.debug(&format!("{} not found!", hash_toml));
         Ok(RootManifest {
             manifest: BTreeMap::new(),
         })

@@ -1,12 +1,12 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-use prjfmt::{run_cli, Cli, CLOG};
+use prjfmt::command::{run_cli, Cli};
+use prjfmt::CLOG;
 use structopt::StructOpt;
 
 fn main() {
-    env_logger::init();
     if let Err(e) = run() {
-        eprintln!("Error: {}", e);
+        CLOG.error(&format!("{}", e));
         ::std::process::exit(1);
     }
 }

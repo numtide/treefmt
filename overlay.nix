@@ -5,7 +5,7 @@ final: prev:
       pname = "prjfmt";
       version = "0.0.1";
       src = ./.;
-      cargoSha256 = "1n9wzbv6nc5sh2l0j1xfb2z65ql2krqw2ba9s7krlfhsbdkndwrr";
+      cargoSha256 = "0q7f596yvzbsg3g8x47cazfrfpa4j3310z14mz1w6i2xjvmadgx6";
       doCheck = false;
       nativeBuildInputs = [ ];
       buildInputs = [ ];
