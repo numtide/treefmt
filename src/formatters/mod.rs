@@ -5,5 +5,3 @@
 pub mod check;
 /// Manifest configuration
 pub mod manifest;
-/// Formatter utility
-pub mod tool;

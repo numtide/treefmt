@@ -1,6 +1,7 @@
-use super::manifest::create_prjfmt_manifest;
+//! The main formatting engine logic should be in this module.
+
 use crate::formatters::check::check_prjfmt;
-use crate::formatters::manifest::{read_prjfmt_manifest, RootManifest};
+use crate::formatters::manifest::{create_prjfmt_manifest, read_prjfmt_manifest, RootManifest};
 use crate::{emoji, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;

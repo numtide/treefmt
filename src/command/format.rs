@@ -1,5 +1,5 @@
 use crate::command::Cli;
-use crate::formatters::tool::run_prjfmt;
+use crate::engine::run_prjfmt;
 use crate::CLOG;
 use anyhow::anyhow;
 use std::env;
