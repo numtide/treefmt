@@ -4,13 +4,10 @@
   # $ nix flake update --recreate-lock-file
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.devshell.url = "github:numtide/devshell";
-  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.naersk.url = "github:nmattia/naersk";
+  inputs.naersk.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, devshell }:
-    {
-      overlay = import ./overlay.nix;
-    }
-    //
+  outputs = { self, nixpkgs, naersk, flake-utils, devshell }:
     (
       flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
         let
@@ -24,20 +21,19 @@
               ];
             };
             overlays = [
-              rust-overlay.overlay
+              naersk.overlay
               devshell.overlay
-              self.overlay
             ];
+          };
+
+          bin = pkgs.naersk.buildPackage {
+            src = self;
           };
         in
         {
-          legacyPackages = pkgs.prjfmt;
-
-          packages = flake-utils.lib.flattenTree pkgs.prjfmt;
+          defaultPackage = bin;
 
           devShell = import ./devshell.nix { inherit pkgs; };
-
-          checks = { };
         }
       )
     );

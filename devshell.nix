@@ -11,24 +11,30 @@ devshell.mkShell {
     Welcome to the prjfmt development environment.
   '';
   commands = [ ];
+
+  # Needed by rust-analyzer
+  env.RUST_SRC_PATH = rustPackages.rustPlatform.rustLibSrc;
+
   packages = [
     # Build tools
-    (rust-bin.stable.latest.rust.override {
-      extensions = [ "rust-src" ];
-    })
+    rustPackages.cargo
+    rustPackages.clippy
+    rustPackages.rustc
     clang
+    rust-analyzer
 
     # Code formatters
     elmPackages.elm-format
-    haskellPackages.ormolu
-    haskellPackages.cabal-install
-    haskellPackages.ghc
-    nixpkgs-fmt
     go
     gopkgs
     gopls
+    haskellPackages.cabal-install
+    haskellPackages.ghc
+    haskellPackages.ormolu
+    nixpkgs-fmt
     nodePackages.prettier
     python3.pkgs.black
+    rustPackages.rustfmt
     shfmt
   ];
 }
