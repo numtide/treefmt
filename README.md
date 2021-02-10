@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="assets/logo.png" alt="logo" width="200">
+  <img src="assets/logo.svg" alt="logo" width="200">
   <br>
   prjfmt - the unified CLI code formatters for projects
   <br>
