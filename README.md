@@ -1,4 +1,11 @@
-# prjfmt - the unified CLI code formatters for projects
+<h1 align="center">
+  <br>
+  <img src="assets/logo.png" alt="logo" width="200">
+  <br>
+  prjfmt - the unified CLI code formatters for projects
+  <br>
+  <br>
+</h1>
 
 **Status: experimental** -- not all the features described here are working
 yet.
