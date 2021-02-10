@@ -1,4 +1,4 @@
-use crate::command::Cli;
+use super::Cli;
 use crate::engine::run_prjfmt;
 use crate::CLOG;
 use anyhow::anyhow;

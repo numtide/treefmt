@@ -1,9 +1,16 @@
 //! Fancy custom log functionality.
+#![allow(missing_docs)]
 
-use crate::emoji;
 use anyhow;
 use console::style;
+use console::Emoji;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+
+pub static FOLDER: Emoji = Emoji("📂", "");
+pub static WARN: Emoji = Emoji("⚠️", ":-)");
+pub static ERROR: Emoji = Emoji("⛔", "");
+pub static INFO: Emoji = Emoji("ℹ️", "");
+pub static DEBUG: Emoji = Emoji("🐛", "");
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
@@ -77,12 +84,7 @@ impl CustomLogOutput {
     /// Add debug message.
     pub fn debug(&self, message: &str) {
         if !self.quiet() && self.is_log_enabled(LogLevel::Debug) {
-            let debug = format!(
-                "{} {}: {}",
-                emoji::DEBUG,
-                style("[DEBUG]").bold().dim(),
-                message,
-            );
+            let debug = format!("{} {}: {}", DEBUG, style("[DEBUG]").bold().dim(), message,);
             self.message(&debug);
         }
     }
@@ -90,12 +92,7 @@ impl CustomLogOutput {
     /// Add an informational message.
     pub fn info(&self, message: &str) {
         if !self.quiet() && self.is_log_enabled(LogLevel::Info) {
-            let info = format!(
-                "{} {}: {}",
-                emoji::INFO,
-                style("[INFO]").bold().dim(),
-                message,
-            );
+            let info = format!("{} {}: {}", INFO, style("[INFO]").bold().dim(), message,);
             self.message(&info);
         }
     }
@@ -103,12 +100,7 @@ impl CustomLogOutput {
     /// Add a warning message.
     pub fn warn(&self, message: &str) {
         if !self.quiet() && self.is_log_enabled(LogLevel::Warn) {
-            let warn = format!(
-                "{} {}: {}",
-                emoji::WARN,
-                style("[WARN]").bold().dim(),
-                message
-            );
+            let warn = format!("{} {}: {}", WARN, style("[WARN]").bold().dim(), message);
             self.message(&warn);
         }
     }
@@ -116,12 +108,7 @@ impl CustomLogOutput {
     /// Add an error message.
     pub fn error(&self, message: &str) {
         if self.is_log_enabled(LogLevel::Error) {
-            let err = format!(
-                "{} {}: {}",
-                emoji::ERROR,
-                style("[ERR]").bold().dim(),
-                message
-            );
+            let err = format!("{} {}: {}", ERROR, style("[ERR]").bold().dim(), message);
             self.message(&err);
         }
     }

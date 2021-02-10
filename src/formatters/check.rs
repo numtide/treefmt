@@ -1,6 +1,5 @@
-use crate::formatters::manifest::RootManifest;
-use crate::engine::CmdContext;
-use crate::CLOG;
+use super::RootManifest;
+use crate::{CmdContext, CLOG};
 use anyhow::{Error, Result};
 use std::path::PathBuf;
 use std::vec::Vec;
