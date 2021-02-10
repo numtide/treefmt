@@ -5,5 +5,14 @@
 pub mod check;
 /// Manifest configuration
 pub mod manifest;
-/// Formatter utility
-pub mod tool;
+
+use crate::CmdContext;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+
+#[derive(Debug, Deserialize, Serialize)]
+/// RootManifest
+pub struct RootManifest {
+    /// Map of manifests config based on its formatter
+    pub manifest: BTreeMap<String, CmdContext>,
+}

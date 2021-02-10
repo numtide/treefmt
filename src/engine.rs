@@ -1,18 +1,20 @@
-use super::manifest::create_prjfmt_manifest;
-use crate::formatters::check::check_prjfmt;
-use crate::formatters::manifest::{read_prjfmt_manifest, RootManifest};
-use crate::{emoji, CLOG};
+//! The main formatting engine logic should be in this module.
+
+use crate::formatters::{
+    check::check_prjfmt,
+    manifest::{create_manifest, read_manifest},
+    RootManifest,
+};
+use crate::{customlog, CmdContext, FileExtensions, FileMeta, Root, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::fs::{metadata, read_to_string};
 use std::iter::{IntoIterator, Iterator};
 use std::path::PathBuf;
-use xshell::cmd;
 use which::which;
+use xshell::cmd;
 
 /// Make sure that formatter binary exists. This also for other formatter
 pub fn check_bin(command: &str) -> Result<()> {
@@ -29,12 +31,25 @@ pub fn check_bin(command: &str) -> Result<()> {
 }
 
 /// Run the prjfmt
+//
+// 1. Find and load prjfmt.toml
+// 1b. Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
+// 2. Load the manifest if it exists, otherwise start with empty manifest
+// 3. Get the list of files, use the ones passed as argument if not empty, other default to all.
+//     Errorr if a file belongs to two formatters
+//    => HashMap<formatter>(files, mtimes) // map A
+// 4. Compare the list of files with the manifest, keep the ones that are not in the manifest. // map B
+// 5. Iterate over each formatter (in parallel)
+//      a. Run the formatter with the list of files
+//      b. Collect the new list of (files, mtimes) and return that // map C
+// 6. Merge map C into map B. Write this as the new manifest.
+
 pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
 
     // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_prjfmt function
-    let manifest: RootManifest = read_prjfmt_manifest(&prjfmt_toml, &cache_dir)?;
+    let manifest: RootManifest = read_manifest(&prjfmt_toml, &cache_dir)?;
     let old_ctx = create_command_context(&prjfmt_toml)?;
     let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &manifest)?;
 
@@ -47,7 +62,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     if !prjfmt_toml.as_path().exists() {
         return Err(anyhow!(
             "{}prjfmt.toml not found, please run --init command",
-            emoji::ERROR
+            customlog::ERROR
         ));
     }
 
@@ -76,6 +91,8 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
             let cmd_arg = &c.command;
             let paths = c.metadata.iter().map(|f| &f.path);
             cmd!("{cmd_arg} {arg...} {paths...}").output()
+            // TODO: go over all the paths, and collect the ones that have a new mtime.
+            // => list (file, mtime)
         })
         .collect();
 
@@ -97,11 +114,11 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         .collect();
 
     if manifest.manifest.is_empty() || ctxs.is_empty() {
-        create_prjfmt_manifest(prjfmt_toml, cache_dir, old_ctx)?;
+        create_manifest(prjfmt_toml, cache_dir, old_ctx)?;
     } else {
         println!("Format successful");
         println!("capturing formatted file's state...");
-        create_prjfmt_manifest(prjfmt_toml, cache_dir, new_ctx)?;
+        create_manifest(prjfmt_toml, cache_dir, new_ctx)?;
     }
 
     Ok(())
@@ -195,7 +212,7 @@ pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> 
         None => {
             return Err(anyhow!(
                 "{}prjfmt.toml not found, please run --init command",
-                emoji::ERROR
+                customlog::ERROR
             ))
         }
     };
@@ -220,107 +237,6 @@ pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> 
         .collect::<Result<Vec<CmdContext>, Error>>()?;
     Ok(cmd_context)
 }
-
-/// prjfmt.toml structure
-#[derive(Debug, Deserialize)]
-pub struct Root {
-    /// Map of formatters into the config
-    pub formatters: BTreeMap<String, FmtConfig>,
-}
-
-/// Config for each formatters
-#[derive(Debug, Deserialize)]
-pub struct FmtConfig {
-    /// File extensions that want to be formatted
-    pub files: FileExtensions,
-    /// File or Folder that is included to be formatted
-    pub includes: Option<Vec<String>>,
-    /// File or Folder that is excluded to be formatted
-    pub excludes: Option<Vec<String>>,
-    /// Command formatter to run
-    pub command: Option<String>,
-    /// Argument for formatter
-    pub options: Option<Vec<String>>,
-}
-
-/// File extensions can be single string (e.g. "*.hs") or
-/// list of string (e.g. [ "*.hs", "*.rs" ])
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum FileExtensions {
-    /// Single file type
-    SingleFile(String),
-    /// List of file type
-    MultipleFile(Vec<String>),
-}
-
-impl<'a> IntoIterator for &'a FileExtensions {
-    type Item = &'a String;
-    type IntoIter = either::Either<std::iter::Once<&'a String>, std::slice::Iter<'a, String>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        match self {
-            FileExtensions::SingleFile(glob) => either::Either::Left(std::iter::once(glob)),
-            FileExtensions::MultipleFile(globs) => either::Either::Right(globs.iter()),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-/// Each context of the formatter config
-pub struct CmdContext {
-    /// formatter command to run
-    pub command: String,
-    /// formatter arguments or flags
-    pub options: Vec<String>,
-    /// formatter target path
-    pub metadata: BTreeSet<FileMeta>,
-}
-
-impl PartialEq for CmdContext {
-    fn eq(&self, other: &Self) -> bool {
-        self.command == other.command
-            && self.options == other.options
-            && self.metadata == other.metadata
-    }
-}
-
-impl Eq for CmdContext {}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-/// File metadata created after the first prjfmt run
-pub struct FileMeta {
-    /// Last modification time listed in the file's metadata
-    pub mtimes: i64,
-    /// Path to the formatted file
-    pub path: PathBuf,
-}
-
-impl Ord for FileMeta {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.eq(other) {
-            return Ordering::Equal;
-        }
-        if self.mtimes.eq(&other.mtimes) {
-            return self.path.cmp(&other.path);
-        }
-        self.mtimes.cmp(&other.mtimes)
-    }
-}
-
-impl PartialOrd for FileMeta {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for FileMeta {
-    fn eq(&self, other: &Self) -> bool {
-        self.mtimes == other.mtimes && self.path == other.path
-    }
-}
-
-impl Eq for FileMeta {}
 
 #[cfg(test)]
 mod tests {

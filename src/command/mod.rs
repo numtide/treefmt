@@ -6,7 +6,7 @@ mod init;
 
 use self::format::format_cmd;
 use self::init::init_cmd;
-use crate::customlog::LogLevel;
+use super::customlog::LogLevel;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -46,13 +46,9 @@ pub struct Cli {
 
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
-    if let Some(command) = cli.cmd {
-        match command {
-            Command::Init { path } => init_cmd(path)?,
-        }
-    } else {
-        format_cmd(cli)?;
-        return Ok(());
+    match cli.cmd {
+        Some(Command::Init { path }) => init_cmd(path)?,
+        None => format_cmd(cli)?,
     }
 
     return Ok(());
