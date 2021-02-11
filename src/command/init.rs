@@ -9,10 +9,10 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         Some(loc) => loc,
         None => PathBuf::from("."),
     };
-    let file_path = file.as_path().join("prjfmt.toml");
+    let file_path = file.join("prjfmt.toml");
     // TODO: detect if file exists
     fs::write(
-        file_path.as_path(),
+        &file_path,
         r#"# prjfmt is the universal code formatter - https://github.com/numtide/prjfmt
 [formatter.<Language>]
 includes = [ "*.<language-extension>" ]

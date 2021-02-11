@@ -17,7 +17,7 @@ pub fn create_manifest(
 ) -> Result<()> {
     let hash_toml = create_hash(&prjfmt_toml)?;
 
-    let mut f = File::create(cache_dir.as_path().join(hash_toml))?;
+    let mut f = File::create(cache_dir.join(hash_toml))?;
     let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
         .into_iter()
         .map(|cmd| {
@@ -48,11 +48,11 @@ pub fn create_manifest(
 /// Read the <hex(hash(path-to-prjfmt))>.toml and return list of config's cache evaluation
 pub fn read_manifest(prjfmt_toml: &PathBuf, cache_dir: &PathBuf) -> Result<RootManifest> {
     let hash_toml = create_hash(&prjfmt_toml)?;
-    let manifest_toml = cache_dir.as_path().join(&hash_toml);
+    let manifest_toml = cache_dir.join(&hash_toml);
 
-    if manifest_toml.as_path().exists() {
+    if manifest_toml.exists() {
         CLOG.debug(&format!("Found {} in: {}", hash_toml, cache_dir.display()));
-        let open_file = match read_to_string(manifest_toml.as_path()) {
+        let open_file = match read_to_string(&manifest_toml) {
             Ok(file) => file,
             Err(err) => {
                 return Err(anyhow!(

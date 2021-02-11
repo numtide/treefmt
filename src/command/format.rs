@@ -12,7 +12,7 @@ pub fn format_cmd(cli: Cli) -> anyhow::Result<()> {
         None => env::current_dir()?,
     };
 
-    let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
+    let prjfmt_toml = cwd.join("prjfmt.toml");
     let xdg_cache_dir = match env::var("XDG_CACHE_DIR") {
         Ok(path) => path,
         Err(err) => {
@@ -24,14 +24,14 @@ pub fn format_cmd(cli: Cli) -> anyhow::Result<()> {
                         "Set the $XDG_CACHE_DIR to {}",
                         home_cache.display()
                     ));
-                    home_cache.as_path().display().to_string()
+                    home_cache.display().to_string()
                 }
                 Err(err) => return Err(anyhow!("cannot open HOME due to {}.", err)),
             }
         }
     };
 
-    if prjfmt_toml.as_path().exists() {
+    if prjfmt_toml.exists() {
         CLOG.debug(&format!(
             "Found {} at {}",
             prjfmt_toml.display(),

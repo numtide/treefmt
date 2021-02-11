@@ -32,7 +32,7 @@ pub fn check_bin(command: &str) -> Result<()> {
 
 /// Run the prjfmt
 pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
+    let prjfmt_toml = cwd.join("prjfmt.toml");
 
     // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_prjfmt function
@@ -48,7 +48,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         &ctxs
     };
 
-    if !prjfmt_toml.as_path().exists() {
+    if !prjfmt_toml.exists() {
         return Err(anyhow!(
             "{}prjfmt.toml not found, please run --init command",
             customlog::ERROR
@@ -159,7 +159,6 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
             CLOG.warn(&format!(
                 "Maybe you want to format one file with different formatter?"
             ));
-            // return Err(anyhow!("prjfmt failed to run."));
         }
     }
     Ok(filemeta)
@@ -167,7 +166,7 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 
 /// Creating command configuration based on prjfmt.toml
 pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let open_prjfmt = match read_to_string(prjfmt_toml.as_path()) {
+    let open_prjfmt = match read_to_string(prjfmt_toml) {
         Ok(file) => file,
         Err(err) => {
             return Err(anyhow!(
