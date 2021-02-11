@@ -31,35 +31,24 @@ pub fn check_bin(command: &str) -> Result<()> {
 }
 
 /// Run the prjfmt
-//
-// 1. Find and load prjfmt.toml
-// 1b. Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
-// 2. Load the manifest if it exists, otherwise start with empty manifest
-// 3. Get the list of files, use the ones passed as argument if not empty, other default to all.
-//     Errorr if a file belongs to two formatters
-//    => HashMap<formatter>(files, mtimes) // map A
-// 4. Compare the list of files with the manifest, keep the ones that are not in the manifest. // map B
-// 5. Iterate over each formatter (in parallel)
-//      a. Run the formatter with the list of files
-//      b. Collect the new list of (files, mtimes) and return that // map C
-// 6. Merge map C into map B. Write this as the new manifest.
-
 pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let prjfmt_toml = cwd.as_path().join("prjfmt.toml");
+    let prjfmt_toml = cwd.join("prjfmt.toml");
 
     // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_prjfmt function
-    let manifest: RootManifest = read_manifest(&prjfmt_toml, &cache_dir)?;
     let old_ctx = create_command_context(&prjfmt_toml)?;
-    let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &manifest)?;
-
-    let context = if manifest.manifest.is_empty() && ctxs.is_empty() {
+    // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
+    // Load the manifest if it exists, otherwise start with empty manifest
+    let mfst: RootManifest = read_manifest(&prjfmt_toml, &cache_dir)?;
+    // Compare the list of files with the manifest, keep the ones that are not in the manifest
+    let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &mfst)?;
+    let context = if mfst.manifest.is_empty() && ctxs.is_empty() {
         &old_ctx
     } else {
         &ctxs
     };
 
-    if !prjfmt_toml.as_path().exists() {
+    if !prjfmt_toml.exists() {
         return Err(anyhow!(
             "{}prjfmt.toml not found, please run --init command",
             customlog::ERROR
@@ -91,31 +80,13 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
             let cmd_arg = &c.command;
             let paths = c.metadata.iter().map(|f| &f.path);
             cmd!("{cmd_arg} {arg...} {paths...}").output()
-            // TODO: go over all the paths, and collect the ones that have a new mtime.
-            // => list (file, mtime)
-        })
-        .collect();
+        }).collect();
 
-    let new_ctx: Vec<CmdContext> = old_ctx
-        .iter()
-        .flat_map(|octx| {
-            ctxs.iter().clone().map(move |c| {
-                if c.command == octx.command {
-                    CmdContext {
-                        command: c.command.clone(),
-                        options: c.options.clone(),
-                        metadata: octx.metadata.union(&c.metadata).cloned().collect(),
-                    }
-                } else {
-                    octx.clone()
-                }
-            })
-        })
-        .collect();
-
-    if manifest.manifest.is_empty() || ctxs.is_empty() {
+    if mfst.manifest.is_empty() || ctxs.is_empty() {
         create_manifest(prjfmt_toml, cache_dir, old_ctx)?;
     } else {
+        // Read the current status of files and insert into the manifest.
+        let new_ctx = create_command_context(&prjfmt_toml)?;
         println!("Format successful");
         println!("capturing formatted file's state...");
         create_manifest(prjfmt_toml, cache_dir, new_ctx)?;
@@ -125,7 +96,7 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 /// Convert glob pattern into list of pathBuf
-pub fn glob_to_path(
+pub fn glob_to_path (
     cwd: &PathBuf,
     extensions: &FileExtensions,
     includes: &Option<Vec<String>>,
@@ -161,11 +132,11 @@ pub fn glob_to_path(
         .overrides(overrides)
         .build()
         .filter_map(|e| {
-            e.ok().and_then(|e| {
-                match e.file_type() {
+            e.ok().and_then(|f| {
+                match f.file_type() {
                     // Skip directory entries
                     Some(t) if t.is_dir() => None,
-                    _ => Some(e.into_path()),
+                    _ => Some(f.into_path()),
                 }
             })
         })
@@ -188,7 +159,6 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
             CLOG.warn(&format!(
                 "Maybe you want to format one file with different formatter?"
             ));
-            // return Err(anyhow!("prjfmt failed to run."));
         }
     }
     Ok(filemeta)
@@ -196,7 +166,7 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 
 /// Creating command configuration based on prjfmt.toml
 pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let open_prjfmt = match read_to_string(prjfmt_toml.as_path()) {
+    let open_prjfmt = match read_to_string(prjfmt_toml) {
         Ok(file) => file,
         Err(err) => {
             return Err(anyhow!(
@@ -246,9 +216,9 @@ mod tests {
     /// Transforming glob into file path
     #[test]
     fn test_glob_to_path() -> Result<()> {
-        let cwd = PathBuf::from(r"examples/monorepo");
+        let cwd = PathBuf::from(r"examples");
         let file_ext = FileExtensions::SingleFile("*.rs".to_string());
-        let glob_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let glob_path = PathBuf::from(r"examples/rust/src/main.rs");
         let mut vec_path = Vec::new();
         vec_path.push(glob_path);
         assert_eq!(glob_to_path(&cwd, &file_ext, &None, &None)?, vec_path);
@@ -258,14 +228,14 @@ mod tests {
     /// Transforming path into FileMeta
     #[test]
     fn test_path_to_filemeta() -> Result<()> {
-        let file_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let file_path = PathBuf::from(r"examples/rust/src/main.rs");
         let metadata = metadata(&file_path)?;
         let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
             mtimes: mtime,
-            path: PathBuf::from(r"examples/monorepo/rust/src/main.rs"),
+            path: PathBuf::from(r"examples/rust/src/main.rs"),
         };
         let mut set_filemeta = BTreeSet::new();
         set_filemeta.insert(file_meta);

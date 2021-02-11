@@ -26,6 +26,11 @@ pub fn check_prjfmt(
                     new.metadata.difference(&old.metadata).cloned().collect()
                 },
             })
+        }).filter(|c| {
+            match c {
+                Ok(x) => !x.metadata.is_empty(),
+                _ => false
+            }
         })
         .collect::<Result<Vec<CmdContext>, Error>>()?;
 
