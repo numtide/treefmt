@@ -217,9 +217,9 @@ mod tests {
     /// Transforming glob into file path
     #[test]
     fn test_glob_to_path() -> Result<()> {
-        let cwd = PathBuf::from(r"examples/monorepo");
+        let cwd = PathBuf::from(r"examples");
         let file_ext = FileExtensions::SingleFile("*.rs".to_string());
-        let glob_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let glob_path = PathBuf::from(r"examples/rust/src/main.rs");
         let mut vec_path = Vec::new();
         vec_path.push(glob_path);
         assert_eq!(glob_to_path(&cwd, &file_ext, &None, &None)?, vec_path);
@@ -229,14 +229,14 @@ mod tests {
     /// Transforming path into FileMeta
     #[test]
     fn test_path_to_filemeta() -> Result<()> {
-        let file_path = PathBuf::from(r"examples/monorepo/rust/src/main.rs");
+        let file_path = PathBuf::from(r"examples/rust/src/main.rs");
         let metadata = metadata(&file_path)?;
         let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
             mtimes: mtime,
-            path: PathBuf::from(r"examples/monorepo/rust/src/main.rs"),
+            path: PathBuf::from(r"examples/rust/src/main.rs"),
         };
         let mut set_filemeta = BTreeSet::new();
         set_filemeta.insert(file_meta);
