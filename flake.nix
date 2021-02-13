@@ -33,7 +33,7 @@
         {
           defaultPackage = bin;
 
-          devShell = import ./devshell.nix { inherit pkgs; };
+          devShell = pkgs.devshell.fromTOML ./devshell.toml;
         }
       )
     );
