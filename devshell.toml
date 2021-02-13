@@ -1,0 +1,24 @@
+# Configure your development environment.
+#
+# Documentation: https://github.com/numtide/devshell
+imports = [
+  "language.c",
+  "language.rust",
+]
+
+[devshell]
+name = "prjfmt"
+
+packages = [
+  # Build tools
+  "rust-analyzer",
+
+  # Code formatters
+  "elmPackages.elm-format",
+  "go",
+  "haskellPackages.ormolu",
+  "nixpkgs-fmt",
+  "nodePackages.prettier",
+  "python3.pkgs.black",
+  "shfmt"
+]
