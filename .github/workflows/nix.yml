@@ -18,6 +18,4 @@ jobs:
         with:
           name: numtide
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: nix-shell --pure --run "cargo build"
-      - run: nix-shell --pure --run "cargo test"
-      - run: nix-build -A defaultNix.defaultPackage.x86_64-linux
+      - run: ./ci.sh
