@@ -9,6 +9,7 @@ use self::init::init_cmd;
 use super::customlog::LogLevel;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use anyhow::{anyhow, Result};
 
 #[derive(Debug, StructOpt)]
 /// The various kinds of commands that `prjfmt` can execute.
@@ -18,6 +19,12 @@ pub enum Command {
     Init {
         /// path to file or folder
         path: Option<PathBuf>,
+    },
+    #[structopt(name = "--config")]
+    ///  Specify prjfmt.toml file
+    PrjFmt {
+        /// path to file or folder
+        path: PathBuf,
     },
 }
 
@@ -39,17 +46,33 @@ pub struct Cli {
     #[structopt(long = "log-level", default_value = "debug")]
     /// The maximum level of messages that should be logged by prjfmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
-
-    /// Files to format
-    pub files: Option<PathBuf>,
 }
 
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
         Some(Command::Init { path }) => init_cmd(path)?,
-        None => format_cmd(cli)?,
+        Some(Command::PrjFmt { path }) => format_cmd(Some(path))?,
+        None => format_cmd(None)?,
     }
 
     return Ok(());
+}
+
+/// Look up prjfmt toml from current directory up into project's root
+pub fn lookup_prjfmt_toml(path: PathBuf) -> Result<PathBuf> {
+    let mut work = path;
+    loop {
+        if work.join("prjfmt.toml").exists() {
+            return Ok(work);
+        }
+        let prev = work.clone();
+        work = match work.parent() {
+            Some(x) => x.to_path_buf(),
+            None => return Err(anyhow!("You already reached root directory"))
+        };
+        if prev == work {
+            return Err(anyhow!("prjfmt.toml could not be found"))
+        }
+    }
 }
