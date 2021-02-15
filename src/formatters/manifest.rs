@@ -9,25 +9,25 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-/// Create <hex(hash(path-to-prjfmt))>.toml and put it in $XDG_CACHE_DIR/prjfmt/eval-cache/
+/// Create <hex(hash(path-to-treefmt))>.toml and put it in $XDG_CACHE_DIR/treefmt/eval-cache/
 pub fn create_manifest(
-    prjfmt_toml: PathBuf,
+    treefmt_toml: PathBuf,
     cache_dir: PathBuf,
     cmd_ctx: Vec<CmdContext>,
 ) -> Result<()> {
-    let hash_toml = create_hash(&prjfmt_toml)?;
+    let hash_toml = create_hash(&treefmt_toml)?;
 
     let mut f = File::create(cache_dir.join(hash_toml))?;
     let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
         .into_iter()
         .map(|cmd| {
-            let prjfmt = cmd.command;
+            let treefmt = cmd.command;
             let manifest = CmdContext {
-                command: prjfmt.to_string(),
+                command: treefmt.to_string(),
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
-            (prjfmt.to_string(), manifest)
+            (treefmt.to_string(), manifest)
         })
         .collect();
     let manifest_toml = RootManifest {
@@ -45,9 +45,9 @@ pub fn create_manifest(
     Ok(())
 }
 
-/// Read the <hex(hash(path-to-prjfmt))>.toml and return list of config's cache evaluation
-pub fn read_manifest(prjfmt_toml: &PathBuf, cache_dir: &PathBuf) -> Result<RootManifest> {
-    let hash_toml = create_hash(&prjfmt_toml)?;
+/// Read the <hex(hash(path-to-treefmt))>.toml and return list of config's cache evaluation
+pub fn read_manifest(treefmt_toml: &PathBuf, cache_dir: &PathBuf) -> Result<RootManifest> {
+    let hash_toml = create_hash(&treefmt_toml)?;
     let manifest_toml = cache_dir.join(&hash_toml);
 
     if manifest_toml.exists() {
@@ -73,8 +73,8 @@ pub fn read_manifest(prjfmt_toml: &PathBuf, cache_dir: &PathBuf) -> Result<RootM
     }
 }
 
-fn create_hash(prjfmt_toml: &PathBuf) -> Result<String> {
-    let prjfmt_str = match prjfmt_toml.to_str() {
+fn create_hash(treefmt_toml: &PathBuf) -> Result<String> {
+    let treefmt_str = match treefmt_toml.to_str() {
         Some(str) => str.as_bytes(),
         None => {
             return Err(anyhow!(
@@ -83,8 +83,8 @@ fn create_hash(prjfmt_toml: &PathBuf) -> Result<String> {
             ))
         }
     };
-    let prjfmt_hash = Sha1::digest(prjfmt_str);
-    let result = hex::encode(prjfmt_hash);
+    let treefmt_hash = Sha1::digest(treefmt_str);
+    let result = hex::encode(treefmt_hash);
     let manifest_toml = format!("{}.toml", result);
     Ok(manifest_toml)
 }
@@ -96,9 +96,9 @@ mod tests {
     /// Every same path produce same hash
     #[test]
     fn test_create_hash() -> Result<()> {
-        let file_path = PathBuf::from(r"examples/monorepo/prjfmt.toml");
-        let prjfmt_hash = "02e97bc0a67b5d61f3152c184690216085ef0c03.toml";
-        assert_eq!(create_hash(&file_path)?, prjfmt_hash);
+        let file_path = PathBuf::from(r"examples/monorepo/treefmt.toml");
+        let treefmt_hash = "3076c82c47ced65a86ffe285ac9d941d812bfdad.toml";
+        assert_eq!(create_hash(&file_path)?, treefmt_hash);
         Ok(())
     }
 }

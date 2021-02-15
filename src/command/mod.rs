@@ -12,7 +12,7 @@ use structopt::StructOpt;
 use anyhow::{anyhow, Result};
 
 #[derive(Debug, StructOpt)]
-/// The various kinds of commands that `prjfmt` can execute.
+/// The various kinds of commands that `treefmt` can execute.
 pub enum Command {
     #[structopt(name = "--init")]
     ///  init a new project with a default config
@@ -21,7 +21,7 @@ pub enum Command {
         path: Option<PathBuf>,
     },
     #[structopt(name = "--config")]
-    ///  Specify prjfmt.toml file
+    ///  Specify treefmt.toml file
     PrjFmt {
         /// path to file or folder
         path: PathBuf,
@@ -44,7 +44,7 @@ pub struct Cli {
     pub quiet: bool,
 
     #[structopt(long = "log-level", default_value = "debug")]
-    /// The maximum level of messages that should be logged by prjfmt. [possible values: info, warn, error]
+    /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
 }
 
@@ -59,11 +59,11 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     return Ok(());
 }
 
-/// Look up prjfmt toml from current directory up into project's root
-pub fn lookup_prjfmt_toml(path: PathBuf) -> Result<PathBuf> {
+/// Look up treefmt toml from current directory up into project's root
+pub fn lookup_treefmt_toml(path: PathBuf) -> Result<PathBuf> {
     let mut work = path;
     loop {
-        if work.join("prjfmt.toml").exists() {
+        if work.join("treefmt.toml").exists() {
             return Ok(work);
         }
         let prev = work.clone();
@@ -72,7 +72,7 @@ pub fn lookup_prjfmt_toml(path: PathBuf) -> Result<PathBuf> {
             None => return Err(anyhow!("You already reached root directory"))
         };
         if prev == work {
-            return Err(anyhow!("prjfmt.toml could not be found"))
+            return Err(anyhow!("treefmt.toml could not be found"))
         }
     }
 }

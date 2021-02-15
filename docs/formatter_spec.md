@@ -1,6 +1,6 @@
 # Formatter spec
 
-In order to keep the design of prjfmt simple, we want all of the formatters
+In order to keep the design of treefmt simple, we want all of the formatters
 to adhere to a unified specification. This document outlines that spec.
 
 ## Command-line interface
@@ -37,7 +37,7 @@ A formatted file SHOULD be idempotent. Meaning that if the formatter it run
 twice on a file, the file should not change on the second invocation.
 
 The formatter MUST NOT do file traversal when a list of files is passed to it.
-This is the responsibility of `prjfmt`.
+This is the responsibility of `treefmt`.
 
 ## Design notes
 

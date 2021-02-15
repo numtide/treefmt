@@ -4,9 +4,9 @@ use anyhow::{Error, Result};
 use std::path::PathBuf;
 use std::vec::Vec;
 
-/// Checking content of cache's file and current prjfmt runs
-pub fn check_prjfmt(
-    prjfmt_toml: &PathBuf,
+/// Checking content of cache's file and current treefmt runs
+pub fn check_treefmt(
+    treefmt_toml: &PathBuf,
     cmd_context: &Vec<CmdContext>,
     cache: &RootManifest,
 ) -> Result<Vec<CmdContext>> {
@@ -35,7 +35,7 @@ pub fn check_prjfmt(
         .collect::<Result<Vec<CmdContext>, Error>>()?;
 
     if cache_context.iter().all(|f| f.metadata.is_empty()) {
-        CLOG.debug(&format!("No changes found in {}", prjfmt_toml.display()));
+        CLOG.debug(&format!("No changes found in {}", treefmt_toml.display()));
         return Ok(Vec::new());
     }
 
@@ -51,7 +51,7 @@ pub fn check_prjfmt(
             }
         }
     }
-    // return Err(anyhow!("prjfmt failed to run."));
+    // return Err(anyhow!("treefmt failed to run."));
     Ok(cache_context)
 }
 
@@ -62,15 +62,15 @@ mod tests {
 
     /// Every same path produce same hash
     #[test]
-    fn test_check_prjfmt() -> Result<()> {
-        let prjfmt_path = PathBuf::from(r"examples/monorepo/prjfmt.toml");
+    fn test_check_treefmt() -> Result<()> {
+        let treefmt_path = PathBuf::from(r"examples/monorepo/treefmt.toml");
         let cache: RootManifest = RootManifest {
             manifest: BTreeMap::new(),
         };
         let cmd_context: Vec<CmdContext> = Vec::new();
 
         assert_eq!(
-            check_prjfmt(&prjfmt_path, &cmd_context, &cache)?,
+            check_treefmt(&treefmt_path, &cmd_context, &cache)?,
             cmd_context
         );
         Ok(())
