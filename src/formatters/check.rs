@@ -7,11 +7,11 @@ use std::vec::Vec;
 /// Checking content of cache's file and current treefmt runs
 pub fn check_treefmt(
     treefmt_toml: &PathBuf,
-    cmd_context: &Vec<CmdContext>,
+    cmd_context: &[CmdContext],
     cache: &RootManifest,
 ) -> Result<Vec<CmdContext>> {
-    let cache_context = cache.manifest.values().map(|b| b).into_iter();
-    let results = cmd_context.into_iter().zip(cache_context);
+    let cache_context = cache.manifest.values();
+    let results = cmd_context.iter().zip(cache_context);
 
     let cache_context: Vec<CmdContext> = results
         .clone()
@@ -39,7 +39,7 @@ pub fn check_treefmt(
         return Ok(Vec::new());
     }
 
-    CLOG.info(&format!("The following file has changed or newly added:"));
+    CLOG.info("The following file has changed or newly added:");
     for cmd in &cache_context {
         if !cmd.metadata.is_empty() {
             for p in &cmd.metadata {

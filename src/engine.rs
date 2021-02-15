@@ -154,11 +154,9 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
             mtimes: mtime,
             path: p.clone(),
         }) {
-            CLOG.warn(&format!("Duplicated file detected:"));
-            CLOG.warn(&format!(" - {:?} ", p.display()));
-            CLOG.warn(&format!(
-                "Maybe you want to format one file with different formatter?"
-            ));
+            CLOG.warn("Duplicated file detected:");
+            CLOG.warn(&format!(" - {} ", p.display()));
+            CLOG.warn("Maybe you want to format one file with different formatter?");
         }
     }
     Ok(filemeta)

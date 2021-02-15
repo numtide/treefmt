@@ -2,7 +2,6 @@ use super::RootManifest;
 use crate::{customlog, CmdContext, CLOG};
 
 use anyhow::{anyhow, Result};
-use hex;
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
 use std::fs::{read_to_string, File};
@@ -27,7 +26,7 @@ pub fn create_manifest(
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
-            (treefmt.to_string(), manifest)
+            (treefmt, manifest)
         })
         .collect();
     let manifest_toml = RootManifest {
