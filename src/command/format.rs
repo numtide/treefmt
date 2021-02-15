@@ -1,5 +1,5 @@
-use super::lookup_prjfmt_toml;
-use crate::engine::run_prjfmt;
+use super::lookup_treefmt_toml;
+use crate::engine::run_treefmt;
 use crate::CLOG;
 use anyhow::anyhow;
 use std::{env, path::PathBuf};
@@ -10,10 +10,10 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
     let cwd = env::current_dir()?;
     let cfg_dir = match path {
         Some(p) => p,
-        None => lookup_prjfmt_toml(cwd)?,
+        None => lookup_treefmt_toml(cwd)?,
     };
 
-    let prjfmt_toml = cfg_dir.join("prjfmt.toml");
+    let treefmt_toml = cfg_dir.join("treefmt.toml");
     let xdg_cache_dir = match env::var("XDG_CACHE_DIR") {
         Ok(path) => path,
         Err(err) => {
@@ -32,19 +32,19 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         }
     };
 
-    if prjfmt_toml.exists() {
+    if treefmt_toml.exists() {
         CLOG.debug(&format!(
             "Found {} at {}",
-            prjfmt_toml.display(),
+            treefmt_toml.display(),
             cfg_dir.display()
         ));
         CLOG.debug(&format!("Change current directory into: {}", cfg_dir.display()));
-        let cache_dir = Path::new(&xdg_cache_dir).join("prjfmt/eval-cache");
+        let cache_dir = Path::new(&xdg_cache_dir).join("treefmt/eval-cache");
         fs::create_dir_all(&cache_dir)?;
-        run_prjfmt(cfg_dir, cache_dir)?;
+        run_treefmt(cfg_dir, cache_dir)?;
     } else {
         CLOG.error(
-            "file prjfmt.toml couldn't be found. Run `--init` to generate the default setting",
+            "file treefmt.toml couldn't be found. Run `--init` to generate the default setting",
         );
     }
     Ok(())

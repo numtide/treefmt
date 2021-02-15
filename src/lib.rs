@@ -15,7 +15,7 @@ use std::path::PathBuf;
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 
-/// prjfmt.toml structure
+/// treefmt.toml structure
 #[derive(Debug, Deserialize)]
 pub struct Root {
     /// Map of formatters into the config
@@ -82,7 +82,7 @@ impl PartialEq for CmdContext {
 impl Eq for CmdContext {}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-/// File metadata created after the first prjfmt run
+/// File metadata created after the first treefmt run
 pub struct FileMeta {
     /// Last modification time listed in the file's metadata
     pub mtimes: i64,

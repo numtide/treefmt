@@ -9,11 +9,11 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         Some(loc) => loc,
         None => PathBuf::from("."),
     };
-    let file_path = file.join("prjfmt.toml");
+    let file_path = file.join("treefmt.toml");
     // TODO: detect if file exists
     fs::write(
         &file_path,
-        r#"# prjfmt is the universal code formatter - https://github.com/numtide/prjfmt
+        r#"# treefmt is the universal code formatter - https://github.com/numtide/treefmt
 [formatter.<Language>]
 includes = [ "*.<language-extension>" ]
 excludes = []
@@ -30,7 +30,7 @@ options = []
     })?;
 
     CLOG.info(&format!(
-        "Generated prjfmt template at {}",
+        "Generated treefmt template at {}",
         file_path.display()
     ));
     Ok(())

@@ -1,7 +1,7 @@
 //! The main formatting engine logic should be in this module.
 
 use crate::formatters::{
-    check::check_prjfmt,
+    check::check_treefmt,
     manifest::{create_manifest, read_manifest},
     RootManifest,
 };
@@ -30,27 +30,27 @@ pub fn check_bin(command: &str) -> Result<()> {
     )
 }
 
-/// Run the prjfmt
-pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let prjfmt_toml = cwd.join("prjfmt.toml");
+/// Run the treefmt
+pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
+    let treefmt_toml = cwd.join("treefmt.toml");
 
-    // Once the prjfmt found the $XDG_CACHE_DIR/prjfmt/eval-cache/ folder,
-    // it will try to scan the manifest and passed it into check_prjfmt function
-    let old_ctx = create_command_context(&prjfmt_toml)?;
+    // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
+    // it will try to scan the manifest and passed it into check_treefmt function
+    let old_ctx = create_command_context(&treefmt_toml)?;
     // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
     // Load the manifest if it exists, otherwise start with empty manifest
-    let mfst: RootManifest = read_manifest(&prjfmt_toml, &cache_dir)?;
+    let mfst: RootManifest = read_manifest(&treefmt_toml, &cache_dir)?;
     // Compare the list of files with the manifest, keep the ones that are not in the manifest
-    let ctxs = check_prjfmt(&prjfmt_toml, &old_ctx, &mfst)?;
+    let ctxs = check_treefmt(&treefmt_toml, &old_ctx, &mfst)?;
     let context = if mfst.manifest.is_empty() && ctxs.is_empty() {
         &old_ctx
     } else {
         &ctxs
     };
 
-    if !prjfmt_toml.exists() {
+    if !treefmt_toml.exists() {
         return Err(anyhow!(
-            "{}prjfmt.toml not found, please run --init command",
+            "{}treefmt.toml not found, please run --init command",
             customlog::ERROR
         ));
     }
@@ -83,13 +83,13 @@ pub fn run_prjfmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         }).collect();
 
     if mfst.manifest.is_empty() || ctxs.is_empty() {
-        create_manifest(prjfmt_toml, cache_dir, old_ctx)?;
+        create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
-        let new_ctx = create_command_context(&prjfmt_toml)?;
+        let new_ctx = create_command_context(&treefmt_toml)?;
         println!("Format successful");
         println!("capturing formatted file's state...");
-        create_manifest(prjfmt_toml, cache_dir, new_ctx)?;
+        create_manifest(treefmt_toml, cache_dir, new_ctx)?;
     }
 
     Ok(())
@@ -164,30 +164,30 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
     Ok(filemeta)
 }
 
-/// Creating command configuration based on prjfmt.toml
-pub fn create_command_context(prjfmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let open_prjfmt = match read_to_string(prjfmt_toml) {
+/// Creating command configuration based on treefmt.toml
+pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
+    let open_treefmt = match read_to_string(treefmt_toml) {
         Ok(file) => file,
         Err(err) => {
             return Err(anyhow!(
                 "cannot open {} due to {}.",
-                prjfmt_toml.display(),
+                treefmt_toml.display(),
                 err
             ))
         }
     };
 
-    let cwd = match prjfmt_toml.parent() {
+    let cwd = match treefmt_toml.parent() {
         Some(path) => path,
         None => {
             return Err(anyhow!(
-                "{}prjfmt.toml not found, please run --init command",
+                "{}treefmt.toml not found, please run --init command",
                 customlog::ERROR
             ))
         }
     };
 
-    let toml_content: Root = toml::from_str(&open_prjfmt)?;
+    let toml_content: Root = toml::from_str(&open_treefmt)?;
     let cmd_context: Vec<CmdContext> = toml_content
         .formatters
         .values()

@@ -14,7 +14,7 @@ pub static DEBUG: Emoji = Emoji("🐛", "");
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
-/// The log level for prjfmt
+/// The log level for treefmt
 // Important! the least verbose must be at
 // the top and the most verbose at the bottom
 pub enum LogLevel {
@@ -76,7 +76,7 @@ impl CustomLogOutput {
         (level as u8) <= self.log_level.load(Ordering::SeqCst)
     }
 
-    /// Sets the log level for prjfmt
+    /// Sets the log level for treefmt
     pub fn set_log_level(&self, log_level: LogLevel) {
         self.log_level.store(log_level as u8, Ordering::SeqCst);
     }

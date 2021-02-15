@@ -1,5 +1,5 @@
 [package]
-name = "prjfmt"
+name = "treefmt"
 version = "0.1.0"
 authors = ["Andika Demas Riyandi <andika.riyan@gmail.com>"]
 edition = "2018"

@@ -1,7 +1,7 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-use prjfmt::command::{run_cli, Cli};
-use prjfmt::CLOG;
+use treefmt::command::{run_cli, Cli};
+use treefmt::CLOG;
 use structopt::StructOpt;
 
 fn main() {

@@ -7,7 +7,7 @@ imports = [
 ]
 
 [devshell]
-name = "prjfmt"
+name = "treefmt"
 
 packages = [
   # Build tools

@@ -2,7 +2,7 @@
   <br>
   <img src="assets/logo.svg" alt="logo" width="200">
   <br>
-  prjfmt - the unified CLI code formatters for projects
+  treefmt - the unified CLI code formatters for projects
   <br>
   <br>
 </h1>
@@ -15,7 +15,7 @@ different configurations. When jumping between project it always takes a bit
 of time to get accustomed to them and update our editor configuration.
 
 This project tries to solve that by proposing a unified CLI interface: type
-`prjfmt` to format all of the files in a given project, using the project's
+`treefmt` to format all of the files in a given project, using the project's
 configuration.
 
 ## Design decisions
@@ -25,20 +25,20 @@ default should be to write formatter changes back in place. Options like
 `--dry-run` are not needed, we rely on the source control to revert or check
 for code changes.
 
-`prjfmt` is responsible for traversing the file-system and mapping files to
+`treefmt` is responsible for traversing the file-system and mapping files to
 specific code formatters.
 
-We want *all* of the project files to be formatted. `prjfmt` should hint if
+We want *all* of the project files to be formatted. `treefmt` should hint if
 any files in the project are not covered.
 
-Only *one* formatter per file. `prjfmt` should enforces that only one tool is
+Only *one* formatter per file. `treefmt` should enforces that only one tool is
 executed per file. Guaranteeing two tools to product idempotent outputs is
 quite difficult.
 
 ## Usage
 
 ```
-prjfmt [options] [<file>...]
+treefmt [options] [<file>...]
 ```
 
 * `file`: path to files to format. If no files are passed, format all of the
@@ -51,7 +51,7 @@ prjfmt [options] [<file>...]
   stdin, and write the formatted result to stdout. The `file` is only used to
   select the right formatter.
 
-* `--init`: Creates a templated `prjfmt.toml` in the current directory. In the
+* `--init`: Creates a templated `treefmt.toml` in the current directory. In the
     future we want to add some heuristic for detecting the languages available
     in the project and make some suggestions for it.
 
@@ -61,7 +61,7 @@ prjfmt [options] [<file>...]
 
 ## Configuration format
 
-`prjfmt` depends on the `prjfmt.toml` to map file extensions to actual code
+`treefmt` depends on the `treefmt.toml` to map file extensions to actual code
 formatters. That file is searched for recursively from the current folder and
 up.
 
@@ -70,7 +70,7 @@ TODO: describe the actual format here
 ### `[formatters.<name>]`
 
 This section describes the integration between a single formatter and
-`prjfmt`.
+`treefmt`.
 
 * `files`: A list of glob patterns used to select files. Usually this would be
     something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
@@ -91,7 +91,7 @@ script that transforms the usage to match that spec.
 
 ### CLI usage
 
-As a developer, I want to run `prjfmt` in any folder and it would
+As a developer, I want to run `treefmt` in any folder and it would
 automatically format all of the code, configured for the project. I don't want
 to remember what tool to use, or their magic incantation.
 
@@ -100,7 +100,7 @@ to remember what tool to use, or their magic incantation.
 Editors often want to be able to format a file, before it gets written to disk.
 
 Ideally, the editor would pipe the code in, pass the filename, and get the
-formatted code out. Eg: `cat ./my_file.sh | prjfmt --stdin my_file.sh >
+formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh >
 formatted_file.sh`
 
 ### CI integration
@@ -114,11 +114,11 @@ For example a Git integration would look like this:
 set -euo pipefail
 
 # Format all of the code
-prjfmt
+treefmt
 
 # Check that there are no changes in the code
 if [[ -n "$(git status --porcelain -unormal)" ]]; then
-  echo "Some code needs formatting! Please run \`prjfmt\`.
+  echo "Some code needs formatting! Please run \`treefmt\`.
   git status -unormal
   exit 1
 fi
@@ -130,16 +130,16 @@ echo "OK"
 ### Formatter integration
 
 Formatters can ship with a config file, that describes and simplifies the
-integration between the formatter and `prjfmt`.
+integration between the formatter and `treefmt`.
 
-Whenever a new formatter is described in the project's `prjfmt.toml` config
-file, `prjfmt` will look for that formatter config in
-`$dir/share/prjfmt.d/<formatter>.toml` where `$dir` is each folder in
+Whenever a new formatter is described in the project's `treefmt.toml` config
+file, `treefmt` will look for that formatter config in
+`$dir/share/treefmt.d/<formatter>.toml` where `$dir` is each folder in
 `XDG_DATA_DIRS`.
 
 Example:
 
-In the `prjfmt.toml` file of the project:
+In the `treefmt.toml` file of the project:
 ```toml
 [formatters.ormolu]
 options = [
@@ -148,7 +148,7 @@ options = [
 ]
 ```
 
-Now assuming that ormolu ships with `$out/share/prjfmt.d/ormolu.toml` that
+Now assuming that ormolu ships with `$out/share/treefmt.d/ormolu.toml` that
 contains:
 ```toml
 command = ["ormolu", "--mode", "inplace"]
@@ -156,8 +156,8 @@ files = ["*.hs"]
 options = []
 ```
 
-The project will first load `prjfmt.toml`, take note of the ormolu formatter,
-then load the `ormolu.toml` file, and merge back the `prjfmt.toml` config for
+The project will first load `treefmt.toml`, take note of the ormolu formatter,
+then load the `ormolu.toml` file, and merge back the `treefmt.toml` config for
 that section back on top. The end-result would be the same as if the user has
 this in their config:
 ```toml
