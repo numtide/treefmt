@@ -1,4 +1,4 @@
-# fmt is the universal code formatter - https://github.com/numtide/fmt
+# One CLI to format the code tree - https://github.com/numtide/treefmt
 
 [formatters.black]
 files = [ "*.py" ]

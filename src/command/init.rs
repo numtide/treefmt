@@ -13,7 +13,8 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
     // TODO: detect if file exists
     fs::write(
         &file_path,
-        r#"# treefmt is the universal code formatter - https://github.com/numtide/treefmt
+        r#"# One CLI to format the code tree - https://github.com/numtide/treefmt
+
 [formatter.<Language>]
 includes = [ "*.<language-extension>" ]
 excludes = []

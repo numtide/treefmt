@@ -2,7 +2,7 @@
   <br>
   <img src="assets/logo.svg" alt="logo" width="200">
   <br>
-  treefmt - the unified CLI code formatters for projects
+  treefmt - one CLI to format the code tree
   <br>
   <br>
 </h1>
