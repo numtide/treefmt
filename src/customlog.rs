@@ -1,7 +1,6 @@
 //! Fancy custom log functionality.
 #![allow(missing_docs)]
 
-use anyhow;
 use console::style;
 use console::Emoji;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};

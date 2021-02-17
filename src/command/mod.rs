@@ -56,7 +56,7 @@ pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
         None => format_cmd(None)?,
     }
 
-    return Ok(());
+    Ok(())
 }
 
 /// Look up treefmt toml from current directory up into project's root
