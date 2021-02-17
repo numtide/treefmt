@@ -7,6 +7,8 @@
   <br>
 </h1>
 
+[![Support room on Matrix](https://img.shields.io/matrix/treefmt:numtide.com.svg?label=%23treefmt%3Anumtide.com&logo=matrix&server_fqdn=matrix.numtide.com)](https://matrix.to/#/#treefmt:numtide.com)
+
 **Status: experimental** -- not all the features described here are working
 yet.
 
@@ -181,6 +183,9 @@ Note how the empty ormolu `options` got overwritten by the project `options`.
 All contributions are welcome! We try to keep the project simple and focused
 so not everything will be accepted. Please open an issue to discuss before
 working on a big item.
+
+If you want to discuss, we have a public Matrix channel:
+[#treefmt:numtide.com](https://matrix.to/#/#treefmt:numtide.com)
 
 ## License
 
