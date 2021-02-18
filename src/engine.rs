@@ -34,9 +34,11 @@ pub fn check_bin(command: &str) -> Result<()> {
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     let treefmt_toml = cwd.join(config::FILENAME);
 
+    let project_config = config::from_path(&treefmt_toml)?;
+
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
-    let old_ctx = create_command_context(&treefmt_toml)?;
+    let old_ctx = create_command_context(&cwd, &project_config)?;
     // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
     // Load the manifest if it exists, otherwise start with empty manifest
     let mfst: RootManifest = read_manifest(&treefmt_toml, &cache_dir)?;
@@ -87,7 +89,7 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
-        let new_ctx = create_command_context(&treefmt_toml)?;
+        let new_ctx = create_command_context(&cwd, &project_config)?;
         println!("Format successful");
         println!("capturing formatted file's state...");
         create_manifest(treefmt_toml, cache_dir, new_ctx)?;
@@ -151,18 +153,7 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 }
 
 /// Creating command configuration based on treefmt.toml
-pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let cwd = match treefmt_toml.parent() {
-        Some(path) => path,
-        None => {
-            return Err(anyhow!(
-                "{}treefmt.toml not found, please run --init command",
-                customlog::ERROR
-            ))
-        }
-    };
-
-    let toml_content = config::from_path(treefmt_toml)?;
+pub fn create_command_context(cwd: &PathBuf, toml_content: &config::Root) -> Result<Vec<CmdContext>> {
     let cmd_context: Vec<CmdContext> = toml_content
         .formatter
         .values()
