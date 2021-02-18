@@ -25,16 +25,17 @@ pub struct Root {
 /// Config for each formatters
 #[derive(Debug, Deserialize)]
 pub struct FmtConfig {
+    /// Command formatter to run
+    pub command: String,
+    /// Argument for formatter
+    #[serde(default)]
+    pub options: Vec<String>,
     /// File or Folder that is included to be formatted
     #[serde(default)]
     pub includes: Vec<String>,
     /// File or Folder that is excluded to be formatted
     #[serde(default)]
     pub excludes: Vec<String>,
-    /// Command formatter to run
-    pub command: Option<String>,
-    /// Argument for formatter
-    pub options: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

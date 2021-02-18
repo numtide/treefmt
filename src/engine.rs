@@ -180,8 +180,8 @@ pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>>
         .map(|config| {
             let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
             Ok(CmdContext {
-                command: config.command.clone().unwrap_or_default(),
-                options: config.options.clone().unwrap_or_default(),
+                command: config.command.clone(),
+                options: config.options.clone(),
                 metadata: path_to_filemeta(list_files)?,
             })
         })
