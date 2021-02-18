@@ -27,10 +27,15 @@ pub fn check_bin(command: &str) -> Result<()> {
 }
 
 /// Run the treefmt
+<<<<<<< HEAD
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     let treefmt_toml = cwd.join(config::FILENAME);
 
     let project_config = config::from_path(&treefmt_toml)?;
+=======
+pub fn run_treefmt(current_dir: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
+    let treefmt_toml = current_dir.join("treefmt.toml");
+>>>>>>> adding working directory option on prjfmt.toml for each formatter
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
@@ -61,6 +66,7 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     for c in context {
         if !c.metadata.is_empty() {
             println!("Command: {}", c.command);
+            println!("Working Directory: {}", c.workdir);
             println!("Files:");
             for m in &c.metadata {
                 let path = &m.path;
@@ -76,12 +82,14 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         .map(|c| {
             let arg = &c.options;
             let cmd_arg = &c.command;
+            let workdir = &c.workdir;
             let paths = c.metadata.iter().map(|f| &f.path);
-            cmd!("{cmd_arg} {arg...} {paths...}").output()
         })
         .collect();
 
-    if mfst.manifest.is_empty() || ctxs.is_empty() {
+    if mfst.manifest.is_empty() && ctxs.is_empty() {
+        CLOG.info("First time running treefmt");
+        CLOG.info("capturing formatted file's state...");
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.

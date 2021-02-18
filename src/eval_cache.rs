@@ -30,6 +30,7 @@ pub fn create_manifest(
             let treefmt = cmd.command;
             let manifest = CmdContext {
                 command: treefmt.to_string(),
+                workdir: cmd.workdir,
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
