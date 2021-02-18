@@ -21,8 +21,8 @@ pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 pub struct CmdContext {
     /// formatter command to run
     pub command: String,
-    /// formatter workdir
-    pub workdir: String,
+    /// formatter work_dir
+    pub work_dir: String,
     /// formatter arguments or flags
     pub options: Vec<String>,
     /// formatter target path
@@ -32,6 +32,7 @@ pub struct CmdContext {
 impl PartialEq for CmdContext {
     fn eq(&self, other: &Self) -> bool {
         self.command == other.command
+            && self.work_dir == other.work_dir
             && self.options == other.options
             && self.metadata == other.metadata
     }

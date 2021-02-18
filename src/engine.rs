@@ -27,15 +27,10 @@ pub fn check_bin(command: &str) -> Result<()> {
 }
 
 /// Run the treefmt
-<<<<<<< HEAD
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     let treefmt_toml = cwd.join(config::FILENAME);
 
     let project_config = config::from_path(&treefmt_toml)?;
-=======
-pub fn run_treefmt(current_dir: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let treefmt_toml = current_dir.join("treefmt.toml");
->>>>>>> adding working directory option on prjfmt.toml for each formatter
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
@@ -66,7 +61,7 @@ pub fn run_treefmt(current_dir: PathBuf, cache_dir: PathBuf) -> anyhow::Result<(
     for c in context {
         if !c.metadata.is_empty() {
             println!("Command: {}", c.command);
-            println!("Working Directory: {}", c.workdir);
+            println!("Working Directory: {}", c.work_dir);
             println!("Files:");
             for m in &c.metadata {
                 let path = &m.path;
@@ -82,7 +77,7 @@ pub fn run_treefmt(current_dir: PathBuf, cache_dir: PathBuf) -> anyhow::Result<(
         .map(|c| {
             let arg = &c.options;
             let cmd_arg = &c.command;
-            let workdir = &c.workdir;
+            let work_dir = &c.work_dir;
             let paths = c.metadata.iter().map(|f| &f.path);
         })
         .collect();
