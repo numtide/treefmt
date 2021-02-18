@@ -36,7 +36,7 @@ pub fn lookup_dir(dir: &PathBuf) -> Option<PathBuf> {
     let mut cwd = dir.clone();
     loop {
         if cwd.join(FILENAME).exists() {
-            return Some(cwd.clone());
+            return Some(cwd);
         }
         cwd = match cwd.parent() {
             Some(x) => x.to_path_buf(),

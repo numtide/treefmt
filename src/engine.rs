@@ -101,8 +101,8 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 /// Convert glob pattern into list of pathBuf
 pub fn glob_to_path(
     cwd: &PathBuf,
-    includes: &Vec<String>,
-    excludes: &Vec<String>,
+    includes: &[String],
+    excludes: &[String],
 ) -> anyhow::Result<Vec<PathBuf>> {
     use ignore::{overrides::OverrideBuilder, WalkBuilder};
 
