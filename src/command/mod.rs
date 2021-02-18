@@ -15,17 +15,8 @@ use structopt::StructOpt;
 /// The various kinds of commands that `treefmt` can execute.
 pub enum Command {
     #[structopt(name = "--init")]
-    ///  init a new project with a default config
-    Init {
-        /// path to file or folder
-        path: Option<PathBuf>,
-    },
-    #[structopt(name = "--config")]
-    ///  Specify treefmt.toml file
-    PrjFmt {
-        /// path to file or folder
-        path: PathBuf,
-    },
+    /// Init a new project with a default config
+    Init {},
 }
 
 /// ✨  format all your language!
@@ -46,14 +37,17 @@ pub struct Cli {
     #[structopt(long = "log-level", default_value = "debug")]
     /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
+
+    #[structopt(long = "config", short = "C")]
+    /// Specify where to look for the treefmt.toml file
+    pub config: Option<PathBuf>,
 }
 
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
-        Some(Command::Init { path }) => init_cmd(path)?,
-        Some(Command::PrjFmt { path }) => format_cmd(Some(path))?,
-        None => format_cmd(None)?,
+        Some(Command::Init {  }) => init_cmd(cli.config)?,
+        None => format_cmd(cli.config)?,
     }
 
     Ok(())

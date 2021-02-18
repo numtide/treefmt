@@ -39,20 +39,29 @@ quite difficult.
 
 ## Usage
 
+`$ cargo run -- --help`
 ```
-treefmt [options] [<file>...]
+treefmt 0.1.0
+The various kinds of commands that `treefmt` can execute
+
+USAGE:
+    treefmt [FLAGS] [OPTIONS] [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --quiet      No output printed to stdout
+    -V, --version    Prints version information
+    -v, --verbose    Log verbosity is based off the number of v used
+
+OPTIONS:
+    -C, --config <config>          Specify where to look for the treefmt.toml file
+        --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
+                                   info, warn, error] [default: debug]
+
+SUBCOMMANDS:
+    --init    Init a new project with a default config
+    help      Prints this message or the help of the given subcommand(s)
 ```
-
-* `file`: path to files to format. If no files are passed, format all of the
-          files from the current folder and down.
-
-### Options
-
-* `--init`: Creates a templated `treefmt.toml` in the current directory.
-
-* `--config <path>`: Overrides the `treefmt.toml` file lookup.
-
-* `--help`: Shows this help.
 
 ## Configuration format
 
