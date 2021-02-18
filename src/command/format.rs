@@ -7,10 +7,12 @@ use std::path::Path;
 use std::{env, path::PathBuf};
 
 pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
-    let cwd = env::current_dir()?;
     let cfg_dir = match path {
         Some(p) => p,
-        None => lookup_treefmt_toml(cwd)?,
+        None => {
+            let cwd = env::current_dir()?;
+            lookup_treefmt_toml(cwd)?
+        },
     };
 
     let treefmt_toml = cfg_dir.join("treefmt.toml");
