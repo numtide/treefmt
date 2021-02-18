@@ -12,7 +12,7 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         None => {
             let cwd = env::current_dir()?;
             lookup_treefmt_toml(cwd)?
-        },
+        }
     };
 
     let treefmt_toml = cfg_dir.join("treefmt.toml");

@@ -1,6 +1,6 @@
 # One CLI to format the code tree - https://github.com/numtide/treefmt
 
-[formatters.black]
+[formatters.python]
 command = "black"
 includes = ["*.py"]
 
@@ -9,12 +9,12 @@ command = "elm-format"
 options = ["--yes"]
 includes = ["*.elm"]
 
-[formatters.gofmt]
-includes = ["*.go"]
+[formatters.go]
 command = "gofmt"
 options = ["-w"]
+includes = ["*.go"]
 
-[formatters.ormolu]
+[formatters.haskell]
 command = "ormolu"
 options = [
     "--ghc-opt", "-XBangPatterns",
@@ -24,20 +24,24 @@ options = [
     "--check-idempotence",
 ]
 includes = ["*.hs"]
-excludes = ["haskell/"]
+excludes = ["examples/haskell/"]
 
-[formatters.prettier]
+[formatters.javascript]
 command = "prettier"
 options = ["--write"]
 includes = ["*.js"]
 
-[formatters.rustfmt]
+[formatters.markdown]
+command = "prettier"
+options = ["--write"]
+includes = ["*.md"]
+
+[formatters.rust]
 command = "rustfmt"
 options = ["--edition", "2018"]
-includes = ["rust/**/*.rs"]
-excludes = []
+includes = ["*.rs"]
 
-[formatters.shfmt]
+[formatters.shell]
 command = "shfmt"
 options = [
     "-i",
@@ -46,4 +50,3 @@ options = [
     "-w",  # write back to the file
 ]
 includes = ["*.sh"]
-excludes = []

@@ -33,13 +33,14 @@ check for code changes.
 `treefmt` is responsible for traversing the file-system and mapping files to
 specific code formatters.
 
-Only *one* formatter per file. `treefmt` enforces that only one tool is
+Only _one_ formatter per file. `treefmt` enforces that only one tool is
 executed per file. Guaranteeing two tools to product idempotent outputs is
 quite difficult.
 
 ## Usage
 
 `$ cargo run -- --help`
+
 ```
 treefmt 0.1.0
 The various kinds of commands that `treefmt` can execute
@@ -74,19 +75,19 @@ up unless the `--config <path>` option is passed.
 This section describes the integration between a single formatter and
 `treefmt`.
 
-* `command`: A list of arguments to execute the formatter. This will be
-    composed with the `options` attribute during invocation. The first argument
-    is the name of the executable to run.
+- `command`: A list of arguments to execute the formatter. This will be
+  composed with the `options` attribute during invocation. The first argument
+  is the name of the executable to run.
 
-* `options`: A list of extra arguments to add to the command. This is typically
-    project-specific arguments.
+- `options`: A list of extra arguments to add to the command. This is typically
+  project-specific arguments.
 
-* `includes`: A list of glob patterns used to select files. Usually this would be
-    something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
-    full filenames can be passed. Eg: `[ "Makefile" ]`.
+- `includes`: A list of glob patterns used to select files. Usually this would be
+  something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
+  full filenames can be passed. Eg: `[ "Makefile" ]`.
 
-* `excludes`: A list of glob patterns to deny. If any of these patterns match,
-    the file will be excluded.
+- `excludes`: A list of glob patterns to deny. If any of these patterns match,
+  the file will be excluded.
 
 ## Use cases
 
@@ -103,8 +104,7 @@ TODO: not supported yet.
 Editors often want to be able to format a file, before it gets written to disk.
 
 Ideally, the editor would pipe the code in, pass the filename, and get the
-formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh >
-formatted_file.sh`
+formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh > formatted_file.sh`
 
 ### CI integration
 
@@ -140,10 +140,10 @@ usage to match that spec.
 
 ## Related projects
 
-* [EditorConfig](https://editorconfig.org/): unifies file indentations
+- [EditorConfig](https://editorconfig.org/): unifies file indentations
   configuration on a per-project basis.
-* [prettier](https://prettier.io/): and opinionated code formatter for a
-    number of languages.
+- [prettier](https://prettier.io/): and opinionated code formatter for a
+  number of languages.
 
 ## Contributing
 

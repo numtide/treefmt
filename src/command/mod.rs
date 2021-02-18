@@ -46,7 +46,7 @@ pub struct Cli {
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
-        Some(Command::Init {  }) => init_cmd(cli.config)?,
+        Some(Command::Init {}) => init_cmd(cli.config)?,
         None => format_cmd(cli.config)?,
     }
 
