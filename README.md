@@ -130,6 +130,8 @@ usage to match that spec.
 
 * [EditorConfig](https://editorconfig.org/): unifies file indentations
   configuration on a per-project basis.
+* [prettier](https://prettier.io/): and opinionated code formatter for a
+    number of languages.
 
 ## Contributing
 
