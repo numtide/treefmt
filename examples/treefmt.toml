@@ -1,51 +1,49 @@
 # One CLI to format the code tree - https://github.com/numtide/treefmt
 
 [formatters.black]
-files = [ "*.py" ]
 command = "black"
-options = [ ]
+includes = ["*.py"]
 
-[formatters.elm-format]
-files = [ "*.elm" ]
+[formatters.elm]
 command = "elm-format"
-options = [ "--yes" ]
+options = ["--yes"]
+includes = ["*.elm"]
 
 [formatters.gofmt]
-files = [ "*.go" ]
+includes = ["*.go"]
 command = "gofmt"
-options = [ "-w" ]
+options = ["-w"]
 
 [formatters.ormolu]
-files = "*.hs"
-excludes = [ "haskell/" ]
 command = "ormolu"
 options = [
-  "--ghc-opt", "-XBangPatterns",
-  "--ghc-opt", "-XPatternSynonyms",
-  "--ghc-opt", "-XTypeApplications",
-  "--mode", "inplace",
-  "--check-idempotence"
+    "--ghc-opt", "-XBangPatterns",
+    "--ghc-opt", "-XPatternSynonyms",
+    "--ghc-opt", "-XTypeApplications",
+    "--mode", "inplace",
+    "--check-idempotence",
 ]
+includes = ["*.hs"]
+excludes = ["haskell/"]
 
 [formatters.prettier]
-files = [ "*.js" ]
 command = "prettier"
-options = [ "--write" ]
+options = ["--write"]
+includes = ["*.js"]
 
 [formatters.rustfmt]
-files = [ "*.rs" ]
-includes = [ "rust/" ]
-excludes = []
 command = "rustfmt"
-options = [ "--edition", "2018" ]
+options = ["--edition", "2018"]
+includes = ["rust/**/*.rs"]
+excludes = []
 
 [formatters.shfmt]
-files = [ "*.sh" ]
-includes = [ "shell/" ]
-excludes = []
 command = "shfmt"
 options = [
-  "-i", "2", # indent 2
-  "-s", # simplify the code
-  "-w", # write back to the file
+    "-i",
+    "2",  # indent 2
+    "-s",  # simplify the code
+    "-w",  # write back to the file
 ]
+includes = ["*.sh"]
+excludes = []

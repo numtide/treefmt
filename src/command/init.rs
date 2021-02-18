@@ -15,11 +15,15 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         &file_path,
         r#"# One CLI to format the code tree - https://github.com/numtide/treefmt
 
-[formatter.<Language>]
-includes = [ "*.<language-extension>" ]
-excludes = []
-command = ""
+[formatters.mylanguage]
+# Formatter to run
+command = "command-to-run"
+# Command-line arguments for the command
 options = []
+# Glob pattern of files to include
+includes = [ "*.<language-extension>" ]
+# Glob patterns of files to exclude
+excludes = []
     "#,
     )
     .with_context(|| {

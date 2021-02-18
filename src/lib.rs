@@ -25,39 +25,16 @@ pub struct Root {
 /// Config for each formatters
 #[derive(Debug, Deserialize)]
 pub struct FmtConfig {
-    /// File extensions that want to be formatted
-    pub files: FileExtensions,
     /// File or Folder that is included to be formatted
-    pub includes: Option<Vec<String>>,
+    #[serde(default)]
+    pub includes: Vec<String>,
     /// File or Folder that is excluded to be formatted
-    pub excludes: Option<Vec<String>>,
+    #[serde(default)]
+    pub excludes: Vec<String>,
     /// Command formatter to run
     pub command: Option<String>,
     /// Argument for formatter
     pub options: Option<Vec<String>>,
-}
-
-/// File extensions can be single string (e.g. "*.hs") or
-/// list of string (e.g. [ "*.hs", "*.rs" ])
-#[derive(Debug, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum FileExtensions {
-    /// Single file type
-    SingleFile(String),
-    /// List of file type
-    MultipleFile(Vec<String>),
-}
-
-impl<'a> IntoIterator for &'a FileExtensions {
-    type Item = &'a String;
-    type IntoIter = either::Either<std::iter::Once<&'a String>, std::slice::Iter<'a, String>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        match self {
-            FileExtensions::SingleFile(glob) => either::Either::Left(std::iter::once(glob)),
-            FileExtensions::MultipleFile(globs) => either::Either::Right(globs.iter()),
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

@@ -5,13 +5,13 @@ use crate::formatters::{
     manifest::{create_manifest, read_manifest},
     RootManifest,
 };
-use crate::{customlog, CmdContext, FileExtensions, FileMeta, Root, CLOG};
+use crate::{customlog, CmdContext, FileMeta, Root, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
 use std::fs::{metadata, read_to_string};
-use std::iter::{IntoIterator, Iterator};
+use std::iter::Iterator;
 use std::path::PathBuf;
 use which::which;
 use xshell::cmd;
@@ -99,32 +99,19 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 /// Convert glob pattern into list of pathBuf
 pub fn glob_to_path(
     cwd: &PathBuf,
-    extensions: &FileExtensions,
-    includes: &Option<Vec<String>>,
-    excludes: &Option<Vec<String>>,
+    includes: &Vec<String>,
+    excludes: &Vec<String>,
 ) -> anyhow::Result<Vec<PathBuf>> {
     use ignore::{overrides::OverrideBuilder, WalkBuilder};
 
     let mut overrides_builder = OverrideBuilder::new(cwd);
 
-    if let Some(includes) = includes {
-        for include in includes {
-            // Remove trailing `/` as we add one explicitly in the override
-            let include = include.trim_end_matches('/');
-            for extension in extensions.into_iter() {
-                overrides_builder.add(&format!("{}/**/{}", include, extension))?;
-            }
-        }
-    } else {
-        for extension in extensions.into_iter() {
-            overrides_builder.add(&extension)?;
-        }
+    for include in includes {
+        overrides_builder.add(include)?;
     }
 
-    if let Some(excludes) = excludes {
-        for exclude in excludes {
-            overrides_builder.add(&format!("!{}", exclude))?;
-        }
+    for exclude in excludes {
+        overrides_builder.add(&format!("!{}", exclude))?;
     }
 
     let overrides = overrides_builder.build()?;
@@ -191,12 +178,7 @@ pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>>
         .formatters
         .values()
         .map(|config| {
-            let list_files = glob_to_path(
-                &cwd.to_path_buf(),
-                &config.files,
-                &config.includes,
-                &config.excludes,
-            )?;
+            let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
             Ok(CmdContext {
                 command: config.command.clone().unwrap_or_default(),
                 options: config.options.clone().unwrap_or_default(),
@@ -216,11 +198,12 @@ mod tests {
     #[test]
     fn test_glob_to_path() -> Result<()> {
         let cwd = PathBuf::from(r"examples");
-        let file_ext = FileExtensions::SingleFile("*.rs".to_string());
+        let includes = vec!["*.rs".to_string()];
+        let excludes: Vec<String> = vec![];
         let glob_path = PathBuf::from(r"examples/rust/src/main.rs");
         let mut vec_path = Vec::new();
         vec_path.push(glob_path);
-        assert_eq!(glob_to_path(&cwd, &file_ext, &None, &None)?, vec_path);
+        assert_eq!(glob_to_path(&cwd, &includes, &excludes)?, vec_path);
         Ok(())
     }
 
