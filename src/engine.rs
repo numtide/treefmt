@@ -1,10 +1,6 @@
 //! The main formatting engine logic should be in this module.
 
-use crate::formatters::{
-    check::check_treefmt,
-    manifest::{create_manifest, read_manifest},
-    RootManifest,
-};
+use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
 use crate::{config, customlog, CmdContext, FileMeta, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
