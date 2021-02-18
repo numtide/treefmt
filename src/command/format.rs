@@ -11,7 +11,10 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         Some(p) => p,
         None => {
             let cwd = env::current_dir()?;
-            config::lookup_dir(&cwd)?
+            match config::lookup_dir(&cwd) {
+                Some(p) => p,
+                None => return Err(anyhow!("treefmt.toml could not be found in {} and up. Use the --init option to create one.", cwd.display()))
+            }
         }
     };
 

@@ -153,7 +153,10 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 }
 
 /// Creating command configuration based on treefmt.toml
-pub fn create_command_context(cwd: &PathBuf, toml_content: &config::Root) -> Result<Vec<CmdContext>> {
+pub fn create_command_context(
+    cwd: &PathBuf,
+    toml_content: &config::Root,
+) -> Result<Vec<CmdContext>> {
     let cmd_context: Vec<CmdContext> = toml_content
         .formatter
         .values()

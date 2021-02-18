@@ -1,5 +1,5 @@
 //! Contains the project configuration schema and parsing
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
@@ -32,20 +32,17 @@ pub struct FmtConfig {
 }
 
 /// Find the directory that contains the treefmt.toml file. From the current folder, and up.
-pub fn lookup_dir(dir: &PathBuf) -> Result<PathBuf> {
+pub fn lookup_dir(dir: &PathBuf) -> Option<PathBuf> {
     let mut cwd = dir.clone();
     loop {
         if cwd.join(FILENAME).exists() {
-            return Ok(cwd.clone());
+            return Some(cwd.clone());
         }
         cwd = match cwd.parent() {
             Some(x) => x.to_path_buf(),
-            None => {
-                return Err(anyhow!(
-                    "treefmt.toml could not be found in {} and up.",
-                    dir.display()
-                ))
-            }
+            // None is returned when .parent() is already the root folder. In that case we have
+            // exhausted the search space.
+            None => return None,
         };
     }
 }
