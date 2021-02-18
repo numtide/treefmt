@@ -7,7 +7,6 @@ mod init;
 use self::format::format_cmd;
 use self::init::init_cmd;
 use super::customlog::LogLevel;
-use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -15,17 +14,8 @@ use structopt::StructOpt;
 /// The various kinds of commands that `treefmt` can execute.
 pub enum Command {
     #[structopt(name = "--init")]
-    ///  init a new project with a default config
-    Init {
-        /// path to file or folder
-        path: Option<PathBuf>,
-    },
-    #[structopt(name = "--config")]
-    ///  Specify treefmt.toml file
-    PrjFmt {
-        /// path to file or folder
-        path: PathBuf,
-    },
+    /// Init a new project with a default config
+    Init {},
 }
 
 /// ✨  format all your language!
@@ -46,33 +36,18 @@ pub struct Cli {
     #[structopt(long = "log-level", default_value = "debug")]
     /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
+
+    #[structopt(long = "config", short = "C")]
+    /// Specify where to look for the treefmt.toml file
+    pub config: Option<PathBuf>,
 }
 
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
-        Some(Command::Init { path }) => init_cmd(path)?,
-        Some(Command::PrjFmt { path }) => format_cmd(Some(path))?,
-        None => format_cmd(None)?,
+        Some(Command::Init {}) => init_cmd(cli.config)?,
+        None => format_cmd(cli.config)?,
     }
 
     Ok(())
-}
-
-/// Look up treefmt toml from current directory up into project's root
-pub fn lookup_treefmt_toml(path: PathBuf) -> Result<PathBuf> {
-    let mut work = path;
-    loop {
-        if work.join("treefmt.toml").exists() {
-            return Ok(work);
-        }
-        let prev = work.clone();
-        work = match work.parent() {
-            Some(x) => x.to_path_buf(),
-            None => return Err(anyhow!("You already reached root directory")),
-        };
-        if prev == work {
-            return Err(anyhow!("treefmt.toml could not be found"));
-        }
-    }
 }

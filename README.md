@@ -33,26 +33,36 @@ check for code changes.
 `treefmt` is responsible for traversing the file-system and mapping files to
 specific code formatters.
 
-Only *one* formatter per file. `treefmt` enforces that only one tool is
+Only _one_ formatter per file. `treefmt` enforces that only one tool is
 executed per file. Guaranteeing two tools to product idempotent outputs is
 quite difficult.
 
 ## Usage
 
+`$ cargo run -- --help`
+
 ```
-treefmt [options] [<file>...]
+treefmt 0.1.0
+The various kinds of commands that `treefmt` can execute
+
+USAGE:
+    treefmt [FLAGS] [OPTIONS] [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --quiet      No output printed to stdout
+    -V, --version    Prints version information
+    -v, --verbose    Log verbosity is based off the number of v used
+
+OPTIONS:
+    -C, --config <config>          Specify where to look for the treefmt.toml file
+        --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
+                                   info, warn, error] [default: debug]
+
+SUBCOMMANDS:
+    --init    Init a new project with a default config
+    help      Prints this message or the help of the given subcommand(s)
 ```
-
-* `file`: path to files to format. If no files are passed, format all of the
-          files from the current folder and down.
-
-### Options
-
-* `--init`: Creates a templated `treefmt.toml` in the current directory.
-
-* `--config <path>`: Overrides the `treefmt.toml` file lookup.
-
-* `--help`: Shows this help.
 
 ## Configuration format
 
@@ -60,21 +70,24 @@ treefmt [options] [<file>...]
 formatters. That file is searched for recursively from the current folder and
 up unless the `--config <path>` option is passed.
 
-### `[formatters.<name>]`
+### `[formatter.<name>]`
 
 This section describes the integration between a single formatter and
 `treefmt`.
 
-* `files`: A list of glob patterns used to select files. Usually this would be
-    something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
-    full filenames can be passed. Eg: `[ "Makefile" ]`.
+- `command`: A list of arguments to execute the formatter. This will be
+  composed with the `options` attribute during invocation. The first argument
+  is the name of the executable to run.
 
-* `command`: A list of arguments to execute the formatter. This will be
-    composed with the `options` attribute during invocation. The first argument
-    is the name of the executable to run.
+- `options`: A list of extra arguments to add to the command. This is typically
+  project-specific arguments.
 
-* `options`: A list of extra arguments to add to the command. This is typically
-    project-specific arguments.
+- `includes`: A list of glob patterns used to select files. Usually this would be
+  something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
+  full filenames can be passed. Eg: `[ "Makefile" ]`.
+
+- `excludes`: A list of glob patterns to deny. If any of these patterns match,
+  the file will be excluded.
 
 ## Use cases
 
@@ -91,8 +104,7 @@ TODO: not supported yet.
 Editors often want to be able to format a file, before it gets written to disk.
 
 Ideally, the editor would pipe the code in, pass the filename, and get the
-formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh >
-formatted_file.sh`
+formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh > formatted_file.sh`
 
 ### CI integration
 
@@ -128,10 +140,10 @@ usage to match that spec.
 
 ## Related projects
 
-* [EditorConfig](https://editorconfig.org/): unifies file indentations
+- [EditorConfig](https://editorconfig.org/): unifies file indentations
   configuration on a per-project basis.
-* [prettier](https://prettier.io/): and opinionated code formatter for a
-    number of languages.
+- [prettier](https://prettier.io/): and opinionated code formatter for a
+  number of languages.
 
 ## Contributing
 

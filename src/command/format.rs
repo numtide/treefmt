@@ -1,4 +1,4 @@
-use super::lookup_treefmt_toml;
+use crate::config;
 use crate::engine::run_treefmt;
 use crate::CLOG;
 use anyhow::anyhow;
@@ -7,10 +7,15 @@ use std::path::Path;
 use std::{env, path::PathBuf};
 
 pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
-    let cwd = env::current_dir()?;
     let cfg_dir = match path {
         Some(p) => p,
-        None => lookup_treefmt_toml(cwd)?,
+        None => {
+            let cwd = env::current_dir()?;
+            match config::lookup_dir(&cwd) {
+                Some(p) => p,
+                None => return Err(anyhow!("treefmt.toml could not be found in {} and up. Use the --init option to create one.", cwd.display()))
+            }
+        }
     };
 
     let treefmt_toml = cfg_dir.join("treefmt.toml");

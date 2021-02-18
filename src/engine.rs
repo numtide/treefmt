@@ -1,17 +1,13 @@
 //! The main formatting engine logic should be in this module.
 
-use crate::formatters::{
-    check::check_treefmt,
-    manifest::{create_manifest, read_manifest},
-    RootManifest,
-};
-use crate::{customlog, CmdContext, FileExtensions, FileMeta, Root, CLOG};
+use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
+use crate::{config, customlog, CmdContext, FileMeta, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
-use std::fs::{metadata, read_to_string};
-use std::iter::{IntoIterator, Iterator};
+use std::fs::metadata;
+use std::iter::Iterator;
 use std::path::PathBuf;
 use which::which;
 use xshell::cmd;
@@ -32,11 +28,13 @@ pub fn check_bin(command: &str) -> Result<()> {
 
 /// Run the treefmt
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let treefmt_toml = cwd.join("treefmt.toml");
+    let treefmt_toml = cwd.join(config::FILENAME);
+
+    let project_config = config::from_path(&treefmt_toml)?;
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
-    let old_ctx = create_command_context(&treefmt_toml)?;
+    let old_ctx = create_command_context(&cwd, &project_config)?;
     // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
     // Load the manifest if it exists, otherwise start with empty manifest
     let mfst: RootManifest = read_manifest(&treefmt_toml, &cache_dir)?;
@@ -87,7 +85,7 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
-        let new_ctx = create_command_context(&treefmt_toml)?;
+        let new_ctx = create_command_context(&cwd, &project_config)?;
         println!("Format successful");
         println!("capturing formatted file's state...");
         create_manifest(treefmt_toml, cache_dir, new_ctx)?;
@@ -99,32 +97,19 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 /// Convert glob pattern into list of pathBuf
 pub fn glob_to_path(
     cwd: &PathBuf,
-    extensions: &FileExtensions,
-    includes: &Option<Vec<String>>,
-    excludes: &Option<Vec<String>>,
+    includes: &[String],
+    excludes: &[String],
 ) -> anyhow::Result<Vec<PathBuf>> {
     use ignore::{overrides::OverrideBuilder, WalkBuilder};
 
     let mut overrides_builder = OverrideBuilder::new(cwd);
 
-    if let Some(includes) = includes {
-        for include in includes {
-            // Remove trailing `/` as we add one explicitly in the override
-            let include = include.trim_end_matches('/');
-            for extension in extensions.into_iter() {
-                overrides_builder.add(&format!("{}/**/{}", include, extension))?;
-            }
-        }
-    } else {
-        for extension in extensions.into_iter() {
-            overrides_builder.add(&extension)?;
-        }
+    for include in includes {
+        overrides_builder.add(include)?;
     }
 
-    if let Some(excludes) = excludes {
-        for exclude in excludes {
-            overrides_builder.add(&format!("!{}", exclude))?;
-        }
+    for exclude in excludes {
+        overrides_builder.add(&format!("!{}", exclude))?;
     }
 
     let overrides = overrides_builder.build()?;
@@ -164,42 +149,18 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 }
 
 /// Creating command configuration based on treefmt.toml
-pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let open_treefmt = match read_to_string(treefmt_toml) {
-        Ok(file) => file,
-        Err(err) => {
-            return Err(anyhow!(
-                "cannot open {} due to {}.",
-                treefmt_toml.display(),
-                err
-            ))
-        }
-    };
-
-    let cwd = match treefmt_toml.parent() {
-        Some(path) => path,
-        None => {
-            return Err(anyhow!(
-                "{}treefmt.toml not found, please run --init command",
-                customlog::ERROR
-            ))
-        }
-    };
-
-    let toml_content: Root = toml::from_str(&open_treefmt)?;
+pub fn create_command_context(
+    cwd: &PathBuf,
+    toml_content: &config::Root,
+) -> Result<Vec<CmdContext>> {
     let cmd_context: Vec<CmdContext> = toml_content
-        .formatters
+        .formatter
         .values()
         .map(|config| {
-            let list_files = glob_to_path(
-                &cwd.to_path_buf(),
-                &config.files,
-                &config.includes,
-                &config.excludes,
-            )?;
+            let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
             Ok(CmdContext {
-                command: config.command.clone().unwrap_or_default(),
-                options: config.options.clone().unwrap_or_default(),
+                command: config.command.clone(),
+                options: config.options.clone(),
                 metadata: path_to_filemeta(list_files)?,
             })
         })
@@ -216,11 +177,12 @@ mod tests {
     #[test]
     fn test_glob_to_path() -> Result<()> {
         let cwd = PathBuf::from(r"examples");
-        let file_ext = FileExtensions::SingleFile("*.rs".to_string());
+        let includes = vec!["*.rs".to_string()];
+        let excludes: Vec<String> = vec![];
         let glob_path = PathBuf::from(r"examples/rust/src/main.rs");
         let mut vec_path = Vec::new();
         vec_path.push(glob_path);
-        assert_eq!(glob_to_path(&cwd, &file_ext, &None, &None)?, vec_path);
+        assert_eq!(glob_to_path(&cwd, &includes, &excludes)?, vec_path);
         Ok(())
     }
 
