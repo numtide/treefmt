@@ -1,4 +1,4 @@
-use super::lookup_treefmt_toml;
+use crate::config;
 use crate::engine::run_treefmt;
 use crate::CLOG;
 use anyhow::anyhow;
@@ -11,7 +11,7 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         Some(p) => p,
         None => {
             let cwd = env::current_dir()?;
-            lookup_treefmt_toml(cwd)?
+            config::lookup_dir(&cwd)?
         }
     };
 

@@ -5,12 +5,12 @@ use crate::formatters::{
     manifest::{create_manifest, read_manifest},
     RootManifest,
 };
-use crate::{customlog, CmdContext, FileMeta, Root, CLOG};
+use crate::{config, customlog, CmdContext, FileMeta, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
-use std::fs::{metadata, read_to_string};
+use std::fs::metadata;
 use std::iter::Iterator;
 use std::path::PathBuf;
 use which::which;
@@ -32,7 +32,7 @@ pub fn check_bin(command: &str) -> Result<()> {
 
 /// Run the treefmt
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let treefmt_toml = cwd.join("treefmt.toml");
+    let treefmt_toml = cwd.join(config::FILENAME);
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
@@ -152,17 +152,6 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
 
 /// Creating command configuration based on treefmt.toml
 pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>> {
-    let open_treefmt = match read_to_string(treefmt_toml) {
-        Ok(file) => file,
-        Err(err) => {
-            return Err(anyhow!(
-                "cannot open {} due to {}.",
-                treefmt_toml.display(),
-                err
-            ))
-        }
-    };
-
     let cwd = match treefmt_toml.parent() {
         Some(path) => path,
         None => {
@@ -173,7 +162,7 @@ pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>>
         }
     };
 
-    let toml_content: Root = toml::from_str(&open_treefmt)?;
+    let toml_content = config::from_path(treefmt_toml)?;
     let cmd_context: Vec<CmdContext> = toml_content
         .formatter
         .values()

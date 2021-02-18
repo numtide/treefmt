@@ -2,6 +2,7 @@
 
 #![deny(missing_docs)]
 pub mod command;
+pub mod config;
 pub mod customlog;
 pub mod engine;
 pub mod formatters;
@@ -9,34 +10,11 @@ pub mod formatters;
 use customlog::CustomLogOutput;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
-
-/// treefmt.toml structure
-#[derive(Debug, Deserialize)]
-pub struct Root {
-    /// Map of formatters into the config
-    pub formatter: BTreeMap<String, FmtConfig>,
-}
-
-/// Config for each formatters
-#[derive(Debug, Deserialize)]
-pub struct FmtConfig {
-    /// Command formatter to run
-    pub command: String,
-    /// Argument for formatter
-    #[serde(default)]
-    pub options: Vec<String>,
-    /// File or Folder that is included to be formatted
-    #[serde(default)]
-    pub includes: Vec<String>,
-    /// File or Folder that is excluded to be formatted
-    #[serde(default)]
-    pub excludes: Vec<String>,
-}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// Each context of the formatter config
