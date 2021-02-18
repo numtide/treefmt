@@ -1,20 +1,20 @@
 # One CLI to format the code tree - https://github.com/numtide/treefmt
 
-[formatters.python]
+[formatter.python]
 command = "black"
 includes = ["*.py"]
 
-[formatters.elm]
+[formatter.elm]
 command = "elm-format"
 options = ["--yes"]
 includes = ["*.elm"]
 
-[formatters.go]
+[formatter.go]
 command = "gofmt"
 options = ["-w"]
 includes = ["*.go"]
 
-[formatters.haskell]
+[formatter.haskell]
 command = "ormolu"
 options = [
     "--ghc-opt", "-XBangPatterns",
@@ -26,22 +26,22 @@ options = [
 includes = ["*.hs"]
 excludes = ["examples/haskell/"]
 
-[formatters.javascript]
+[formatter.javascript]
 command = "prettier"
 options = ["--write"]
 includes = ["*.js"]
 
-[formatters.markdown]
+[formatter.markdown]
 command = "prettier"
 options = ["--write"]
 includes = ["*.md"]
 
-[formatters.rust]
+[formatter.rust]
 command = "rustfmt"
 options = ["--edition", "2018"]
 includes = ["*.rs"]
 
-[formatters.shell]
+[formatter.shell]
 command = "shfmt"
 options = [
     "-i",

@@ -19,7 +19,7 @@ pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 #[derive(Debug, Deserialize)]
 pub struct Root {
     /// Map of formatters into the config
-    pub formatters: BTreeMap<String, FmtConfig>,
+    pub formatter: BTreeMap<String, FmtConfig>,
 }
 
 /// Config for each formatters

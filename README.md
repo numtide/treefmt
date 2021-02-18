@@ -70,7 +70,7 @@ SUBCOMMANDS:
 formatters. That file is searched for recursively from the current folder and
 up unless the `--config <path>` option is passed.
 
-### `[formatters.<name>]`
+### `[formatter.<name>]`
 
 This section describes the integration between a single formatter and
 `treefmt`.

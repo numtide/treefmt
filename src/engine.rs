@@ -175,7 +175,7 @@ pub fn create_command_context(treefmt_toml: &PathBuf) -> Result<Vec<CmdContext>>
 
     let toml_content: Root = toml::from_str(&open_treefmt)?;
     let cmd_context: Vec<CmdContext> = toml_content
-        .formatters
+        .formatter
         .values()
         .map(|config| {
             let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;

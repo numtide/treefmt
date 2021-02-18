@@ -15,7 +15,7 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         &file_path,
         r#"# One CLI to format the code tree - https://github.com/numtide/treefmt
 
-[formatters.mylanguage]
+[formatter.mylanguage]
 # Formatter to run
 command = "command-to-run"
 # Command-line arguments for the command
