@@ -7,9 +7,9 @@ mod init;
 use self::format::format_cmd;
 use self::init::init_cmd;
 use super::customlog::LogLevel;
+use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use anyhow::{anyhow, Result};
 
 #[derive(Debug, StructOpt)]
 /// The various kinds of commands that `treefmt` can execute.
@@ -69,10 +69,10 @@ pub fn lookup_treefmt_toml(path: PathBuf) -> Result<PathBuf> {
         let prev = work.clone();
         work = match work.parent() {
             Some(x) => x.to_path_buf(),
-            None => return Err(anyhow!("You already reached root directory"))
+            None => return Err(anyhow!("You already reached root directory")),
         };
         if prev == work {
-            return Err(anyhow!("treefmt.toml could not be found"))
+            return Err(anyhow!("treefmt.toml could not be found"));
         }
     }
 }

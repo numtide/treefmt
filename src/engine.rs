@@ -80,7 +80,8 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
             let cmd_arg = &c.command;
             let paths = c.metadata.iter().map(|f| &f.path);
             cmd!("{cmd_arg} {arg...} {paths...}").output()
-        }).collect();
+        })
+        .collect();
 
     if mfst.manifest.is_empty() || ctxs.is_empty() {
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
@@ -96,7 +97,7 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
 }
 
 /// Convert glob pattern into list of pathBuf
-pub fn glob_to_path (
+pub fn glob_to_path(
     cwd: &PathBuf,
     extensions: &FileExtensions,
     includes: &Option<Vec<String>>,

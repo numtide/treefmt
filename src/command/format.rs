@@ -2,9 +2,9 @@ use super::lookup_treefmt_toml;
 use crate::engine::run_treefmt;
 use crate::CLOG;
 use anyhow::anyhow;
-use std::{env, path::PathBuf};
 use std::fs;
 use std::path::Path;
+use std::{env, path::PathBuf};
 
 pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
     let cwd = env::current_dir()?;
@@ -38,7 +38,10 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
             treefmt_toml.display(),
             cfg_dir.display()
         ));
-        CLOG.debug(&format!("Change current directory into: {}", cfg_dir.display()));
+        CLOG.debug(&format!(
+            "Change current directory into: {}",
+            cfg_dir.display()
+        ));
         let cache_dir = Path::new(&xdg_cache_dir).join("treefmt/eval-cache");
         fs::create_dir_all(&cache_dir)?;
         run_treefmt(cfg_dir, cache_dir)?;

@@ -1,8 +1,8 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
+use structopt::StructOpt;
 use treefmt::command::{run_cli, Cli};
 use treefmt::CLOG;
-use structopt::StructOpt;
 
 fn main() {
     if let Err(e) = run() {

@@ -26,11 +26,10 @@ pub fn check_treefmt(
                     new.metadata.difference(&old.metadata).cloned().collect()
                 },
             })
-        }).filter(|c| {
-            match c {
-                Ok(x) => !x.metadata.is_empty(),
-                _ => false
-            }
+        })
+        .filter(|c| match c {
+            Ok(x) => !x.metadata.is_empty(),
+            _ => false,
         })
         .collect::<Result<Vec<CmdContext>, Error>>()?;
 
