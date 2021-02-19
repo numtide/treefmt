@@ -103,8 +103,21 @@ pub fn check_treefmt(
     cache: &RootManifest,
 ) -> Result<Vec<CmdContext>> {
     let cache_context = cache.manifest.values();
-    let results = cmd_context.iter().zip(cache_context);
-
+    let map_ctx: BTreeMap<String, CmdContext> = cmd_context
+        .into_iter()
+        .map(|cmd| {
+            let treefmt = cmd.command.clone();
+            let ctx = CmdContext {
+                command: treefmt.to_string(),
+                work_dir: cmd.work_dir.clone(),
+                options: cmd.options.clone(),
+                metadata: cmd.metadata.clone(),
+            };
+            (treefmt, ctx)
+        })
+        .collect();
+    let new_cmd_ctx = map_ctx.values();
+    let results = new_cmd_ctx.clone().into_iter().zip(cache_context);
     let cache_context: Vec<CmdContext> = results
         .clone()
         .map(|(new, old)| {
