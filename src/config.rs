@@ -20,6 +20,8 @@ pub struct Root {
 pub struct FmtConfig {
     /// Command formatter to run
     pub command: String,
+    /// Working directory for formatter
+    pub work_dir: Option<String>,
     /// Argument for formatter
     #[serde(default)]
     pub options: Vec<String>,

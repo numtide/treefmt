@@ -9,8 +9,8 @@ use std::collections::BTreeSet;
 use std::fs::metadata;
 use std::iter::Iterator;
 use std::path::PathBuf;
+use std::process::Command;
 use which::which;
-use xshell::cmd;
 
 /// Make sure that formatter binary exists. This also for other formatter
 pub fn check_bin(command: &str) -> Result<()> {
@@ -61,6 +61,10 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     for c in context {
         if !c.metadata.is_empty() {
             println!("Command: {}", c.command);
+            println!(
+                "Working Directory: {}",
+                c.work_dir.clone().unwrap_or("".to_string())
+            );
             println!("Files:");
             for m in &c.metadata {
                 let path = &m.path;
@@ -71,17 +75,29 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     }
 
     // TODO: report errors (both Err(_), and Ok(bad status))
-    let _outputs: Vec<xshell::Result<std::process::Output>> = context
+    let _outputs: Vec<std::io::Result<std::process::Output>> = context
         .par_iter()
         .map(|c| {
             let arg = &c.options;
-            let cmd_arg = &c.command;
+            let mut cmd_arg = Command::new(&c.command);
+            let work_dir = match c.work_dir.clone() {
+                Some(x) => x,
+                None => String::new(),
+            };
             let paths = c.metadata.iter().map(|f| &f.path);
-            cmd!("{cmd_arg} {arg...} {paths...}").output()
+            if !work_dir.is_empty() {
+                let _x = std::env::set_current_dir(work_dir);
+                cmd_arg.args(arg).args(paths).output()
+            } else {
+                let _x = std::env::set_current_dir(cwd.clone());
+                cmd_arg.args(arg).args(paths).output()
+            }
         })
         .collect();
 
-    if mfst.manifest.is_empty() || ctxs.is_empty() {
+    if mfst.manifest.is_empty() && ctxs.is_empty() {
+        CLOG.info("First time running treefmt");
+        CLOG.info("capturing formatted file's state...");
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
@@ -161,6 +177,7 @@ pub fn create_command_context(
             Ok(CmdContext {
                 command: config.command.clone(),
                 options: config.options.clone(),
+                work_dir: config.work_dir.clone(),
                 metadata: path_to_filemeta(list_files)?,
             })
         })

@@ -30,6 +30,7 @@ pub fn create_manifest(
             let treefmt = cmd.command;
             let manifest = CmdContext {
                 command: treefmt.to_string(),
+                work_dir: cmd.work_dir,
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
@@ -102,15 +103,32 @@ pub fn check_treefmt(
     cache: &RootManifest,
 ) -> Result<Vec<CmdContext>> {
     let cache_context = cache.manifest.values();
-    let results = cmd_context.iter().zip(cache_context);
-
+    let map_ctx: BTreeMap<String, CmdContext> = cmd_context
+        .into_iter()
+        .map(|cmd| {
+            let treefmt = cmd.command.clone();
+            let ctx = CmdContext {
+                command: treefmt.to_string(),
+                work_dir: cmd.work_dir.clone(),
+                options: cmd.options.clone(),
+                metadata: cmd.metadata.clone(),
+            };
+            (treefmt, ctx)
+        })
+        .collect();
+    let new_cmd_ctx = map_ctx.values();
+    let results = new_cmd_ctx.clone().into_iter().zip(cache_context);
     let cache_context: Vec<CmdContext> = results
         .clone()
         .map(|(new, old)| {
             Ok(CmdContext {
                 command: new.command.clone(),
+                work_dir: new.work_dir.clone(),
                 options: new.options.clone(),
-                metadata: if new.command != old.command || new.options != old.options {
+                metadata: if new.command != old.command
+                    || new.options != old.options
+                    || new.work_dir != old.work_dir
+                {
                     // If either the command or the options have changed, invalidate old entries
                     new.metadata.clone()
                 } else {

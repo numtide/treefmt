@@ -610,7 +610,6 @@ dependencies = [
  "structopt",
  "toml",
  "which",
- "xshell",
 ]
 
 [[package]]
@@ -700,18 +699,3 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "xshell"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed373ede30cea03e8c0af22f48ee1ba80efbf06fec8b4746977e6ee703878de0"
-dependencies = [
- "xshell-macros",
-]
-
-[[package]]
-name = "xshell-macros"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f6af9f8119104697b0105989a73c578ce33f922d9d6f3dae0e8ae3d538db321"
