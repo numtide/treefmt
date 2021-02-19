@@ -22,7 +22,7 @@ pub struct CmdContext {
     /// formatter command to run
     pub command: String,
     /// formatter work_dir
-    pub work_dir: String,
+    pub work_dir: Option<String>,
     /// formatter arguments or flags
     pub options: Vec<String>,
     /// formatter target path

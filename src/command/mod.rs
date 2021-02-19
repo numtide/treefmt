@@ -7,7 +7,6 @@ mod init;
 use self::format::format_cmd;
 use self::init::init_cmd;
 use super::customlog::LogLevel;
-use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use structopt::StructOpt;
 

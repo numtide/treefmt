@@ -12,10 +12,11 @@ A formatter MUST adhere to the following interface:
 ```
 
 Where
-* `<command>` is the name of the formatter.
-* `[options]` is any number of flags and options that the formatter wants to
-    provide.
-* `[...<files>]` is one or more files that the formatter should process.
+
+- `<command>` is the name of the formatter.
+- `[options]` is any number of flags and options that the formatter wants to
+  provide.
+- `[...<files>]` is one or more files that the formatter should process.
 
 Whenever the program is invoked with the list of files, it MUST only process all the files that are passed and format them. Files that are not passed should never be formatted.
 
