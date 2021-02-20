@@ -22,3 +22,10 @@ sha-1 = "0.9.2"
 structopt = "0.3"
 toml = "0.5"
 which = "4.0.2"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "bench"
+harness = false
