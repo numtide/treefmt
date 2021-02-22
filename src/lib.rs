@@ -7,16 +7,14 @@ pub mod customlog;
 pub mod engine;
 pub mod eval_cache;
 
+use crate::eval_cache::{get_mtime, Mtime};
 use anyhow::Result;
 use customlog::CustomLogOutput;
-use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::fmt;
-use std::fs::metadata;
 use std::path::PathBuf;
-use which::which;
 
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
@@ -24,14 +22,14 @@ pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// Each context of the formatter config
 pub struct CmdContext {
-    /// formatter command to run
-    pub command: String,
-    /// Last modification time listed in the file's metadata
-    pub mtime: i64,
+    /// Name of the command
+    pub name: String,
     /// Path to the formatted file
     pub path: PathBuf,
+    /// Last modification time listed in the file's metadata
+    pub mtime: Mtime,
     /// formatter work_dir
-    pub work_dir: Option<String>,
+    pub work_dir: PathBuf,
     /// formatter arguments or flags
     pub options: Vec<String>,
     /// formatter target path
@@ -44,12 +42,12 @@ impl CmdContext {
         let new_meta: BTreeSet<FileMeta> = self
             .metadata
             .into_iter()
-            .map(|e| e.update_mtimes())
+            .map(|e| e.update_mtime())
             .collect::<Result<BTreeSet<FileMeta>>>()?;
         Ok(CmdContext {
-            command: self.command,
-            mtime: self.mtime,
+            name: self.name,
             path: self.path,
+            mtime: self.mtime,
             work_dir: self.work_dir,
             options: self.options,
             metadata: new_meta,
@@ -59,7 +57,8 @@ impl CmdContext {
 
 impl PartialEq for CmdContext {
     fn eq(&self, other: &Self) -> bool {
-        self.command == other.command
+        self.name == other.name
+            && self.path == other.path
             && self.work_dir == other.work_dir
             && self.options == other.options
             && self.metadata == other.metadata
@@ -71,58 +70,34 @@ impl Eq for CmdContext {}
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// Command metadata created after the first treefmt run
 pub struct CmdMeta {
-    /// Name provided by user's config
-    pub name: String,
-    /// Last modification time listed in the file's metadata
-    pub mtime: i64,
-    /// Path to the formatted file
+    /// Absolute path to the formatter
     pub path: PathBuf,
+    /// Last modification time listed in the file's metadata
+    pub mtime: Mtime,
 }
 
 impl CmdMeta {
     /// Create new CmdMeta based on the given config name
-    pub fn new(cmd: String) -> Result<Self> {
-        let cmd_path = Self::check_bin(&cmd)?;
-        let metadata = metadata(&cmd_path)?;
-        let cmd_mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
-
+    ///
+    /// We assume that cmd_path is absolute.
+    pub fn new(cmd_path: &PathBuf) -> Result<Self> {
+        assert!(cmd_path.is_absolute());
         Ok(CmdMeta {
-            name: cmd,
-            mtime: cmd_mtime,
-            path: cmd_path,
+            path: cmd_path.clone(),
+            mtime: get_mtime(&cmd_path)?,
         })
-    }
-
-    /// Make sure that formatter binary exists. This also for other formatter
-    fn check_bin<'a>(command: &'a str) -> Result<PathBuf> {
-        let cmd_bin = command.split_ascii_whitespace().next().unwrap_or("");
-        if let Ok(path) = which(cmd_bin) {
-            CLOG.debug(&format!("Found {} at {}", cmd_bin, path.display()));
-            return Ok(path);
-        }
-        anyhow::bail!(
-            "Failed to locate formatter named {}. \
-            Please make sure it is available in your PATH",
-            command
-        )
     }
 }
 
 impl fmt::Display for CmdMeta {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}: ({}, {})",
-            self.name,
-            self.path.display(),
-            self.mtime
-        )
+        write!(f, "({}, {})", self.path.display(), self.mtime)
     }
 }
 
 impl PartialEq for CmdMeta {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name && self.mtime == other.mtime && self.path == other.path
+        self.path == other.path && self.mtime == other.mtime
     }
 }
 
@@ -131,19 +106,18 @@ impl Eq for CmdMeta {}
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// File metadata created after the first treefmt run
 pub struct FileMeta {
-    /// Last modification time listed in the file's metadata
-    pub mtimes: i64,
     /// Path to the formatted file
     pub path: PathBuf,
+    /// Last modification time listed in the file's metadata
+    pub mtime: Mtime,
 }
 
 impl FileMeta {
-    fn update_mtimes(self) -> Result<Self> {
-        let metadata = metadata(&self.path)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+    fn update_mtime(self) -> Result<Self> {
+        let mtime = get_mtime(&self.path)?;
         Ok(FileMeta {
-            mtimes: mtime,
             path: self.path,
+            mtime,
         })
     }
 }
@@ -153,10 +127,10 @@ impl Ord for FileMeta {
         if self.eq(other) {
             return Ordering::Equal;
         }
-        if self.mtimes.eq(&other.mtimes) {
+        if self.mtime.eq(&other.mtime) {
             return self.path.cmp(&other.path);
         }
-        self.mtimes.cmp(&other.mtimes)
+        self.mtime.cmp(&other.mtime)
     }
 }
 
@@ -168,7 +142,7 @@ impl PartialOrd for FileMeta {
 
 impl PartialEq for FileMeta {
     fn eq(&self, other: &Self) -> bool {
-        self.mtimes == other.mtimes && self.path == other.path
+        self.mtime == other.mtime && self.path == other.path
     }
 }
 

@@ -1,28 +1,32 @@
 //! The main formatting engine logic should be in this module.
 
-use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
-use crate::{config, customlog, CmdContext, CmdMeta, FileMeta, CLOG};
-use anyhow::{anyhow, Error, Result};
-use filetime::FileTime;
+use crate::eval_cache::{check_treefmt, create_manifest, get_mtime, read_manifest, RootManifest};
+use crate::{config, CmdContext, CmdMeta, FileMeta, CLOG};
+use anyhow::{Error, Result};
 use rayon::prelude::*;
 use std::collections::BTreeSet;
-use std::fs::metadata;
 use std::iter::Iterator;
 use std::path::PathBuf;
 use std::process::Command;
 
 /// Run the treefmt
-pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let treefmt_toml = cwd.join(config::FILENAME);
-
+pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> anyhow::Result<()> {
     let project_config = config::from_path(&treefmt_toml)?;
+
+    // Load the manifest if it exists, otherwise print the error and use an empty manifest
+    let mfst: RootManifest = match read_manifest(&treefmt_toml, &cache_dir) {
+        Ok(mfst) => mfst,
+        Err(err) => {
+            CLOG.warn(&format!("Using empty manifest due to error: {}", err));
+            RootManifest::default()
+        }
+    };
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
     let old_ctx = create_command_context(&cwd, &project_config)?;
     // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
-    // Load the manifest if it exists, otherwise start with empty manifest
-    let mfst: RootManifest = read_manifest(&treefmt_toml, &cache_dir)?;
+
     // Compare the list of files with the manifest, keep the ones that are not in the manifest
     let ctxs = check_treefmt(&treefmt_toml, &old_ctx, &mfst)?;
     let context = if mfst.manifest.is_empty() && ctxs.is_empty() {
@@ -31,21 +35,11 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         &ctxs
     };
 
-    if !treefmt_toml.exists() {
-        return Err(anyhow!(
-            "{}treefmt.toml not found, please run --init command",
-            customlog::ERROR
-        ));
-    }
-
     println!("===========================");
     for c in context {
         if !c.metadata.is_empty() {
-            println!("{}", c.command);
-            println!(
-                "Working Directory: {}",
-                c.work_dir.clone().unwrap_or("".to_string())
-            );
+            println!("{}", c.name);
+            println!("Working Directory: {}", c.work_dir.display());
             println!("Files:");
             for m in &c.metadata {
                 let path = &m.path;
@@ -60,18 +54,15 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         .map(|c| {
             let arg = &c.options;
             let mut cmd_arg = Command::new(&c.path);
-            let work_dir = match c.work_dir.clone() {
-                Some(x) => x,
-                None => String::new(),
-            };
+            // Set the command to run under its working directory.
+            cmd_arg.current_dir(&c.work_dir);
+            // Append the default options to the command.
+            cmd_arg.args(arg);
+            // Append all of the file paths to format.
             let paths = c.metadata.iter().map(|f| &f.path);
-            if !work_dir.is_empty() {
-                let _x = std::env::set_current_dir(work_dir);
-                cmd_arg.args(arg).args(paths).output()
-            } else {
-                let _x = std::env::set_current_dir(cwd.clone());
-                cmd_arg.args(arg).args(paths).output()
-            }
+            cmd_arg.args(paths);
+            // And run
+            cmd_arg.output()
         })
         .collect();
 
@@ -135,10 +126,9 @@ pub fn glob_to_path(
 pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
     let mut filemeta = BTreeSet::new();
     for p in paths {
-        let metadata = metadata(&p)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mtime = get_mtime(&p)?;
         if !filemeta.insert(FileMeta {
-            mtimes: mtime,
+            mtime,
             path: p.clone(),
         }) {
             CLOG.warn("Duplicated file detected:");
@@ -156,12 +146,12 @@ pub fn create_command_context(
 ) -> Result<Vec<CmdContext>> {
     let cmd_context: Vec<CmdContext> = toml_content
         .formatter
-        .values()
-        .map(|config| {
+        .iter()
+        .map(|(name, config)| {
             let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
-            let cmd_meta = CmdMeta::new(config.command.clone())?;
+            let cmd_meta = CmdMeta::new(&config.command)?;
             Ok(CmdContext {
-                command: cmd_meta.name,
+                name: name.clone(),
                 mtime: cmd_meta.mtime,
                 path: cmd_meta.path,
                 options: config.options.clone(),
@@ -195,12 +185,11 @@ mod tests {
     #[test]
     fn test_path_to_filemeta() -> Result<()> {
         let file_path = PathBuf::from(r"examples/rust/src/main.rs");
-        let metadata = metadata(&file_path)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mtime = get_mtime(&file_path)?;
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
-            mtimes: mtime,
+            mtime,
             path: PathBuf::from(r"examples/rust/src/main.rs"),
         };
         let mut set_filemeta = BTreeSet::new();

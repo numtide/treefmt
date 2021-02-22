@@ -2,19 +2,22 @@
 use crate::{customlog, CmdContext, CLOG};
 
 use anyhow::{anyhow, Error, Result};
+use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
+use std::fmt;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 /// RootManifest
 pub struct RootManifest {
     /// Map of manifests config based on its formatter
     pub manifest: BTreeMap<String, CmdContext>,
 }
+
 /// Create <hex(hash(path-to-treefmt))>.toml and put it in $XDG_CACHE_DIR/treefmt/eval-cache/
 pub fn create_manifest(
     treefmt_toml: PathBuf,
@@ -27,20 +30,20 @@ pub fn create_manifest(
     let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
         .into_iter()
         .map(|cmd| {
-            let treefmt = cmd.command.clone();
+            let name = cmd.name.clone();
             let manifest = CmdContext {
-                command: cmd.command,
-                mtime: cmd.mtime,
+                name: cmd.name,
                 path: cmd.path,
+                mtime: cmd.mtime,
                 work_dir: cmd.work_dir,
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
-            (treefmt, manifest)
+            (name, manifest)
         })
         .collect();
     let manifest_toml = RootManifest {
-        manifest: map_manifest.clone(),
+        manifest: map_manifest,
     };
     f.write_all(
         format!(
@@ -106,18 +109,18 @@ pub fn check_treefmt(
 ) -> Result<Vec<CmdContext>> {
     let cache_context = cache.manifest.values();
     let map_ctx: BTreeMap<String, CmdContext> = cmd_context
-        .into_iter()
+        .iter()
         .map(|cmd| {
-            let treefmt = cmd.command.clone();
+            let name = cmd.name.clone();
             let ctx = CmdContext {
-                command: cmd.command.clone(),
-                mtime: cmd.mtime.clone(),
+                name: cmd.name.clone(),
+                mtime: cmd.mtime,
                 path: cmd.path.clone(),
                 work_dir: cmd.work_dir.clone(),
                 options: cmd.options.clone(),
                 metadata: cmd.metadata.clone(),
             };
-            (treefmt, ctx)
+            (name, ctx)
         })
         .collect();
     let new_cmd_ctx = map_ctx.values();
@@ -126,12 +129,12 @@ pub fn check_treefmt(
         .clone()
         .map(|(new, old)| {
             Ok(CmdContext {
-                command: new.command.clone(),
-                mtime: new.mtime.clone(),
+                name: new.name.clone(),
                 path: new.path.clone(),
+                mtime: new.mtime,
                 work_dir: new.work_dir.clone(),
                 options: new.options.clone(),
-                metadata: if new.command != old.command
+                metadata: if new.path != old.path
                     || new.options != old.options
                     || new.work_dir != old.work_dir
                 {
@@ -160,7 +163,7 @@ pub fn check_treefmt(
                 CLOG.info(&format!(
                     " - {} last modification time: {}",
                     p.path.display(),
-                    p.mtimes
+                    p.mtime
                 ));
             }
         }
@@ -198,4 +201,22 @@ mod tests {
         );
         Ok(())
     }
+}
+
+/// Mtime represents a unix epoch file modification time
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
+pub struct Mtime(i64);
+
+impl fmt::Display for Mtime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+/// Small utility that stat() and retrieve the mtime of a file
+pub fn get_mtime(path: &PathBuf) -> Result<Mtime> {
+    let metadata = std::fs::metadata(path)?;
+    Ok(Mtime(
+        FileTime::from_last_modification_time(&metadata).unix_seconds(),
+    ))
 }

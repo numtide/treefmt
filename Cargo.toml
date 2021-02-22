@@ -23,6 +23,12 @@ structopt = "0.3"
 toml = "0.5"
 which = "4.0.2"
 
+[dependencies.path-absolutize]
+version = "3.0.6"
+# Do not use `std::env::set_current_dir`.
+# See https://github.com/magiclen/path-absolutize#once_cell_cache
+features = ["once_cell_cache"]
+
 [dev-dependencies]
 criterion = "0.3"
 

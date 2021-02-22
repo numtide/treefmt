@@ -1,7 +1,6 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-use structopt::StructOpt;
-use treefmt::command::{run_cli, Cli};
+use treefmt::command::{cli_from_args, run_cli};
 use treefmt::CLOG;
 
 fn main() {
@@ -12,7 +11,7 @@ fn main() {
 }
 
 fn run() -> anyhow::Result<()> {
-    let options = Cli::from_args();
+    let options = cli_from_args()?;
 
     CLOG.set_log_level(options.log_level);
 
