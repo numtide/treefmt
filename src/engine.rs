@@ -185,8 +185,7 @@ mod tests {
     #[test]
     fn test_path_to_filemeta() -> Result<()> {
         let file_path = PathBuf::from(r"examples/rust/src/main.rs");
-        let metadata = metadata(&file_path)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mtime = get_mtime(&file_path)?;
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
