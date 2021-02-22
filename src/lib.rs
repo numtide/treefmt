@@ -7,14 +7,13 @@ pub mod customlog;
 pub mod engine;
 pub mod eval_cache;
 
+use crate::eval_cache::get_mtime;
 use anyhow::Result;
 use customlog::CustomLogOutput;
-use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::fmt;
-use std::fs::metadata;
 use std::path::PathBuf;
 
 /// The global custom log and user-facing message output.
@@ -83,12 +82,9 @@ impl CmdMeta {
     /// We assume that cmd_path is absolute.
     pub fn new(cmd_path: &PathBuf) -> Result<Self> {
         assert!(cmd_path.is_absolute());
-        let metadata = metadata(&cmd_path)?;
-        let cmd_mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
-
         Ok(CmdMeta {
             path: cmd_path.clone(),
-            mtime: cmd_mtime,
+            mtime: get_mtime(&cmd_path)?,
         })
     }
 }
@@ -118,8 +114,7 @@ pub struct FileMeta {
 
 impl FileMeta {
     fn update_mtime(self) -> Result<Self> {
-        let metadata = metadata(&self.path)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mtime = get_mtime(&self.path)?;
         Ok(FileMeta {
             path: self.path,
             mtime,

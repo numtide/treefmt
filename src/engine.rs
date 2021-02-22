@@ -1,12 +1,10 @@
 //! The main formatting engine logic should be in this module.
 
-use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
+use crate::eval_cache::{check_treefmt, create_manifest, get_mtime, read_manifest, RootManifest};
 use crate::{config, CmdContext, CmdMeta, FileMeta, CLOG};
 use anyhow::{Error, Result};
-use filetime::FileTime;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
-use std::fs::metadata;
 use std::iter::Iterator;
 use std::path::PathBuf;
 use std::process::Command;
@@ -128,8 +126,7 @@ pub fn glob_to_path(
 pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
     let mut filemeta = BTreeSet::new();
     for p in paths {
-        let metadata = metadata(&p)?;
-        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        let mtime = get_mtime(&p)?;
         if !filemeta.insert(FileMeta {
             mtime,
             path: p.clone(),

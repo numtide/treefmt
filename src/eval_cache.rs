@@ -2,6 +2,7 @@
 use crate::{customlog, CmdContext, CLOG};
 
 use anyhow::{anyhow, Error, Result};
+use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
@@ -199,4 +200,10 @@ mod tests {
         );
         Ok(())
     }
+}
+
+/// Small utility that stat() and retrieve the mtime of a file
+pub fn get_mtime(path: &PathBuf) -> Result<i64> {
+    let metadata = std::fs::metadata(path)?;
+    Ok(FileTime::from_last_modification_time(&metadata).unix_seconds())
 }
