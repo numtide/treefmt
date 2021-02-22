@@ -7,10 +7,13 @@ pub mod customlog;
 pub mod engine;
 pub mod eval_cache;
 
+use anyhow::Result;
 use customlog::CustomLogOutput;
+use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+use std::fs::metadata;
 use std::path::PathBuf;
 
 /// The global custom log and user-facing message output.
@@ -27,6 +30,23 @@ pub struct CmdContext {
     pub options: Vec<String>,
     /// formatter target path
     pub metadata: BTreeSet<FileMeta>,
+}
+
+impl CmdContext {
+    /// Update CmdContext mtimes
+    pub fn update_meta(self) -> Result<Self> {
+        let new_meta: BTreeSet<FileMeta> = self
+            .metadata
+            .into_iter()
+            .map(|e| e.update_mtimes())
+            .collect::<Result<BTreeSet<FileMeta>>>()?;
+        Ok(CmdContext {
+            command: self.command,
+            work_dir: self.work_dir,
+            options: self.options,
+            metadata: new_meta,
+        })
+    }
 }
 
 impl PartialEq for CmdContext {
@@ -47,6 +67,17 @@ pub struct FileMeta {
     pub mtimes: i64,
     /// Path to the formatted file
     pub path: PathBuf,
+}
+
+impl FileMeta {
+    fn update_mtimes(self) -> Result<Self> {
+        let metadata = metadata(&self.path)?;
+        let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+        Ok(FileMeta {
+            mtimes: mtime,
+            path: self.path,
+        })
+    }
 }
 
 impl Ord for FileMeta {

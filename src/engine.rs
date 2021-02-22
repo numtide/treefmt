@@ -73,7 +73,6 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
             println!("===========================");
         }
     }
-
     // TODO: report errors (both Err(_), and Ok(bad status))
     let _outputs: Vec<std::io::Result<std::process::Output>> = context
         .par_iter()
@@ -101,10 +100,15 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
-        let new_ctx = create_command_context(&cwd, &project_config)?;
+        let new_mfst: Vec<CmdContext> = mfst
+            .manifest
+            .values()
+            .map(|e| e.clone().update_meta())
+            .collect::<Result<Vec<CmdContext>, Error>>()?;
+
         println!("Format successful");
         println!("capturing formatted file's state...");
-        create_manifest(treefmt_toml, cache_dir, new_ctx)?;
+        create_manifest(treefmt_toml, cache_dir, new_mfst)?;
     }
 
     Ok(())
