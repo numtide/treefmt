@@ -35,7 +35,7 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> a
             println!("{}", c.command);
             println!(
                 "Working Directory: {}",
-                c.work_dir.clone().unwrap_or("".to_string())
+                c.work_dir.display()
             );
             println!("Files:");
             for m in &c.metadata {
@@ -51,18 +51,15 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> a
         .map(|c| {
             let arg = &c.options;
             let mut cmd_arg = Command::new(&c.path);
-            let work_dir = match c.work_dir.clone() {
-                Some(x) => x,
-                None => String::new(),
-            };
+            // Set the command to run under its working directory.
+            cmd_arg.current_dir(&c.work_dir);
+            // Append the default options to the command.
+            cmd_arg.args(arg);
+            // Append all of the file paths to format.
             let paths = c.metadata.iter().map(|f| &f.path);
-            if !work_dir.is_empty() {
-                let _x = std::env::set_current_dir(work_dir);
-                cmd_arg.args(arg).args(paths).output()
-            } else {
-                let _x = std::env::set_current_dir(cwd.clone());
-                cmd_arg.args(arg).args(paths).output()
-            }
+            cmd_arg.args(paths);
+            // And run
+            cmd_arg.output()
         })
         .collect();
 

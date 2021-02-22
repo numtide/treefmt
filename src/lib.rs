@@ -31,7 +31,7 @@ pub struct CmdContext {
     /// Path to the formatted file
     pub path: PathBuf,
     /// formatter work_dir
-    pub work_dir: Option<String>,
+    pub work_dir: PathBuf,
     /// formatter arguments or flags
     pub options: Vec<String>,
     /// formatter target path

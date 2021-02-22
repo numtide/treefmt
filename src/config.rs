@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use path_absolutize::*;
 
 /// Name of the config file
 pub const FILENAME: &str = "treefmt.toml";
@@ -21,7 +22,8 @@ pub struct FmtConfig {
     /// Command formatter to run
     pub command: String,
     /// Working directory for formatter
-    pub work_dir: Option<String>,
+    #[serde(default = "cwd")]
+    pub work_dir: PathBuf,
     /// Argument for formatter
     #[serde(default)]
     pub options: Vec<String>,
@@ -33,7 +35,12 @@ pub struct FmtConfig {
     pub excludes: Vec<String>,
 }
 
-/// Find the treefmt.toml file. From the current folder, and up.
+// The default work_dir value. It's a bit clunky. See https://github.com/serde-rs/serde/issues/1814
+fn cwd() -> PathBuf {
+    ".".into()
+}
+
+/// Returns an absolute path to the treefmt.toml file. From the current folder, and up.
 pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
     let mut cwd = dir.clone();
     loop {
@@ -51,8 +58,17 @@ pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
 }
 
 /// Loads the treefmt.toml config from the given file path.
-pub fn from_path(path: &PathBuf) -> Result<Root> {
-    let content = read_to_string(path)?;
-    let ret: Root = toml::from_str(&content)?;
+pub fn from_path(file_path: &PathBuf) -> Result<Root> {
+    let file_dir = file_path.parent().unwrap(); // unwrap: assume the file is in a folder
+    // Load the file
+    let content = read_to_string(file_path)?;
+    // Parse the config
+    let mut ret: Root = toml::from_str(&content)?;
+    // Turn all the formatter working directories into absolute paths
+    for  (_, formatter) in ret.formatter.iter_mut() {
+        let abs_work_dir = formatter.work_dir.absolutize_virtually(file_dir)?;
+        formatter.work_dir = abs_work_dir.to_path_buf();
+    }
+
     Ok(ret)
 }
