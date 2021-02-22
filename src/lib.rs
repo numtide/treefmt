@@ -7,7 +7,7 @@ pub mod customlog;
 pub mod engine;
 pub mod eval_cache;
 
-use crate::eval_cache::get_mtime;
+use crate::eval_cache::{get_mtime, Mtime};
 use anyhow::Result;
 use customlog::CustomLogOutput;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ pub struct CmdContext {
     /// Path to the formatted file
     pub path: PathBuf,
     /// Last modification time listed in the file's metadata
-    pub mtime: i64,
+    pub mtime: Mtime,
     /// formatter work_dir
     pub work_dir: PathBuf,
     /// formatter arguments or flags
@@ -73,7 +73,7 @@ pub struct CmdMeta {
     /// Absolute path to the formatter
     pub path: PathBuf,
     /// Last modification time listed in the file's metadata
-    pub mtime: i64,
+    pub mtime: Mtime,
 }
 
 impl CmdMeta {
@@ -109,7 +109,7 @@ pub struct FileMeta {
     /// Path to the formatted file
     pub path: PathBuf,
     /// Last modification time listed in the file's metadata
-    pub mtime: i64,
+    pub mtime: Mtime,
 }
 
 impl FileMeta {
