@@ -32,11 +32,8 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> a
     println!("===========================");
     for c in context {
         if !c.metadata.is_empty() {
-            println!("{}", c.command);
-            println!(
-                "Working Directory: {}",
-                c.work_dir.display()
-            );
+            println!("{}", c.name);
+            println!("Working Directory: {}", c.work_dir.display());
             println!("Files:");
             for m in &c.metadata {
                 let path = &m.path;
@@ -144,12 +141,12 @@ pub fn create_command_context(
 ) -> Result<Vec<CmdContext>> {
     let cmd_context: Vec<CmdContext> = toml_content
         .formatter
-        .values()
-        .map(|config| {
+        .iter()
+        .map(|(name, config)| {
             let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
-            let cmd_meta = CmdMeta::new(config.command.clone())?;
+            let cmd_meta = CmdMeta::new(&config.command)?;
             Ok(CmdContext {
-                command: cmd_meta.name,
+                name: name.clone(),
                 mtime: cmd_meta.mtime,
                 path: cmd_meta.path,
                 options: config.options.clone(),

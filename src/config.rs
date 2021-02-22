@@ -1,10 +1,12 @@
 //! Contains the project configuration schema and parsing
+use crate::CLOG;
 use anyhow::Result;
+use path_absolutize::*;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
-use std::path::PathBuf;
-use path_absolutize::*;
+use std::path::{Path, PathBuf};
+use which::which;
 
 /// Name of the config file
 pub const FILENAME: &str = "treefmt.toml";
@@ -20,7 +22,7 @@ pub struct Root {
 #[derive(Debug, Deserialize)]
 pub struct FmtConfig {
     /// Command formatter to run
-    pub command: String,
+    pub command: PathBuf,
     /// Working directory for formatter
     #[serde(default = "cwd")]
     pub work_dir: PathBuf,
@@ -59,16 +61,49 @@ pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
 
 /// Loads the treefmt.toml config from the given file path.
 pub fn from_path(file_path: &PathBuf) -> Result<Root> {
-    let file_dir = file_path.parent().unwrap(); // unwrap: assume the file is in a folder
+    // unwrap: assume the file is in a folder
+    let file_dir = file_path.parent().unwrap();
     // Load the file
     let content = read_to_string(file_path)?;
     // Parse the config
     let mut ret: Root = toml::from_str(&content)?;
-    // Turn all the formatter working directories into absolute paths
-    for  (_, formatter) in ret.formatter.iter_mut() {
-        let abs_work_dir = formatter.work_dir.absolutize_virtually(file_dir)?;
-        formatter.work_dir = abs_work_dir.to_path_buf();
-    }
+    // Expand a bunch of formatter configs. If any of these fail, don't make it a fatal issue. Display the error and continue.
+    let new_formatter = ret
+        .formatter
+        .iter()
+        .fold(BTreeMap::new(), |mut sum, (name, fmt)| {
+            match load_formatter(fmt, file_dir) {
+                // Re-add the resolved formatter if it was successful
+                Ok(fmt2) => {
+                    sum.insert(name.clone(), fmt2);
+                    ()
+                }
+                Err(err) => CLOG.warn(&format!("Ignoring {} because of error: {}", name, err)),
+            };
+            sum
+        });
+    // Replace the formatters with the loaded ones
+    ret.formatter = new_formatter;
 
     Ok(ret)
+}
+
+fn load_formatter(fmt: &FmtConfig, config_dir: &Path) -> Result<FmtConfig> {
+    // Expand the work_dir to an absolute path, using the config directory as a reference.
+    let abs_work_dir = fmt.work_dir.absolutize_virtually(config_dir)?;
+    // Resolve the path to the binary
+    let abs_command = which(&fmt.command)?;
+    assert!(abs_command.is_absolute());
+    CLOG.debug(&format!(
+        "Found {} at {}",
+        fmt.command.display(),
+        abs_command.display()
+    ));
+    Ok(FmtConfig {
+        command: abs_command,
+        work_dir: abs_work_dir.to_path_buf(),
+        options: fmt.options.clone(),
+        includes: fmt.includes.clone(),
+        excludes: fmt.excludes.clone(),
+    })
 }

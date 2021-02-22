@@ -27,16 +27,16 @@ pub fn create_manifest(
     let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
         .into_iter()
         .map(|cmd| {
-            let treefmt = cmd.command.clone();
+            let name = cmd.name.clone();
             let manifest = CmdContext {
-                command: cmd.command,
-                mtime: cmd.mtime,
+                name: cmd.name,
                 path: cmd.path,
+                mtime: cmd.mtime,
                 work_dir: cmd.work_dir,
                 options: cmd.options,
                 metadata: cmd.metadata,
             };
-            (treefmt, manifest)
+            (name, manifest)
         })
         .collect();
     let manifest_toml = RootManifest {
@@ -108,16 +108,16 @@ pub fn check_treefmt(
     let map_ctx: BTreeMap<String, CmdContext> = cmd_context
         .into_iter()
         .map(|cmd| {
-            let treefmt = cmd.command.clone();
+            let name = cmd.name.clone();
             let ctx = CmdContext {
-                command: cmd.command.clone(),
+                name: cmd.name.clone(),
                 mtime: cmd.mtime.clone(),
                 path: cmd.path.clone(),
                 work_dir: cmd.work_dir.clone(),
                 options: cmd.options.clone(),
                 metadata: cmd.metadata.clone(),
             };
-            (treefmt, ctx)
+            (name, ctx)
         })
         .collect();
     let new_cmd_ctx = map_ctx.values();
@@ -126,12 +126,12 @@ pub fn check_treefmt(
         .clone()
         .map(|(new, old)| {
             Ok(CmdContext {
-                command: new.command.clone(),
-                mtime: new.mtime.clone(),
+                name: new.name.clone(),
                 path: new.path.clone(),
+                mtime: new.mtime.clone(),
                 work_dir: new.work_dir.clone(),
                 options: new.options.clone(),
-                metadata: if new.command != old.command
+                metadata: if new.path != old.path
                     || new.options != old.options
                     || new.work_dir != old.work_dir
                 {
