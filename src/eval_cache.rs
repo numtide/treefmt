@@ -42,7 +42,7 @@ pub fn create_manifest(
         })
         .collect();
     let manifest_toml = RootManifest {
-        manifest: map_manifest.clone(),
+        manifest: map_manifest,
     };
     f.write_all(
         format!(
@@ -108,12 +108,12 @@ pub fn check_treefmt(
 ) -> Result<Vec<CmdContext>> {
     let cache_context = cache.manifest.values();
     let map_ctx: BTreeMap<String, CmdContext> = cmd_context
-        .into_iter()
+        .iter()
         .map(|cmd| {
             let name = cmd.name.clone();
             let ctx = CmdContext {
                 name: cmd.name.clone(),
-                mtime: cmd.mtime.clone(),
+                mtime: cmd.mtime,
                 path: cmd.path.clone(),
                 work_dir: cmd.work_dir.clone(),
                 options: cmd.options.clone(),
@@ -130,7 +130,7 @@ pub fn check_treefmt(
             Ok(CmdContext {
                 name: new.name.clone(),
                 path: new.path.clone(),
-                mtime: new.mtime.clone(),
+                mtime: new.mtime,
                 work_dir: new.work_dir.clone(),
                 options: new.options.clone(),
                 metadata: if new.path != old.path

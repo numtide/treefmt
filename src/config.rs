@@ -76,7 +76,6 @@ pub fn from_path(file_path: &PathBuf) -> Result<Root> {
                 // Re-add the resolved formatter if it was successful
                 Ok(fmt2) => {
                     sum.insert(name.clone(), fmt2);
-                    ()
                 }
                 Err(err) => CLOG.warn(&format!("Ignoring {} because of error: {}", name, err)),
             };

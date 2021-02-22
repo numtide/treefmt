@@ -50,7 +50,7 @@ pub fn format_cmd(work_dir: PathBuf) -> anyhow::Result<()> {
     fs::create_dir_all(&cache_dir)?;
 
     // Finally run the main formatter logic from the engine.
-    run_treefmt(work_dir.to_path_buf(), cache_dir, treefmt_toml)?;
+    run_treefmt(work_dir, cache_dir, treefmt_toml)?;
 
     Ok(())
 }
