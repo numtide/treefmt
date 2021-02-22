@@ -9,12 +9,13 @@ use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 /// RootManifest
 pub struct RootManifest {
     /// Map of manifests config based on its formatter
     pub manifest: BTreeMap<String, CmdContext>,
 }
+
 /// Create <hex(hash(path-to-treefmt))>.toml and put it in $XDG_CACHE_DIR/treefmt/eval-cache/
 pub fn create_manifest(
     treefmt_toml: PathBuf,

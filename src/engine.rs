@@ -15,12 +15,20 @@ use std::process::Command;
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> anyhow::Result<()> {
     let project_config = config::from_path(&treefmt_toml)?;
 
+    // Load the manifest if it exists, otherwise print the error and use an empty manifest
+    let mfst: RootManifest = match read_manifest(&treefmt_toml, &cache_dir) {
+        Ok(mfst) => mfst,
+        Err(err) => {
+            CLOG.warn(&format!("Using empty manifest due to error: {}", err));
+            RootManifest::default()
+        }
+    };
+
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
     // it will try to scan the manifest and passed it into check_treefmt function
     let old_ctx = create_command_context(&cwd, &project_config)?;
     // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
-    // Load the manifest if it exists, otherwise start with empty manifest
-    let mfst: RootManifest = read_manifest(&treefmt_toml, &cache_dir)?;
+
     // Compare the list of files with the manifest, keep the ones that are not in the manifest
     let ctxs = check_treefmt(&treefmt_toml, &old_ctx, &mfst)?;
     let context = if mfst.manifest.is_empty() && ctxs.is_empty() {
