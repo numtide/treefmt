@@ -6,12 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::{env, path::PathBuf};
 
-pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
-    // Default to the current directory if no working directory has been passed.
-    let work_dir = match path {
-        Some(p) => p,
-        None => env::current_dir()?,
-    };
+pub fn format_cmd(work_dir: PathBuf) -> anyhow::Result<()> {
     // Search for the treefmt.toml from there.
     let treefmt_toml = match config::lookup(&work_dir) {
         Some(p) => p,

@@ -7,6 +7,7 @@ mod init;
 use self::format::format_cmd;
 use self::init::init_cmd;
 use super::customlog::LogLevel;
+use path_absolutize::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -37,9 +38,19 @@ pub struct Cli {
     /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
 
-    #[structopt(short = "C")]
+    #[structopt(short = "C", default_value = ".")]
     /// Run as if treefmt was started in <path> instead of the current working directory.
-    pub work_dir: Option<PathBuf>,
+    pub work_dir: PathBuf,
+}
+
+/// Use this instead of Cli::from_args(). We do a little bit of post-processing here.
+pub fn cli_from_args() -> anyhow::Result<Cli> {
+    let mut cli = Cli::from_args();
+    // Make sure the work_dir is an absolute path. Don't use the stdlib canonicalize() function
+    // because symlinks should not be resolved.
+    let abs_work_dir = cli.work_dir.absolutize()?;
+    cli.work_dir = abs_work_dir.to_path_buf();
+    Ok(cli)
 }
 
 /// Run a command with the given logger
