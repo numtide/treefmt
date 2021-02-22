@@ -160,7 +160,7 @@ pub fn check_treefmt(
                 CLOG.info(&format!(
                     " - {} last modification time: {}",
                     p.path.display(),
-                    p.mtimes
+                    p.mtime
                 ));
             }
         }

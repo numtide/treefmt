@@ -123,7 +123,7 @@ pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
         let metadata = metadata(&p)?;
         let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
         if !filemeta.insert(FileMeta {
-            mtimes: mtime,
+            mtime,
             path: p.clone(),
         }) {
             CLOG.warn("Duplicated file detected:");
@@ -185,7 +185,7 @@ mod tests {
         let mut vec_path = Vec::new();
         vec_path.push(file_path);
         let file_meta = FileMeta {
-            mtimes: mtime,
+            mtime,
             path: PathBuf::from(r"examples/rust/src/main.rs"),
         };
         let mut set_filemeta = BTreeSet::new();

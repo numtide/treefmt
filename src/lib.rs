@@ -43,7 +43,7 @@ impl CmdContext {
         let new_meta: BTreeSet<FileMeta> = self
             .metadata
             .into_iter()
-            .map(|e| e.update_mtimes())
+            .map(|e| e.update_mtime())
             .collect::<Result<BTreeSet<FileMeta>>>()?;
         Ok(CmdContext {
             name: self.name,
@@ -110,19 +110,19 @@ impl Eq for CmdMeta {}
 #[derive(Debug, Deserialize, Serialize, Clone)]
 /// File metadata created after the first treefmt run
 pub struct FileMeta {
-    /// Last modification time listed in the file's metadata
-    pub mtimes: i64,
     /// Path to the formatted file
     pub path: PathBuf,
+    /// Last modification time listed in the file's metadata
+    pub mtime: i64,
 }
 
 impl FileMeta {
-    fn update_mtimes(self) -> Result<Self> {
+    fn update_mtime(self) -> Result<Self> {
         let metadata = metadata(&self.path)?;
         let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
         Ok(FileMeta {
-            mtimes: mtime,
             path: self.path,
+            mtime,
         })
     }
 }
@@ -132,10 +132,10 @@ impl Ord for FileMeta {
         if self.eq(other) {
             return Ordering::Equal;
         }
-        if self.mtimes.eq(&other.mtimes) {
+        if self.mtime.eq(&other.mtime) {
             return self.path.cmp(&other.path);
         }
-        self.mtimes.cmp(&other.mtimes)
+        self.mtime.cmp(&other.mtime)
     }
 }
 
@@ -147,7 +147,7 @@ impl PartialOrd for FileMeta {
 
 impl PartialEq for FileMeta {
     fn eq(&self, other: &Self) -> bool {
-        self.mtimes == other.mtimes && self.path == other.path
+        self.mtime == other.mtime && self.path == other.path
     }
 }
 
