@@ -97,7 +97,7 @@ impl CmdMeta {
     fn check_bin<'a>(command: &'a str) -> Result<PathBuf> {
         let cmd_bin = command.split_ascii_whitespace().next().unwrap_or("");
         if let Ok(path) = which(cmd_bin) {
-            CLOG.info(&format!("Found {} at {}", cmd_bin, path.display()));
+            CLOG.debug(&format!("Found {} at {}", cmd_bin, path.display()));
             return Ok(path);
         }
         anyhow::bail!(
