@@ -1,7 +1,7 @@
 //! The main formatting engine logic should be in this module.
 
 use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
-use crate::{config, customlog, CmdContext, FileMeta, CLOG};
+use crate::{config, customlog, CmdContext, CmdMeta, FileMeta, CLOG};
 use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
@@ -10,21 +10,6 @@ use std::fs::metadata;
 use std::iter::Iterator;
 use std::path::PathBuf;
 use std::process::Command;
-use which::which;
-
-/// Make sure that formatter binary exists. This also for other formatter
-pub fn check_bin(command: &str) -> Result<()> {
-    let cmd_bin = command.split_ascii_whitespace().next().unwrap_or("");
-    if let Ok(path) = which(cmd_bin) {
-        CLOG.info(&format!("Found {} at {}", cmd_bin, path.display()));
-        return Ok(());
-    }
-    anyhow::bail!(
-        "Failed to locate formatter named {}. \
-        Please make sure it is available in your PATH",
-        command
-    )
-}
 
 /// Run the treefmt
 pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
@@ -53,14 +38,10 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         ));
     }
 
-    for c in context {
-        check_bin(&c.command)?;
-    }
-
     println!("===========================");
     for c in context {
         if !c.metadata.is_empty() {
-            println!("Command: {}", c.command);
+            println!("{}", c.command);
             println!(
                 "Working Directory: {}",
                 c.work_dir.clone().unwrap_or("".to_string())
@@ -73,13 +54,12 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
             println!("===========================");
         }
     }
-
     // TODO: report errors (both Err(_), and Ok(bad status))
     let _outputs: Vec<std::io::Result<std::process::Output>> = context
         .par_iter()
         .map(|c| {
             let arg = &c.options;
-            let mut cmd_arg = Command::new(&c.command);
+            let mut cmd_arg = Command::new(&c.path);
             let work_dir = match c.work_dir.clone() {
                 Some(x) => x,
                 None => String::new(),
@@ -101,10 +81,15 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
         create_manifest(treefmt_toml, cache_dir, old_ctx)?;
     } else {
         // Read the current status of files and insert into the manifest.
-        let new_ctx = create_command_context(&cwd, &project_config)?;
+        let new_mfst: Vec<CmdContext> = mfst
+            .manifest
+            .values()
+            .map(|e| e.clone().update_meta())
+            .collect::<Result<Vec<CmdContext>, Error>>()?;
+
         println!("Format successful");
         println!("capturing formatted file's state...");
-        create_manifest(treefmt_toml, cache_dir, new_ctx)?;
+        create_manifest(treefmt_toml, cache_dir, new_mfst)?;
     }
 
     Ok(())
@@ -174,8 +159,11 @@ pub fn create_command_context(
         .values()
         .map(|config| {
             let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
+            let cmd_meta = CmdMeta::new(config.command.clone())?;
             Ok(CmdContext {
-                command: config.command.clone(),
+                command: cmd_meta.name,
+                mtime: cmd_meta.mtime,
+                path: cmd_meta.path,
                 options: config.options.clone(),
                 work_dir: config.work_dir.clone(),
                 metadata: path_to_filemeta(list_files)?,

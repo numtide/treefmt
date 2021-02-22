@@ -27,9 +27,11 @@ pub fn create_manifest(
     let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
         .into_iter()
         .map(|cmd| {
-            let treefmt = cmd.command;
+            let treefmt = cmd.command.clone();
             let manifest = CmdContext {
-                command: treefmt.to_string(),
+                command: cmd.command,
+                mtime: cmd.mtime,
+                path: cmd.path,
                 work_dir: cmd.work_dir,
                 options: cmd.options,
                 metadata: cmd.metadata,
@@ -38,7 +40,7 @@ pub fn create_manifest(
         })
         .collect();
     let manifest_toml = RootManifest {
-        manifest: map_manifest,
+        manifest: map_manifest.clone(),
     };
     f.write_all(
         format!(
@@ -108,7 +110,9 @@ pub fn check_treefmt(
         .map(|cmd| {
             let treefmt = cmd.command.clone();
             let ctx = CmdContext {
-                command: treefmt.to_string(),
+                command: cmd.command.clone(),
+                mtime: cmd.mtime.clone(),
+                path: cmd.path.clone(),
                 work_dir: cmd.work_dir.clone(),
                 options: cmd.options.clone(),
                 metadata: cmd.metadata.clone(),
@@ -123,6 +127,8 @@ pub fn check_treefmt(
         .map(|(new, old)| {
             Ok(CmdContext {
                 command: new.command.clone(),
+                mtime: new.mtime.clone(),
+                path: new.path.clone(),
                 work_dir: new.work_dir.clone(),
                 options: new.options.clone(),
                 metadata: if new.command != old.command
