@@ -7,18 +7,32 @@ use std::path::Path;
 use std::{env, path::PathBuf};
 
 pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
-    let cfg_dir = match path {
+    // Default to the current directory if no working directory has been passed.
+    let work_dir = match path {
+        Some(p) => p,
+        None => env::current_dir()?,
+    };
+    // Search for the treefmt.toml from there.
+    let treefmt_toml = match config::lookup(&work_dir) {
         Some(p) => p,
         None => {
-            let cwd = env::current_dir()?;
-            match config::lookup_dir(&cwd) {
-                Some(p) => p,
-                None => return Err(anyhow!("treefmt.toml could not be found in {} and up. Use the --init option to create one.", cwd.display()))
-            }
+            return Err(anyhow!(
+                "{} could not be found in {} and up. Use the --init option to create one.",
+                config::FILENAME,
+                work_dir.display()
+            ))
         }
     };
+    // We assume that the parent always exists since the file is contained in a folder.
+    let treefmt_root = treefmt_toml.parent().unwrap();
 
-    let treefmt_toml = cfg_dir.join("treefmt.toml");
+    CLOG.debug(&format!(
+        "Found {} at {}",
+        treefmt_toml.display(),
+        treefmt_root.display()
+    ));
+
+    // Find the location of the cache directory to store the eval-cache manifests.
     let xdg_cache_dir = match env::var("XDG_CACHE_DIR") {
         Ok(path) => path,
         Err(err) => {
@@ -36,24 +50,12 @@ pub fn format_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
             }
         }
     };
+    let cache_dir = Path::new(&xdg_cache_dir).join("treefmt/eval-cache");
+    // Make sure the cache directory exists.
+    fs::create_dir_all(&cache_dir)?;
 
-    if treefmt_toml.exists() {
-        CLOG.debug(&format!(
-            "Found {} at {}",
-            treefmt_toml.display(),
-            cfg_dir.display()
-        ));
-        CLOG.debug(&format!(
-            "Change current directory into: {}",
-            cfg_dir.display()
-        ));
-        let cache_dir = Path::new(&xdg_cache_dir).join("treefmt/eval-cache");
-        fs::create_dir_all(&cache_dir)?;
-        run_treefmt(cfg_dir, cache_dir)?;
-    } else {
-        CLOG.error(
-            "file treefmt.toml couldn't be found. Run `--init` to generate the default setting",
-        );
-    }
+    // Finally run the main formatter logic from the engine.
+    run_treefmt(work_dir.to_path_buf(), cache_dir, treefmt_toml)?;
+
     Ok(())
 }

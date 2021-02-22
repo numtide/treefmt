@@ -37,16 +37,16 @@ pub struct Cli {
     /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
     pub log_level: LogLevel,
 
-    #[structopt(long = "config", short = "C")]
-    /// Specify where to look for the treefmt.toml file
-    pub config: Option<PathBuf>,
+    #[structopt(short = "C")]
+    /// Run as if treefmt was started in <path> instead of the current working directory.
+    pub work_dir: Option<PathBuf>,
 }
 
 /// Run a command with the given logger
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
-        Some(Command::Init {}) => init_cmd(cli.config)?,
-        None => format_cmd(cli.config)?,
+        Some(Command::Init {}) => init_cmd(cli.work_dir)?,
+        None => format_cmd(cli.work_dir)?,
     }
 
     Ok(())

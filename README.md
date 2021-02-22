@@ -55,9 +55,9 @@ FLAGS:
     -v, --verbose    Log verbosity is based off the number of v used
 
 OPTIONS:
-    -C, --config <config>          Specify where to look for the treefmt.toml file
         --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
                                    info, warn, error] [default: debug]
+    -C <work-dir>                  Run as if treefmt was started in <path> instead of the current working directory
 
 SUBCOMMANDS:
     --init    Init a new project with a default config

@@ -1,3 +1,4 @@
+use crate::config;
 use crate::CLOG;
 use anyhow::Context;
 use console::style;
@@ -9,7 +10,7 @@ pub fn init_cmd(path: Option<PathBuf>) -> anyhow::Result<()> {
         Some(loc) => loc,
         None => PathBuf::from("."),
     };
-    let file_path = file.join("treefmt.toml");
+    let file_path = file.join(config::FILENAME);
     // TODO: detect if file exists
     fs::write(
         &file_path,

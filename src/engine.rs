@@ -1,8 +1,8 @@
 //! The main formatting engine logic should be in this module.
 
 use crate::eval_cache::{check_treefmt, create_manifest, read_manifest, RootManifest};
-use crate::{config, customlog, CmdContext, CmdMeta, FileMeta, CLOG};
-use anyhow::{anyhow, Error, Result};
+use crate::{config, CmdContext, CmdMeta, FileMeta, CLOG};
+use anyhow::{Error, Result};
 use filetime::FileTime;
 use rayon::prelude::*;
 use std::collections::BTreeSet;
@@ -12,9 +12,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 /// Run the treefmt
-pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
-    let treefmt_toml = cwd.join(config::FILENAME);
-
+pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> anyhow::Result<()> {
     let project_config = config::from_path(&treefmt_toml)?;
 
     // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
@@ -30,13 +28,6 @@ pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf) -> anyhow::Result<()> {
     } else {
         &ctxs
     };
-
-    if !treefmt_toml.exists() {
-        return Err(anyhow!(
-            "{}treefmt.toml not found, please run --init command",
-            customlog::ERROR
-        ));
-    }
 
     println!("===========================");
     for c in context {

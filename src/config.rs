@@ -33,12 +33,13 @@ pub struct FmtConfig {
     pub excludes: Vec<String>,
 }
 
-/// Find the directory that contains the treefmt.toml file. From the current folder, and up.
-pub fn lookup_dir(dir: &PathBuf) -> Option<PathBuf> {
+/// Find the treefmt.toml file. From the current folder, and up.
+pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
     let mut cwd = dir.clone();
     loop {
-        if cwd.join(FILENAME).exists() {
-            return Some(cwd);
+        let config_file = cwd.join(FILENAME);
+        if config_file.exists() {
+            return Some(config_file);
         }
         cwd = match cwd.parent() {
             Some(x) => x.to_path_buf(),
