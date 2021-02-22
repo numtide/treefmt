@@ -39,7 +39,7 @@ pub struct Cli {
     pub log_level: LogLevel,
 
     #[structopt(short = "C", default_value = ".")]
-    /// Run as if treefmt was started in <path> instead of the current working directory.
+    /// Run as if treefmt was started in <work-dir> instead of the current working directory.
     pub work_dir: PathBuf,
 }
 
