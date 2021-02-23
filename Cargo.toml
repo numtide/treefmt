@@ -12,6 +12,7 @@ console = "0.13"
 filetime = "0.2"
 ignore = "0.4.17"
 log = "0.4"
+path-clean = "0.1.0"
 rayon = "1.5.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -19,12 +20,6 @@ sha-1 = "0.9.2"
 structopt = "0.3"
 toml = "0.5"
 which = "4.0.2"
-
-[dependencies.path-absolutize]
-version = "3.0.6"
-# Do not use `std::env::set_current_dir`.
-# See https://github.com/magiclen/path-absolutize#once_cell_cache
-features = ["once_cell_cache"]
 
 [dev-dependencies]
 criterion = "0.3"

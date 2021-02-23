@@ -1,11 +1,10 @@
 //! Contains the project configuration schema and parsing
-use crate::CLOG;
+use crate::{expand_path, CLOG};
 use anyhow::Result;
-use path_absolutize::*;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::read_to_string;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use which::which;
 
 /// Name of the config file
@@ -72,7 +71,7 @@ pub fn from_path(file_path: &PathBuf) -> Result<Root> {
         .formatter
         .iter()
         .fold(BTreeMap::new(), |mut sum, (name, fmt)| {
-            match load_formatter(fmt, file_dir) {
+            match load_formatter(fmt, &file_dir.to_path_buf()) {
                 // Re-add the resolved formatter if it was successful
                 Ok(fmt2) => {
                     sum.insert(name.clone(), fmt2);
@@ -87,9 +86,9 @@ pub fn from_path(file_path: &PathBuf) -> Result<Root> {
     Ok(ret)
 }
 
-fn load_formatter(fmt: &FmtConfig, config_dir: &Path) -> Result<FmtConfig> {
+fn load_formatter(fmt: &FmtConfig, config_dir: &PathBuf) -> Result<FmtConfig> {
     // Expand the work_dir to an absolute path, using the config directory as a reference.
-    let abs_work_dir = fmt.work_dir.absolutize_virtually(config_dir)?;
+    let abs_work_dir = expand_path(&fmt.work_dir, config_dir);
     // Resolve the path to the binary
     let abs_command = which(&fmt.command)?;
     assert!(abs_command.is_absolute());
@@ -100,7 +99,7 @@ fn load_formatter(fmt: &FmtConfig, config_dir: &Path) -> Result<FmtConfig> {
     ));
     Ok(FmtConfig {
         command: abs_command,
-        work_dir: abs_work_dir.to_path_buf(),
+        work_dir: abs_work_dir,
         options: fmt.options.clone(),
         includes: fmt.includes.clone(),
         excludes: fmt.excludes.clone(),
