@@ -96,7 +96,7 @@ fn create_hash(treefmt_toml: &PathBuf) -> Result<String> {
         }
     };
     let treefmt_hash = Sha1::digest(treefmt_str);
-    let result = hex::encode(treefmt_hash);
+    let result = format!("{:x}", treefmt_hash);
     let manifest_toml = format!("{}.toml", result);
     Ok(manifest_toml)
 }
