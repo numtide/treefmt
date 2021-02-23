@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 console = "0.13"
-either = "1.6.1"
 filetime = "0.2"
 ignore = "0.4.17"
 log = "0.4"
