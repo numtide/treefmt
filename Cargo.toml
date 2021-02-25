@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0"
 console = "0.13"
+directories = "3.0.1"
 filetime = "0.2"
 globset = "0.4.6"
 ignore = "0.4.17"
