@@ -37,13 +37,15 @@ pub fn get_path_mtime(path: &PathBuf) -> Result<Mtime> {
 }
 
 /// Small utility that stat() and retrieve the mtime of a file metadata
-#[must_use] pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
+#[must_use]
+pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
     Mtime(FileTime::from_last_modification_time(metadata).unix_seconds())
 }
 
 /// Returns an absolute path. If the path is absolute already, leave it alone. Otherwise join it to the reference path.
 /// Then clean all superfluous ../
-#[must_use] pub fn expand_path(path: &PathBuf, reference: &PathBuf) -> PathBuf {
+#[must_use]
+pub fn expand_path(path: &PathBuf, reference: &PathBuf) -> PathBuf {
     let new_path = if path.is_absolute() {
         path.clone()
     } else {

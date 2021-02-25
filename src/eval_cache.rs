@@ -68,7 +68,8 @@ impl CacheManifest {
     }
 
     /// Always loads the manifest. If an error occured, log and return an empty manifest.
-    #[must_use] pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
+    #[must_use]
+    pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
         match Self::try_load(cache_dir, treefmt_toml) {
             Ok(manifest) => manifest,
             Err(err) => {
@@ -107,7 +108,8 @@ impl CacheManifest {
 
     /// Checks and inserts the formatter info into the cache.
     /// If the formatter info has changed, invalidate all the old paths.
-    #[must_use] pub fn update_formatters(self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
+    #[must_use]
+    pub fn update_formatters(self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
         let mut new_formatters = BTreeMap::new();
         let mut new_paths = self.matches.clone();
         for (name, fmt) in formatters {
@@ -145,12 +147,12 @@ impl CacheManifest {
     }
 
     /// Returns a new map with all the paths that haven't changed
-    #[must_use] pub fn filter_matches(
+    #[must_use]
+    pub fn filter_matches(
         self,
         matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
     ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> {
         matches
-            
             .into_iter()
             .fold(BTreeMap::new(), |mut sum, (key, path_infos)| {
                 let new_path_infos = match self.matches.get(&key) {
@@ -175,10 +177,8 @@ impl CacheManifest {
     }
 
     /// Merge recursively the new matches with the existing entries in the cache
-    #[must_use] pub fn add_results(
-        self,
-        matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
-    ) -> Self {
+    #[must_use]
+    pub fn add_results(self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>) -> Self {
         // Get a copy of the old matches
         let mut new_matches = self.matches.to_owned();
         // This is really ugly. Get a second copy to work around lifetime issues.
@@ -187,7 +187,9 @@ impl CacheManifest {
         // Merge all the new matches into it
         for (name, path_infos) in matches {
             let mut def = BTreeMap::new();
-            let merged_path_infos = new_matches_cmp.get_mut(&name).unwrap_or_else(|| def.borrow_mut());
+            let merged_path_infos = new_matches_cmp
+                .get_mut(&name)
+                .unwrap_or_else(|| def.borrow_mut());
             for (path, mtime) in path_infos {
                 merged_path_infos.insert(path.clone(), mtime);
             }

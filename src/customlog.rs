@@ -48,7 +48,8 @@ pub struct CustomLogOutput {
 
 impl CustomLogOutput {
     /// Returns a new CustomLogOutput
-    #[must_use] pub const fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             quiet: AtomicBool::new(false),
             log_level: AtomicU8::new(LogLevel::Info as u8),

@@ -49,6 +49,11 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
+    CLOG.debug(&format!(
+        "load config: {}",
+        start_time.elapsed().as_millis()
+    ));
+
     // Load all the formatter instances from the config. Ignore the ones that failed.
     let formatters =
         project_config
@@ -67,9 +72,14 @@ pub fn run_treefmt(
                 sum
             });
 
+    CLOG.debug(&format!(
+        "load formatters: {}",
+        start_time.elapsed().as_millis()
+    ));
+
     // Load the eval cache
     let cache = CacheManifest::load(&cache_dir, &treefmt_toml);
-
+    CLOG.debug(&format!("load cache: {}", start_time.elapsed().as_millis()));
     // Insert the new formatter configs
     let cache = cache.update_formatters(formatters.clone());
 
@@ -126,9 +136,15 @@ pub fn run_treefmt(
             }
         }
     }
+    CLOG.debug(&format!("tree walk: {}", start_time.elapsed().as_millis()));
 
     // Filter out all of the paths that were already in the cache
     let matches = cache.clone().filter_matches(matches);
+
+    CLOG.debug(&format!(
+        "filter_matches: {}",
+        start_time.elapsed().as_millis()
+    ));
 
     // Start another collection of formatter names to path to mtime.
     //
@@ -141,62 +157,77 @@ pub fn run_treefmt(
         let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
         let formatter = formatters.get(&formatter_name).unwrap();
 
-        // Keep track of the paths that are actually going to be formatted
-        filtered_files += paths.len();
+        if !paths.is_empty() {
+            // Keep track of the paths that are actually going to be formatted
+            filtered_files += paths.len();
 
-        match formatter.clone().fmt(&paths.clone()) {
-            // FIXME: do we care about the output?
-            Ok(_) => {
-                // Get the new mtimes and compare them to the original ones
-                let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
-                    let mtime = get_path_mtime(&path).unwrap();
-                    sum.insert(path, mtime);
-                    sum
-                });
-                new_matches.insert(formatter_name.clone(), new_paths);
-            }
-            Err(err) => {
-                // FIXME: What is the right behaviour if a formatter has failed running?
-                CLOG.error(&format!("{} failed: {}", &formatter, err));
+            let start_time = Instant::now();
+
+            match formatter.clone().fmt(&paths.clone()) {
+                // FIXME: do we care about the output?
+                Ok(_) => {
+                    CLOG.info(&format!(
+                        "{}: {} files formatted in {} millis",
+                        formatter.name,
+                        paths.len(),
+                        start_time.elapsed().as_millis()
+                    ));
+
+                    // Get the new mtimes and compare them to the original ones
+                    let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
+                        let mtime = get_path_mtime(&path).unwrap();
+                        sum.insert(path, mtime);
+                        sum
+                    });
+                    new_matches.insert(formatter_name.clone(), new_paths);
+                }
+                Err(err) => {
+                    // FIXME: What is the right behaviour if a formatter has failed running?
+                    CLOG.error(&format!("{} failed: {}", &formatter, err));
+                }
             }
         }
     }
+    CLOG.debug(&format!("format: {}", start_time.elapsed().as_millis()));
 
     // Record the new matches in the cache
     let cache = cache.add_results(new_matches.clone());
     // And write to disk
     cache.write(cache_dir, treefmt_toml);
+    CLOG.debug(&format!(
+        "write cache: {}",
+        start_time.elapsed().as_millis()
+    ));
 
     // Diff the old matches with the new matches
-    let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> = new_matches
-        
-        .into_iter()
-        .fold(BTreeMap::new(), |mut sum, (name, new_paths)| {
-            let old_paths = matches.get(&name).unwrap().clone();
-            let filtered = new_paths
-                
-                .iter()
-                .filter_map(|(k, v)| {
-                    if old_paths.get(k).unwrap() == v {
-                        None
-                    } else {
-                        Some(k.clone())
-                    }
-                })
-                .collect();
+    let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> =
+        new_matches
+            .into_iter()
+            .fold(BTreeMap::new(), |mut sum, (name, new_paths)| {
+                let old_paths = matches.get(&name).unwrap().clone();
+                let filtered = new_paths
+                    .iter()
+                    .filter_map(|(k, v)| {
+                        if old_paths.get(k).unwrap() == v {
+                            None
+                        } else {
+                            Some(k.clone())
+                        }
+                    })
+                    .collect();
 
-            sum.insert(name, filtered);
-            sum
-        });
+                sum.insert(name, filtered);
+                sum
+            });
 
     // Finally display all the paths that have been formatted
     for (_name, paths) in changed_matches {
         // Keep track of how many files were reformatted
         reformatted_files += paths.len();
-        println!("{}:", name);
-        for path in paths {
-            println!("- {}", path.display());
-        }
+        // println!("{}:", name);
+        // for path in paths {
+        //     println!("- {}", path.display());
+        // }
     }
 
     println!(

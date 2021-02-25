@@ -40,7 +40,8 @@ fn cwd() -> PathBuf {
 }
 
 /// Returns an absolute path to the treefmt.toml file. From the current folder, and up.
-#[must_use] pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
+#[must_use]
+pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
     let mut cwd = dir.clone();
     loop {
         let config_file = cwd.join(FILENAME);
