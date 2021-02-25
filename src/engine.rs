@@ -12,7 +12,7 @@ pub fn run_treefmt(
     work_dir: &PathBuf,
     cache_dir: &PathBuf,
     treefmt_toml: &PathBuf,
-    paths: &Vec<PathBuf>,
+    paths: &[PathBuf],
 ) -> anyhow::Result<()> {
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
@@ -29,20 +29,20 @@ pub fn run_treefmt(
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
         let abs_path = expand_path(path, work_dir);
-        if !abs_path.starts_with(&tree_root) {
+        if abs_path.starts_with(&tree_root) {
+            sum.push(abs_path);
+        } else {
             CLOG.warn(&format!(
                 "Ignoring path {}, it is not in the project root",
                 path.display()
             ));
-        } else {
-            sum.push(abs_path);
         }
         sum
     });
 
     // Let's check that there is at least one path to format.
     if paths.is_empty() {
-        CLOG.warn(&format!("Aborting, no paths to format"));
+        CLOG.warn(&"Aborting, no paths to format".to_string());
         return Ok(());
     }
 
@@ -100,7 +100,7 @@ pub fn run_treefmt(
 
                         let path = dir_entry.path().to_path_buf();
                         // FIXME: complain if multiple matchers match the same path.
-                        for (_, fmt) in formatters.clone().into_iter() {
+                        for (_, fmt) in formatters.clone() {
                             if fmt.clone().is_match(&path) {
                                 // Keep track of how many files were associated with a formatter
                                 matched_files += 1;
@@ -128,7 +128,7 @@ pub fn run_treefmt(
     }
 
     // Filter out all of the paths that were already in the cache
-    let matches = cache.clone().filter_matches(matches.clone());
+    let matches = cache.clone().filter_matches(matches);
 
     // Start another collection of formatter names to path to mtime.
     //
@@ -137,7 +137,7 @@ pub fn run_treefmt(
 
     // Now run all the formatters and collect the formatted paths
     // TODO: do this in parallel
-    for (formatter_name, path_mtime) in matches.clone().into_iter() {
+    for (formatter_name, path_mtime) in matches.clone() {
         let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
         let formatter = formatters.get(&formatter_name).unwrap();
 
@@ -150,7 +150,7 @@ pub fn run_treefmt(
                 // Get the new mtimes and compare them to the original ones
                 let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
                     let mtime = get_path_mtime(&path).unwrap();
-                    sum.insert(path.clone(), mtime);
+                    sum.insert(path, mtime);
                     sum
                 });
                 new_matches.insert(formatter_name.clone(), new_paths);
@@ -169,18 +169,18 @@ pub fn run_treefmt(
 
     // Diff the old matches with the new matches
     let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> = new_matches
-        .clone()
+        
         .into_iter()
         .fold(BTreeMap::new(), |mut sum, (name, new_paths)| {
             let old_paths = matches.get(&name).unwrap().clone();
             let filtered = new_paths
-                .clone()
+                
                 .iter()
                 .filter_map(|(k, v)| {
-                    if old_paths.get(k).unwrap() != v {
-                        Some(k.clone())
-                    } else {
+                    if old_paths.get(k).unwrap() == v {
                         None
+                    } else {
+                        Some(k.clone())
                     }
                 })
                 .collect();
@@ -190,7 +190,7 @@ pub fn run_treefmt(
         });
 
     // Finally display all the paths that have been formatted
-    for (name, paths) in changed_matches.into_iter() {
+    for (_name, paths) in changed_matches {
         // Keep track of how many files were reformatted
         reformatted_files += paths.len();
         println!("{}:", name);

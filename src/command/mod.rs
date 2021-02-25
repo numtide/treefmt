@@ -59,10 +59,10 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
 }
 
 /// Run a command with the given logger
-pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
+pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     match cli.cmd {
-        Some(Command::Init {}) => init_cmd(cli.work_dir)?,
-        None => format_cmd(cli.work_dir, cli.paths)?,
+        Some(Command::Init {}) => init_cmd(&cli.work_dir)?,
+        None => format_cmd(&cli.work_dir, &cli.paths)?,
     }
 
     Ok(())

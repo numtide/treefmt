@@ -87,20 +87,20 @@ pub struct Formatter {
 impl Formatter {
     /// Run the formatter on the given paths
     // TODO: handle E2BIG
-    pub fn fmt<'a>(self: &'a Self, paths: &'a Vec<PathBuf>) -> Result<Output> {
-        let mut cmd_arg = Command::new(&self.command.clone());
+    pub fn fmt(&self, paths: &[PathBuf]) -> Result<Output> {
+        let mut cmd_arg = Command::new(&self.command);
         // Set the command to run under its working directory.
-        cmd_arg.current_dir(&self.work_dir.clone());
+        cmd_arg.current_dir(&self.work_dir);
         // Append the default options to the command.
         cmd_arg.args(&self.options);
         // Append all of the file paths to format.
-        cmd_arg.args(&paths.clone());
+        cmd_arg.args(paths);
         // And run
         Ok(cmd_arg.output()?)
     }
 
     /// Returns the formatter if the path matches the formatter rules.
-    pub fn is_match<T: AsRef<Path>>(self: Self, path: T) -> bool {
+    pub fn is_match<T: AsRef<Path>>(&self, path: T) -> bool {
         let path = path.as_ref();
         assert!(path.is_absolute());
         // Ignore any paths that are outside of the formatter work_dir
@@ -119,8 +119,8 @@ impl Formatter {
     }
 
     /// Load the formatter matcher from a config fragment
-    pub fn from_config(config_dir: &PathBuf, name: &String, cfg: &FmtConfig) -> Result<Self> {
-        let name = FormatterName(name.clone());
+    pub fn from_config(config_dir: &PathBuf, name: &str, cfg: &FmtConfig) -> Result<Self> {
+        let name = FormatterName(name.to_string());
         // Expand the work_dir to an absolute path, using the config directory as a reference.
         let work_dir = expand_path(&cfg.work_dir, config_dir);
         // Resolve the path to the binary
@@ -140,7 +140,7 @@ impl Formatter {
         let excludes = patterns_to_glob_set(&cfg.excludes)?;
 
         Ok(Self {
-            name: name,
+            name,
             command,
             options: cfg.options.clone(),
             work_dir,

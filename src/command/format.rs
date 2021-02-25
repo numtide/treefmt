@@ -6,7 +6,7 @@ use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn format_cmd(work_dir: PathBuf, paths: Vec<PathBuf>) -> anyhow::Result<()> {
+pub fn format_cmd(work_dir: &PathBuf, paths: &[PathBuf]) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
         None => {

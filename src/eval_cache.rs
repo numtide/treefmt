@@ -49,7 +49,7 @@ impl Default for CacheManifest {
 }
 
 impl Clone for CacheManifest {
-    fn clone(self: &Self) -> Self {
+    fn clone(&self) -> Self {
         Self {
             formatters: self.formatters.clone(),
             matches: self.matches.clone(),
@@ -68,7 +68,7 @@ impl CacheManifest {
     }
 
     /// Always loads the manifest. If an error occured, log and return an empty manifest.
-    pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
+    #[must_use] pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
         match Self::try_load(cache_dir, treefmt_toml) {
             Ok(manifest) => manifest,
             Err(err) => {
@@ -82,7 +82,7 @@ impl CacheManifest {
     }
 
     /// Seralizes back the manifest into place.
-    pub fn try_write(self: Self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<()> {
+    pub fn try_write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<()> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
         CLOG.debug(&format!("cache: writing to {}", manifest_path.display()));
         let mut f = File::create(manifest_path)?;
@@ -99,7 +99,7 @@ impl CacheManifest {
     }
 
     /// Seralizes back the manifest into place.
-    pub fn write(self: Self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) {
+    pub fn write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) {
         if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
             CLOG.warn(&format!("cache: failed to write to disk: {}", err));
         };
@@ -107,10 +107,10 @@ impl CacheManifest {
 
     /// Checks and inserts the formatter info into the cache.
     /// If the formatter info has changed, invalidate all the old paths.
-    pub fn update_formatters(self: Self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
+    #[must_use] pub fn update_formatters(self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
         let mut new_formatters = BTreeMap::new();
         let mut new_paths = self.matches.clone();
-        for (name, fmt) in formatters.into_iter() {
+        for (name, fmt) in formatters {
             match load_formatter_info(&fmt) {
                 Ok(new_fmt_info) => {
                     if let Some(old_fmt_info) = self.formatters.get(&name) {
@@ -145,12 +145,12 @@ impl CacheManifest {
     }
 
     /// Returns a new map with all the paths that haven't changed
-    pub fn filter_matches(
-        self: Self,
+    #[must_use] pub fn filter_matches(
+        self,
         matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
     ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> {
         matches
-            .clone()
+            
             .into_iter()
             .fold(BTreeMap::new(), |mut sum, (key, path_infos)| {
                 let new_path_infos = match self.matches.get(&key) {
@@ -175,8 +175,8 @@ impl CacheManifest {
     }
 
     /// Merge recursively the new matches with the existing entries in the cache
-    pub fn add_results(
-        self: Self,
+    #[must_use] pub fn add_results(
+        self,
         matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
     ) -> Self {
         // Get a copy of the old matches
@@ -185,9 +185,9 @@ impl CacheManifest {
         let mut new_matches_cmp = self.matches.to_owned();
 
         // Merge all the new matches into it
-        for (name, path_infos) in matches.into_iter() {
+        for (name, path_infos) in matches {
             let mut def = BTreeMap::new();
-            let merged_path_infos = new_matches_cmp.get_mut(&name).unwrap_or(def.borrow_mut());
+            let merged_path_infos = new_matches_cmp.get_mut(&name).unwrap_or_else(|| def.borrow_mut());
             for (path, mtime) in path_infos {
                 merged_path_infos.insert(path.clone(), mtime);
             }
@@ -195,7 +195,7 @@ impl CacheManifest {
         }
 
         Self {
-            formatters: self.formatters.clone(),
+            formatters: self.formatters,
             matches: new_matches,
         }
     }
