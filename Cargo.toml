@@ -6,10 +6,17 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+
 [dependencies]
 anyhow = "1.0"
 console = "0.13"
+directories = "3.0.1"
 filetime = "0.2"
+globset = "0.4.6"
 ignore = "0.4.17"
 log = "0.4"
 path-clean = "0.1.0"

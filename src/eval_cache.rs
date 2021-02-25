@@ -1,221 +1,237 @@
 //! Keep track of evaluations
-use crate::{customlog, CmdContext, CLOG};
+use crate::{
+    customlog,
+    formatter::{Formatter, FormatterName},
+    get_path_mtime, Mtime, CLOG,
+};
 
-use anyhow::{anyhow, Error, Result};
-use filetime::FileTime;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
-use std::collections::BTreeMap;
-use std::fmt;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
+use std::{borrow::BorrowMut, collections::BTreeMap};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+/// Metadata about the formatter
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
+pub struct FormatterInfo {
+    /// Absolute path to the command
+    pub command: PathBuf,
+    /// Mtime of the command
+    pub command_mtime: Mtime,
+    /// Absolute and symlink-resolved path to the command
+    pub command_resolved: PathBuf,
+    /// mtime of the above
+    pub command_resolved_mtime: Mtime,
+    /// formatter options
+    pub options: Vec<String>,
+    /// work_dir
+    pub work_dir: PathBuf,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 /// RootManifest
-pub struct RootManifest {
-    /// Map of manifests config based on its formatter
-    pub manifest: BTreeMap<String, CmdContext>,
+pub struct CacheManifest {
+    /// Map of all the formatter infos
+    pub formatters: BTreeMap<FormatterName, FormatterInfo>,
+    /// Map of all the formatted paths
+    pub matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
 }
 
-/// Create <hex(hash(path-to-treefmt))>.toml and put it in $XDG_CACHE_DIR/treefmt/eval-cache/
-pub fn create_manifest(
-    treefmt_toml: PathBuf,
-    cache_dir: PathBuf,
-    cmd_ctx: Vec<CmdContext>,
-) -> Result<()> {
-    let hash_toml = create_hash(&treefmt_toml)?;
-
-    let mut f = File::create(cache_dir.join(hash_toml))?;
-    let map_manifest: BTreeMap<String, CmdContext> = cmd_ctx
-        .into_iter()
-        .map(|cmd| {
-            let name = cmd.name.clone();
-            let manifest = CmdContext {
-                name: cmd.name,
-                path: cmd.path,
-                mtime: cmd.mtime,
-                work_dir: cmd.work_dir,
-                options: cmd.options,
-                metadata: cmd.metadata,
-            };
-            (name, manifest)
-        })
-        .collect();
-    let manifest_toml = RootManifest {
-        manifest: map_manifest,
-    };
-    f.write_all(
-        format!(
-            "# {} DO NOT HAND EDIT THIS FILE {}\n\n{}",
-            customlog::WARN,
-            customlog::WARN,
-            toml::to_string_pretty(&manifest_toml)?
-        )
-        .as_bytes(),
-    )?;
-    Ok(())
+impl Default for CacheManifest {
+    fn default() -> Self {
+        Self {
+            formatters: BTreeMap::new(),
+            matches: BTreeMap::new(),
+        }
+    }
 }
 
-/// Read the <hex(hash(path-to-treefmt))>.toml and return list of config's cache evaluation
-pub fn read_manifest(treefmt_toml: &PathBuf, cache_dir: &PathBuf) -> Result<RootManifest> {
-    let hash_toml = create_hash(&treefmt_toml)?;
-    let manifest_toml = cache_dir.join(&hash_toml);
+impl Clone for CacheManifest {
+    fn clone(&self) -> Self {
+        Self {
+            formatters: self.formatters.clone(),
+            matches: self.matches.clone(),
+        }
+    }
+}
 
-    if manifest_toml.exists() {
-        CLOG.debug(&format!("Found {} in: {}", hash_toml, cache_dir.display()));
-        let open_file = match read_to_string(&manifest_toml) {
-            Ok(file) => file,
+impl CacheManifest {
+    /// Loads the manifest and returns an error if it failed
+    pub fn try_load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<Self> {
+        let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
+        CLOG.debug(&format!("cache: loading from {}", manifest_path.display()));
+        let content = read_to_string(&manifest_path)?;
+        let manifest = toml::from_str(&content)?;
+        Ok(manifest)
+    }
+
+    /// Always loads the manifest. If an error occured, log and return an empty manifest.
+    #[must_use]
+    pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
+        match Self::try_load(cache_dir, treefmt_toml) {
+            Ok(manifest) => manifest,
             Err(err) => {
-                return Err(anyhow!(
-                    "Cannot open {} due to {}.",
-                    manifest_toml.display(),
+                CLOG.warn(&format!(
+                    "cache: failed to load the manifest due to: {}",
                     err
-                ))
-            }
-        };
-
-        let manifest_content: RootManifest = toml::from_str(&open_file)?;
-        Ok(manifest_content)
-    } else {
-        CLOG.debug(&format!("{} not found!", hash_toml));
-        Ok(RootManifest {
-            manifest: BTreeMap::new(),
-        })
-    }
-}
-
-fn create_hash(treefmt_toml: &PathBuf) -> Result<String> {
-    let treefmt_str = match treefmt_toml.to_str() {
-        Some(str) => str.as_bytes(),
-        None => {
-            return Err(anyhow!(
-                "{}cannot convert to string slice",
-                customlog::ERROR
-            ))
-        }
-    };
-    let treefmt_hash = Sha1::digest(treefmt_str);
-    let manifest_toml = format!("{:x}.toml", treefmt_hash);
-    Ok(manifest_toml)
-}
-
-/// Checking content of cache's file and current treefmt runs
-pub fn check_treefmt(
-    treefmt_toml: &PathBuf,
-    cmd_context: &[CmdContext],
-    cache: &RootManifest,
-) -> Result<Vec<CmdContext>> {
-    let cache_context = cache.manifest.values();
-    let map_ctx: BTreeMap<String, CmdContext> = cmd_context
-        .iter()
-        .map(|cmd| {
-            let name = cmd.name.clone();
-            let ctx = CmdContext {
-                name: cmd.name.clone(),
-                mtime: cmd.mtime,
-                path: cmd.path.clone(),
-                work_dir: cmd.work_dir.clone(),
-                options: cmd.options.clone(),
-                metadata: cmd.metadata.clone(),
-            };
-            (name, ctx)
-        })
-        .collect();
-    let new_cmd_ctx = map_ctx.values();
-    let results = new_cmd_ctx.clone().into_iter().zip(cache_context);
-    let cache_context: Vec<CmdContext> = results
-        .clone()
-        .map(|(new, old)| {
-            Ok(CmdContext {
-                name: new.name.clone(),
-                path: new.path.clone(),
-                mtime: new.mtime,
-                work_dir: new.work_dir.clone(),
-                options: new.options.clone(),
-                metadata: if new.path != old.path
-                    || new.options != old.options
-                    || new.work_dir != old.work_dir
-                {
-                    // If either the command or the options have changed, invalidate old entries
-                    new.metadata.clone()
-                } else {
-                    new.metadata.difference(&old.metadata).cloned().collect()
-                },
-            })
-        })
-        .filter(|c| match c {
-            Ok(x) => !x.metadata.is_empty(),
-            _ => false,
-        })
-        .collect::<Result<Vec<CmdContext>, Error>>()?;
-
-    if cache_context.iter().all(|f| f.metadata.is_empty()) {
-        CLOG.debug(&format!("No changes found in {}", treefmt_toml.display()));
-        return Ok(Vec::new());
-    }
-
-    CLOG.info("The following file has changed or newly added:");
-    for cmd in &cache_context {
-        if !cmd.metadata.is_empty() {
-            for p in &cmd.metadata {
-                CLOG.info(&format!(
-                    " - {} last modification time: {}",
-                    p.path.display(),
-                    p.mtime
                 ));
+                Self::default()
             }
         }
     }
-    // return Err(anyhow!("treefmt failed to run."));
-    Ok(cache_context)
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::BTreeMap;
-
-    /// Every same path produce same hash
-    #[test]
-    fn test_create_hash() -> Result<()> {
-        let file_path = PathBuf::from(r"examples/monorepo/treefmt.toml");
-        let treefmt_hash = "3076c82c47ced65a86ffe285ac9d941d812bfdad.toml";
-        assert_eq!(create_hash(&file_path)?, treefmt_hash);
+    /// Seralizes back the manifest into place.
+    pub fn try_write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<()> {
+        let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
+        CLOG.debug(&format!("cache: writing to {}", manifest_path.display()));
+        let mut f = File::create(manifest_path)?;
+        f.write_all(
+            format!(
+                "# {} DO NOT HAND EDIT THIS FILE {}\n\n{}",
+                customlog::WARN,
+                customlog::WARN,
+                toml::to_string_pretty(&self)?
+            )
+            .as_bytes(),
+        )?;
         Ok(())
     }
 
-    /// Every same path produce same hash
-    #[test]
-    fn test_check_treefmt() -> Result<()> {
-        let treefmt_path = PathBuf::from(r"examples/monorepo/treefmt.toml");
-        let cache: RootManifest = RootManifest {
-            manifest: BTreeMap::new(),
+    /// Seralizes back the manifest into place.
+    pub fn write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) {
+        if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
+            CLOG.warn(&format!("cache: failed to write to disk: {}", err));
         };
-        let cmd_context: Vec<CmdContext> = Vec::new();
+    }
 
-        assert_eq!(
-            check_treefmt(&treefmt_path, &cmd_context, &cache)?,
-            cmd_context
-        );
-        Ok(())
+    /// Checks and inserts the formatter info into the cache.
+    /// If the formatter info has changed, invalidate all the old paths.
+    #[must_use]
+    pub fn update_formatters(self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
+        let mut new_formatters = BTreeMap::new();
+        let mut new_paths = self.matches.clone();
+        for (name, fmt) in formatters {
+            match load_formatter_info(&fmt) {
+                Ok(new_fmt_info) => {
+                    if let Some(old_fmt_info) = self.formatters.get(&name) {
+                        // Invalidate the old paths if the formatter config has changed.
+                        if old_fmt_info != &new_fmt_info {
+                            new_paths.remove(&name);
+                        }
+                    }
+                    // Record the new formatter info
+                    new_formatters.insert(name, new_fmt_info);
+                }
+                Err(err) => {
+                    // TODO: This probably means that there is a deeper issue with the formatter and
+                    //       the formatter will fail down the line.
+                    CLOG.error(&format!("cache: failed to load the formatter info {}", err))
+                }
+            }
+        }
+
+        // Now discard all the paths who don't have an associated formatter
+        for (name, _) in self.matches {
+            if !new_formatters.contains_key(&name) {
+                new_paths.remove(&name);
+            }
+        }
+
+        // Replace with the new info
+        Self {
+            formatters: new_formatters,
+            matches: new_paths,
+        }
+    }
+
+    /// Returns a new map with all the paths that haven't changed
+    #[must_use]
+    pub fn filter_matches(
+        self,
+        matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
+    ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> {
+        matches
+            .into_iter()
+            .fold(BTreeMap::new(), |mut sum, (key, path_infos)| {
+                let new_path_infos = match self.matches.get(&key) {
+                    Some(prev_paths) => {
+                        path_infos
+                            .into_iter()
+                            .fold(BTreeMap::new(), |mut sum, (path, mtime)| {
+                                // Mtime(-1) is not a valid mtime and will therefor never match
+                                let prev_mtime = prev_paths.get(&path).unwrap_or(&Mtime(-1));
+                                if prev_mtime != &mtime {
+                                    // Keep the path if the mtimes don't match
+                                    sum.insert(path, mtime);
+                                }
+                                sum
+                            })
+                    }
+                    None => path_infos,
+                };
+                sum.insert(key, new_path_infos);
+                sum
+            })
+    }
+
+    /// Merge recursively the new matches with the existing entries in the cache
+    #[must_use]
+    pub fn add_results(self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>) -> Self {
+        // Get a copy of the old matches
+        let mut new_matches = self.matches.to_owned();
+        // This is really ugly. Get a second copy to work around lifetime issues.
+        let mut new_matches_cmp = self.matches.to_owned();
+
+        // Merge all the new matches into it
+        for (name, path_infos) in matches {
+            let mut def = BTreeMap::new();
+            let merged_path_infos = new_matches_cmp
+                .get_mut(&name)
+                .unwrap_or_else(|| def.borrow_mut());
+            for (path, mtime) in path_infos {
+                merged_path_infos.insert(path.clone(), mtime);
+            }
+            new_matches.insert(name, merged_path_infos.to_owned());
+        }
+
+        Self {
+            formatters: self.formatters,
+            matches: new_matches,
+        }
     }
 }
 
-/// Mtime represents a unix epoch file modification time
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
-pub struct Mtime(i64);
-
-impl fmt::Display for Mtime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
+/// Gets all the info we want from the formatter
+fn load_formatter_info(fmt: &Formatter) -> Result<FormatterInfo> {
+    let command = fmt.command.clone();
+    let command_mtime = get_path_mtime(&command)?;
+    // Resolve symlinks and everything
+    let command_resolved = std::fs::canonicalize(command.clone())?;
+    let command_resolved_mtime = get_path_mtime(&command_resolved)?;
+    let options = fmt.options.clone();
+    let work_dir = fmt.work_dir.clone();
+    // TODO: does it matter if the includes and excludes are missing?
+    Ok(FormatterInfo {
+        command,
+        command_mtime,
+        command_resolved,
+        command_resolved_mtime,
+        options,
+        work_dir,
+    })
 }
 
-/// Small utility that stat() and retrieve the mtime of a file
-pub fn get_mtime(path: &PathBuf) -> Result<Mtime> {
-    let metadata = std::fs::metadata(path)?;
-    Ok(Mtime(
-        FileTime::from_last_modification_time(&metadata).unix_seconds(),
-    ))
+/// Derive the manifest filename from the treefmt_toml path.
+fn get_manifest_path(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> PathBuf {
+    assert!(cache_dir.is_absolute());
+    assert!(treefmt_toml.is_absolute());
+    // FIXME: it's a shame that we can't access the underlying OsStr bytes
+    let path_bytes = treefmt_toml.to_string_lossy();
+    // Hash the config path
+    let treefmt_hash = Sha1::digest(path_bytes.as_bytes());
+    // Hexencode
+    let filename = format!("{:x}.toml", treefmt_hash);
+    cache_dir.join(filename)
 }

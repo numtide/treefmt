@@ -5,7 +5,7 @@ use console::style;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn init_cmd(work_dir: PathBuf) -> anyhow::Result<()> {
+pub fn init_cmd(work_dir: &PathBuf) -> anyhow::Result<()> {
     let file_path = work_dir.join(config::FILENAME);
     // TODO: detect if file exists
     fs::write(

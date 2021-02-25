@@ -36,6 +36,10 @@ command = "prettier"
 options = ["--write"]
 includes = ["*.md"]
 
+[formatter.nix]
+command = "nixpkgs-fmt"
+includes = ["*.nix"]
+
 [formatter.rust]
 command = "rustfmt"
 options = ["--edition", "2018"]

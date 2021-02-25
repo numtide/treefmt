@@ -5,11 +5,11 @@ use console::style;
 use console::Emoji;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
-pub static FOLDER: Emoji = Emoji("📂", "");
-pub static WARN: Emoji = Emoji("⚠️", ":-)");
-pub static ERROR: Emoji = Emoji("⛔", "");
-pub static INFO: Emoji = Emoji("ℹ️", "");
-pub static DEBUG: Emoji = Emoji("🐛", "");
+pub static FOLDER: Emoji = Emoji("\u{1f4c2}", "");
+pub static WARN: Emoji = Emoji("\u{26a0}\u{fe0f}", ":-)");
+pub static ERROR: Emoji = Emoji("\u{26d4}", "");
+pub static INFO: Emoji = Emoji("\u{2139}\u{fe0f}", "");
+pub static DEBUG: Emoji = Emoji("\u{1f41b}", "");
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
@@ -48,6 +48,7 @@ pub struct CustomLogOutput {
 
 impl CustomLogOutput {
     /// Returns a new CustomLogOutput
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             quiet: AtomicBool::new(false),
