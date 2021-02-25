@@ -7,7 +7,7 @@ mod init;
 use self::format::format_cmd;
 use self::init::init_cmd;
 use super::customlog::LogLevel;
-use path_absolutize::*;
+use crate::expand_path;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -46,10 +46,11 @@ pub struct Cli {
 /// Use this instead of Cli::from_args(). We do a little bit of post-processing here.
 pub fn cli_from_args() -> anyhow::Result<Cli> {
     let mut cli = Cli::from_args();
+    let cwd = std::env::current_dir()?;
+    assert!(cwd.is_absolute());
     // Make sure the work_dir is an absolute path. Don't use the stdlib canonicalize() function
     // because symlinks should not be resolved.
-    let abs_work_dir = cli.work_dir.absolutize()?;
-    cli.work_dir = abs_work_dir.to_path_buf();
+    cli.work_dir = expand_path(&cli.work_dir, &cwd);
     Ok(cli)
 }
 

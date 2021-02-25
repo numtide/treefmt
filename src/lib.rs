@@ -10,6 +10,7 @@ pub mod eval_cache;
 use crate::eval_cache::{get_mtime, Mtime};
 use anyhow::Result;
 use customlog::CustomLogOutput;
+use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
@@ -147,3 +148,14 @@ impl PartialEq for FileMeta {
 }
 
 impl Eq for FileMeta {}
+
+/// Returns an absolute path. If the path is absolute already, leave it alone. Otherwise join it to the reference path.
+/// Then clean all superfluous ../
+pub fn expand_path(path: &PathBuf, reference: &PathBuf) -> PathBuf {
+    let new_path = if path.is_absolute() {
+        path.clone()
+    } else {
+        reference.join(path)
+    };
+    new_path.clean()
+}
