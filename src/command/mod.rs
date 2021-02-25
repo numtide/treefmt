@@ -26,6 +26,10 @@ pub struct Cli {
     #[structopt(long = "init")]
     pub init: bool,
 
+    /// Clear the evaluation cache. Use in case the cache is not precise enough.
+    #[structopt(long = "clear-cache")]
+    pub clear_cache: bool,
+
     /// Log verbosity is based off the number of v used
     #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
     pub verbosity: u8,
@@ -63,7 +67,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
     } else {
-        format_cmd(&cli.work_dir, &cli.paths)?
+        format_cmd(&cli.work_dir, &cli.paths, cli.clear_cache)?
     }
 
     Ok(())

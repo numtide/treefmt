@@ -6,7 +6,7 @@ use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
 
-pub fn format_cmd(work_dir: &PathBuf, paths: &[PathBuf]) -> anyhow::Result<()> {
+pub fn format_cmd(work_dir: &PathBuf, paths: &[PathBuf], clear_cache: bool) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
         None => {
@@ -41,7 +41,7 @@ pub fn format_cmd(work_dir: &PathBuf, paths: &[PathBuf]) -> anyhow::Result<()> {
     ));
 
     // Finally run the main formatter logic from the engine.
-    run_treefmt(&work_dir, &cache_dir, &config_file, &paths)?;
+    run_treefmt(&work_dir, &cache_dir, &config_file, &paths, clear_cache)?;
 
     Ok(())
 }

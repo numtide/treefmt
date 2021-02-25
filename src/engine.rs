@@ -13,6 +13,7 @@ pub fn run_treefmt(
     cache_dir: &PathBuf,
     treefmt_toml: &PathBuf,
     paths: &[PathBuf],
+    clear_cache: bool,
 ) -> anyhow::Result<()> {
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
@@ -78,7 +79,12 @@ pub fn run_treefmt(
     ));
 
     // Load the eval cache
-    let cache = CacheManifest::load(&cache_dir, &treefmt_toml);
+    let cache = if clear_cache {
+        // Start with an empty cache
+        CacheManifest::default()
+    } else {
+        CacheManifest::load(&cache_dir, &treefmt_toml)
+    };
     CLOG.debug(&format!("load cache: {}", start_time.elapsed().as_millis()));
     // Insert the new formatter configs
     let cache = cache.update_formatters(formatters.clone());
