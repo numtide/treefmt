@@ -43,13 +43,14 @@ quite difficult.
 
 ```
 treefmt 0.1.0
-The various kinds of commands that `treefmt` can execute
+✨  format all your language!
 
 USAGE:
-    treefmt [FLAGS] [OPTIONS] [SUBCOMMAND]
+    treefmt [FLAGS] [OPTIONS] [paths]...
 
 FLAGS:
     -h, --help       Prints help information
+        --init       Create a new treefmt.toml
     -q, --quiet      No output printed to stdout
     -V, --version    Prints version information
     -v, --verbose    Log verbosity is based off the number of v used
@@ -60,9 +61,8 @@ OPTIONS:
     -C <work-dir>                  Run as if treefmt was started in <work-dir> instead of the current working directory
                                    [default: .]
 
-SUBCOMMANDS:
-    --init    Init a new project with a default config
-    help      Prints this message or the help of the given subcommand(s)
+ARGS:
+    <paths>...    Paths to format [default: .]
 ```
 
 ## Configuration format

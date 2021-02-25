@@ -22,9 +22,9 @@ pub enum Command {
 /// ✨  format all your language!
 #[derive(Debug, StructOpt)]
 pub struct Cli {
-    /// Main command to run
-    #[structopt(subcommand)]
-    pub cmd: Option<Command>,
+    /// Create a new treefmt.toml
+    #[structopt(long = "init")]
+    pub init: bool,
 
     /// Log verbosity is based off the number of v used
     #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
@@ -60,9 +60,10 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
 
 /// Run a command with the given logger
 pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
-    match cli.cmd {
-        Some(Command::Init {}) => init_cmd(&cli.work_dir)?,
-        None => format_cmd(&cli.work_dir, &cli.paths)?,
+    if cli.init {
+        init_cmd(&cli.work_dir)?
+    } else {
+        format_cmd(&cli.work_dir, &cli.paths)?
     }
 
     Ok(())
