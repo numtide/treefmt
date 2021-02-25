@@ -804,6 +804,7 @@ dependencies = [
  "console",
  "criterion",
  "filetime",
+ "globset",
  "ignore",
  "log",
  "path-clean",

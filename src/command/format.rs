@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 use std::{env, path::PathBuf};
 
-pub fn format_cmd(work_dir: PathBuf) -> anyhow::Result<()> {
+pub fn format_cmd(work_dir: PathBuf, paths: Vec<PathBuf>) -> anyhow::Result<()> {
     // Search for the treefmt.toml from there.
     let treefmt_toml = match config::lookup(&work_dir) {
         Some(p) => p,
@@ -50,7 +50,7 @@ pub fn format_cmd(work_dir: PathBuf) -> anyhow::Result<()> {
     fs::create_dir_all(&cache_dir)?;
 
     // Finally run the main formatter logic from the engine.
-    run_treefmt(work_dir, cache_dir, treefmt_toml)?;
+    run_treefmt(&work_dir, &cache_dir, &treefmt_toml, &paths)?;
 
     Ok(())
 }

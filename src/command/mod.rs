@@ -41,6 +41,10 @@ pub struct Cli {
     #[structopt(short = "C", default_value = ".")]
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
     pub work_dir: PathBuf,
+
+    #[structopt(default_value = ".")]
+    /// Paths to format
+    pub paths: Vec<PathBuf>,
 }
 
 /// Use this instead of Cli::from_args(). We do a little bit of post-processing here.
@@ -58,7 +62,7 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
 pub fn run_cli(cli: Cli) -> anyhow::Result<()> {
     match cli.cmd {
         Some(Command::Init {}) => init_cmd(cli.work_dir)?,
-        None => format_cmd(cli.work_dir)?,
+        None => format_cmd(cli.work_dir, cli.paths)?,
     }
 
     Ok(())

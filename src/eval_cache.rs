@@ -5,11 +5,11 @@ use anyhow::{anyhow, Error, Result};
 use filetime::FileTime;
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
-use std::collections::BTreeMap;
 use std::fmt;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::PathBuf;
+use std::{collections::BTreeMap, fs::Metadata};
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 /// RootManifest
@@ -200,22 +200,4 @@ mod tests {
         );
         Ok(())
     }
-}
-
-/// Mtime represents a unix epoch file modification time
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
-pub struct Mtime(i64);
-
-impl fmt::Display for Mtime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-/// Small utility that stat() and retrieve the mtime of a file
-pub fn get_mtime(path: &PathBuf) -> Result<Mtime> {
-    let metadata = std::fs::metadata(path)?;
-    Ok(Mtime(
-        FileTime::from_last_modification_time(&metadata).unix_seconds(),
-    ))
 }

@@ -1,200 +1,171 @@
-//! The main formatting engine logic should be in this module.
+//! The main formatting engine logic is in this module.
 
-use crate::eval_cache::{check_treefmt, create_manifest, get_mtime, read_manifest, RootManifest};
-use crate::{config, CmdContext, CmdMeta, FileMeta, CLOG};
-use anyhow::{Error, Result};
-use rayon::prelude::*;
-use std::collections::BTreeSet;
+use crate::{config, formatter::FormatterName, CLOG};
+use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
+use ignore::WalkBuilder;
+use std::collections::BTreeMap;
 use std::iter::Iterator;
 use std::path::PathBuf;
-use std::process::Command;
 
 /// Run the treefmt
-pub fn run_treefmt(cwd: PathBuf, cache_dir: PathBuf, treefmt_toml: PathBuf) -> anyhow::Result<()> {
-    let project_config = config::from_path(&treefmt_toml)?;
+pub fn run_treefmt(
+    work_dir: &PathBuf,
+    cache_dir: &PathBuf,
+    tree_config_file: &PathBuf,
+    paths: &Vec<PathBuf>,
+) -> anyhow::Result<()> {
+    assert!(work_dir.is_absolute());
+    assert!(cache_dir.is_absolute());
+    assert!(tree_config_file.is_absolute());
 
-    // Load the manifest if it exists, otherwise print the error and use an empty manifest
-    let mfst: RootManifest = match read_manifest(&treefmt_toml, &cache_dir) {
-        Ok(mfst) => mfst,
-        Err(err) => {
-            CLOG.warn(&format!("Using empty manifest due to error: {}", err));
-            RootManifest::default()
+    let tree_root = tree_config_file.parent().unwrap().to_path_buf();
+
+    // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
+    let paths = paths.iter().fold(vec![], |mut sum, path| {
+        let abs_path = expand_path(path, work_dir);
+        if !abs_path.starts_with(&tree_root) {
+            CLOG.warn(&format!(
+                "Ignoring path {}, it is not in the project root",
+                path.display()
+            ));
+        } else {
+            sum.push(abs_path);
         }
+        sum
+    });
+
+    // Let's check that there is at least one path to format.
+    if paths.is_empty() {
+        CLOG.warn(&format!("Aborting, no paths to format"));
+        return Ok(());
+    }
+
+    // Load the treefmt.toml file
+    let project_config = config::from_path(&tree_config_file)?;
+
+    // Load all the formatter instances from the config. Ignore the ones that failed.
+    let formatters =
+        project_config
+            .formatter
+            .iter()
+            .fold(BTreeMap::new(), |mut sum, (name, fmt_config)| {
+                match Formatter::from_config(&tree_root.clone(), &name, &fmt_config) {
+                    Ok(fmt_matcher) => {
+                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                    }
+                    Err(err) => CLOG.error(&format!(
+                        "Ignoring formatter #{} due to error: {}",
+                        name, err
+                    )),
+                };
+                sum
+            });
+
+    // Configure the tree walker
+    let walker = {
+        // For some reason the WalkBuilder must start with one path, but can add more paths later.
+        let mut builder = WalkBuilder::new(paths.first().unwrap());
+        // Add the other paths
+        for path in paths[1..].iter() {
+            builder.add(path);
+        }
+        // TODO: builder has a lot of interesting options.
+        builder.build()
     };
 
-    // Once the treefmt found the $XDG_CACHE_DIR/treefmt/eval-cache/ folder,
-    // it will try to scan the manifest and passed it into check_treefmt function
-    let old_ctx = create_command_context(&cwd, &project_config)?;
-    // TODO: Resolve all of the formatters paths. If missing, print an error, remove the formatters from the list and continue.
+    // Start a collection of formatter names to path to mtime
+    let mut matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = BTreeMap::new();
 
-    // Compare the list of files with the manifest, keep the ones that are not in the manifest
-    let ctxs = check_treefmt(&treefmt_toml, &old_ctx, &mfst)?;
-    let context = if mfst.manifest.is_empty() && ctxs.is_empty() {
-        &old_ctx
-    } else {
-        &ctxs
-    };
+    // Now traverse the filesystem and classify each file. We also want the file mtime to see if it changed
+    // afterwards.
+    for walk_entry in walker {
+        match walk_entry {
+            Ok(dir_entry) => {
+                if let Some(file_type) = dir_entry.file_type() {
+                    if !file_type.is_dir() {
+                        let path = dir_entry.path().to_path_buf();
+                        // FIXME: complain if multiple matchers match the same path.
+                        for (_, fmt) in formatters.clone().into_iter() {
+                            if fmt.clone().is_match(&path) {
+                                let mtime = get_meta_mtime(&dir_entry.metadata().unwrap());
 
-    println!("===========================");
-    for c in context {
-        if !c.metadata.is_empty() {
-            println!("{}", c.name);
-            println!("Working Directory: {}", c.work_dir.display());
-            println!("Files:");
-            for m in &c.metadata {
-                let path = &m.path;
-                println!(" - {}", path.display());
+                                matches
+                                    .entry(fmt.name)
+                                    .or_insert_with(BTreeMap::new)
+                                    .insert(path.clone(), mtime);
+                            }
+                        }
+                    }
+                } else {
+                    CLOG.warn(&format!(
+                        "Couldn't get file type for {:?}",
+                        dir_entry.path()
+                    ))
+                }
             }
-            println!("===========================");
+            Err(err) => {
+                CLOG.warn(&format!("traversal error: {}", err));
+            }
         }
     }
-    // TODO: report errors (both Err(_), and Ok(bad status))
-    let _outputs: Vec<std::io::Result<std::process::Output>> = context
-        .par_iter()
-        .map(|c| {
-            let arg = &c.options;
-            let mut cmd_arg = Command::new(&c.path);
-            // Set the command to run under its working directory.
-            cmd_arg.current_dir(&c.work_dir);
-            // Append the default options to the command.
-            cmd_arg.args(arg);
-            // Append all of the file paths to format.
-            let paths = c.metadata.iter().map(|f| &f.path);
-            cmd_arg.args(paths);
-            // And run
-            cmd_arg.output()
-        })
-        .collect();
 
-    if mfst.manifest.is_empty() && ctxs.is_empty() {
-        CLOG.info("First time running treefmt");
-        CLOG.info("capturing formatted file's state...");
-        create_manifest(treefmt_toml, cache_dir, old_ctx)?;
-    } else {
-        // Read the current status of files and insert into the manifest.
-        let new_mfst: Vec<CmdContext> = mfst
-            .manifest
-            .values()
-            .map(|e| e.clone().update_meta())
-            .collect::<Result<Vec<CmdContext>, Error>>()?;
+    // Start another collection of formatter names to path to mtime.
+    //
+    // This time to collect the new paths that have been formatted.
+    let mut new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = BTreeMap::new();
 
-        println!("Format successful");
-        println!("capturing formatted file's state...");
-        create_manifest(treefmt_toml, cache_dir, new_mfst)?;
+    // Now run all the formatters and collect the formatted paths
+    // TODO: do this in parallel
+    for (formatter_name, path_mtime) in matches.clone().into_iter() {
+        let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
+        let formatter = formatters.get(&formatter_name).unwrap();
+        match formatter.clone().fmt(&paths.clone()) {
+            // FIXME: do we care about the output?
+            Ok(_) => {
+                // Get the new mtimes and compare them to the original ones
+                let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
+                    let mtime = get_path_mtime(&path).unwrap();
+                    sum.insert(path.clone(), mtime);
+                    sum
+                });
+                new_matches.insert(formatter_name.clone(), new_paths);
+            }
+            Err(err) => {
+                // FIXME: What is the right behaviour if a formatter has failed running?
+                CLOG.error(&format!("{} failed: {}", &formatter, err));
+            }
+        }
+    }
+
+    // Diff the old matches with the new matches
+    let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> = new_matches
+        .clone()
+        .into_iter()
+        .fold(BTreeMap::new(), |mut sum, (name, new_paths)| {
+            let old_paths = matches.get(&name).unwrap().clone();
+            let filtered = new_paths
+                .clone()
+                .iter()
+                .filter_map(|(k, v)| {
+                    if old_paths.get(k).unwrap() != v {
+                        Some(k.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            sum.insert(name, filtered);
+            sum
+        });
+
+    // Finally display all the paths that have been formatted
+    for (name, paths) in changed_matches.into_iter() {
+        println!("{}:", name);
+        for path in paths {
+            println!("- {}", path.display());
+        }
     }
 
     Ok(())
-}
-
-/// Convert glob pattern into list of pathBuf
-pub fn glob_to_path(
-    cwd: &PathBuf,
-    includes: &[String],
-    excludes: &[String],
-) -> anyhow::Result<Vec<PathBuf>> {
-    use ignore::{overrides::OverrideBuilder, WalkBuilder};
-
-    let mut overrides_builder = OverrideBuilder::new(cwd);
-
-    for include in includes {
-        overrides_builder.add(include)?;
-    }
-
-    for exclude in excludes {
-        overrides_builder.add(&format!("!{}", exclude))?;
-    }
-
-    let overrides = overrides_builder.build()?;
-
-    Ok(WalkBuilder::new(cwd)
-        .overrides(overrides)
-        .build()
-        .filter_map(|e| {
-            e.ok().and_then(|f| {
-                match f.file_type() {
-                    // Skip directory entries
-                    Some(t) if t.is_dir() => None,
-                    _ => Some(f.into_path()),
-                }
-            })
-        })
-        .collect())
-}
-
-/// Convert each PathBuf into FileMeta
-/// FileMeta consist of file's path and its modification times
-pub fn path_to_filemeta(paths: Vec<PathBuf>) -> Result<BTreeSet<FileMeta>> {
-    let mut filemeta = BTreeSet::new();
-    for p in paths {
-        let mtime = get_mtime(&p)?;
-        if !filemeta.insert(FileMeta {
-            mtime,
-            path: p.clone(),
-        }) {
-            CLOG.warn("Duplicated file detected:");
-            CLOG.warn(&format!(" - {} ", p.display()));
-            CLOG.warn("Maybe you want to format one file with different formatter?");
-        }
-    }
-    Ok(filemeta)
-}
-
-/// Creating command configuration based on treefmt.toml
-pub fn create_command_context(
-    cwd: &PathBuf,
-    toml_content: &config::Root,
-) -> Result<Vec<CmdContext>> {
-    let cmd_context: Vec<CmdContext> = toml_content
-        .formatter
-        .iter()
-        .map(|(name, config)| {
-            let list_files = glob_to_path(&cwd.to_path_buf(), &config.includes, &config.excludes)?;
-            let cmd_meta = CmdMeta::new(&config.command)?;
-            Ok(CmdContext {
-                name: name.clone(),
-                mtime: cmd_meta.mtime,
-                path: cmd_meta.path,
-                options: config.options.clone(),
-                work_dir: config.work_dir.clone(),
-                metadata: path_to_filemeta(list_files)?,
-            })
-        })
-        .collect::<Result<Vec<CmdContext>, Error>>()?;
-    Ok(cmd_context)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::BTreeSet;
-
-    /// Transforming glob into file path
-    #[test]
-    fn test_glob_to_path() -> Result<()> {
-        let cwd = PathBuf::from(r"examples");
-        let includes = vec!["*.rs".to_string()];
-        let excludes: Vec<String> = vec![];
-        let glob_path = PathBuf::from(r"examples/rust/src/main.rs");
-        let mut vec_path = Vec::new();
-        vec_path.push(glob_path);
-        assert_eq!(glob_to_path(&cwd, &includes, &excludes)?, vec_path);
-        Ok(())
-    }
-
-    /// Transforming path into FileMeta
-    #[test]
-    fn test_path_to_filemeta() -> Result<()> {
-        let file_path = PathBuf::from(r"examples/rust/src/main.rs");
-        let mtime = get_mtime(&file_path)?;
-        let mut vec_path = Vec::new();
-        vec_path.push(file_path);
-        let file_meta = FileMeta {
-            mtime,
-            path: PathBuf::from(r"examples/rust/src/main.rs"),
-        };
-        let mut set_filemeta = BTreeSet::new();
-        set_filemeta.insert(file_meta);
-        assert_eq!(path_to_filemeta(vec_path)?, set_filemeta);
-        Ok(())
-    }
 }
