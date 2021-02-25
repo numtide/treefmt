@@ -3,9 +3,9 @@
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use ignore::WalkBuilder;
-use std::collections::BTreeMap;
 use std::iter::Iterator;
 use std::path::PathBuf;
+use std::{collections::BTreeMap, time::Instant};
 
 /// Run the treefmt
 pub fn run_treefmt(
@@ -17,6 +17,12 @@ pub fn run_treefmt(
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
+
+    let start_time = Instant::now();
+    let mut traversed_files: usize = 0;
+    let mut matched_files: usize = 0;
+    let mut filtered_files: usize = 0;
+    let mut reformatted_files: usize = 0;
 
     let tree_root = treefmt_toml.parent().unwrap().to_path_buf();
 
@@ -89,10 +95,16 @@ pub fn run_treefmt(
             Ok(dir_entry) => {
                 if let Some(file_type) = dir_entry.file_type() {
                     if !file_type.is_dir() {
+                        // Keep track of how many files were traversed
+                        traversed_files += 1;
+
                         let path = dir_entry.path().to_path_buf();
                         // FIXME: complain if multiple matchers match the same path.
                         for (_, fmt) in formatters.clone().into_iter() {
                             if fmt.clone().is_match(&path) {
+                                // Keep track of how many files were associated with a formatter
+                                matched_files += 1;
+
                                 let mtime = get_meta_mtime(&dir_entry.metadata().unwrap());
 
                                 matches
@@ -128,6 +140,10 @@ pub fn run_treefmt(
     for (formatter_name, path_mtime) in matches.clone().into_iter() {
         let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
         let formatter = formatters.get(&formatter_name).unwrap();
+
+        // Keep track of the paths that are actually going to be formatted
+        filtered_files += paths.len();
+
         match formatter.clone().fmt(&paths.clone()) {
             // FIXME: do we care about the output?
             Ok(_) => {
@@ -175,11 +191,28 @@ pub fn run_treefmt(
 
     // Finally display all the paths that have been formatted
     for (name, paths) in changed_matches.into_iter() {
+        // Keep track of how many files were reformatted
+        reformatted_files += paths.len();
         println!("{}:", name);
         for path in paths {
             println!("- {}", path.display());
         }
     }
+
+    println!(
+        r#"
+traversed {} files
+matched {} files to formatters
+left with {} files after cache
+of whom {} files were re-formatted
+all of this in {} milliseconds
+        "#,
+        traversed_files,
+        matched_files,
+        filtered_files,
+        reformatted_files,
+        start_time.elapsed().as_millis()
+    );
 
     Ok(())
 }
