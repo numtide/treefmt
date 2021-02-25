@@ -3,9 +3,9 @@ use crate::CLOG;
 use anyhow::Context;
 use console::style;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
-pub fn init_cmd(work_dir: &PathBuf) -> anyhow::Result<()> {
+pub fn init_cmd(work_dir: &Path) -> anyhow::Result<()> {
     let file_path = work_dir.join(config::FILENAME);
     // TODO: detect if file exists
     fs::write(

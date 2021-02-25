@@ -4,9 +4,9 @@ use crate::CLOG;
 use anyhow::anyhow;
 use directories::ProjectDirs;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn format_cmd(work_dir: &PathBuf, paths: &[PathBuf], clear_cache: bool) -> anyhow::Result<()> {
+pub fn format_cmd(work_dir: &Path, paths: &[PathBuf], clear_cache: bool) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
         None => {
