@@ -1,6 +1,6 @@
 //! The main formatting engine logic is in this module.
 
-use crate::{config, formatter::FormatterName, CLOG};
+use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use ignore::WalkBuilder;
 use std::collections::BTreeMap;
@@ -11,14 +11,14 @@ use std::path::PathBuf;
 pub fn run_treefmt(
     work_dir: &PathBuf,
     cache_dir: &PathBuf,
-    tree_config_file: &PathBuf,
+    treefmt_toml: &PathBuf,
     paths: &Vec<PathBuf>,
 ) -> anyhow::Result<()> {
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
-    assert!(tree_config_file.is_absolute());
+    assert!(treefmt_toml.is_absolute());
 
-    let tree_root = tree_config_file.parent().unwrap().to_path_buf();
+    let tree_root = treefmt_toml.parent().unwrap().to_path_buf();
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
@@ -41,7 +41,7 @@ pub fn run_treefmt(
     }
 
     // Load the treefmt.toml file
-    let project_config = config::from_path(&tree_config_file)?;
+    let project_config = config::from_path(&treefmt_toml)?;
 
     // Load all the formatter instances from the config. Ignore the ones that failed.
     let formatters =
@@ -60,6 +60,12 @@ pub fn run_treefmt(
                 };
                 sum
             });
+
+    // Load the eval cache
+    let cache = CacheManifest::load(&cache_dir, &treefmt_toml);
+
+    // Insert the new formatter configs
+    let cache = cache.update_formatters(formatters.clone());
 
     // Configure the tree walker
     let walker = {
@@ -109,6 +115,9 @@ pub fn run_treefmt(
         }
     }
 
+    // Filter out all of the paths that were already in the cache
+    let matches = cache.clone().filter_matches(matches.clone());
+
     // Start another collection of formatter names to path to mtime.
     //
     // This time to collect the new paths that have been formatted.
@@ -136,6 +145,11 @@ pub fn run_treefmt(
             }
         }
     }
+
+    // Record the new matches in the cache
+    let cache = cache.add_results(new_matches.clone());
+    // And write to disk
+    cache.write(cache_dir, treefmt_toml);
 
     // Diff the old matches with the new matches
     let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> = new_matches

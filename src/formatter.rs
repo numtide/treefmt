@@ -4,6 +4,8 @@ use crate::expand_path;
 use crate::CLOG;
 use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, path::PathBuf};
 use std::{
     path::Path,
@@ -12,8 +14,51 @@ use std::{
 use which::which;
 
 /// newtype for the formatter name
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FormatterName(String);
+
+impl Serialize for FormatterName {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+// All of this is for the serde deserialized. Maybe there is a more elegant way to do this?
+struct FormatterNameVisitor;
+
+impl<'de> Visitor<'de> for FormatterNameVisitor {
+    type Value = FormatterName;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string")
+    }
+
+    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(FormatterName(value))
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(FormatterName(value.to_string()))
+    }
+}
+
+impl<'de> Deserialize<'de> for FormatterName {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_string(FormatterNameVisitor)
+    }
+}
 
 /// Display formatters as "#name"
 impl fmt::Display for FormatterName {

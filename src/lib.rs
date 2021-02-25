@@ -5,7 +5,7 @@ pub mod command;
 pub mod config;
 pub mod customlog;
 pub mod engine;
-//pub mod eval_cache;
+pub mod eval_cache;
 pub mod formatter;
 
 use anyhow::Result;
