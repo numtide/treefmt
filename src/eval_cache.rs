@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{read_to_string, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{borrow::BorrowMut, collections::BTreeMap};
 
 /// Metadata about the formatter
@@ -59,7 +59,7 @@ impl Clone for CacheManifest {
 
 impl CacheManifest {
     /// Loads the manifest and returns an error if it failed
-    pub fn try_load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<Self> {
+    pub fn try_load(cache_dir: &Path, treefmt_toml: &Path) -> Result<Self> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
         CLOG.debug(&format!("cache: loading from {}", manifest_path.display()));
         let content = read_to_string(&manifest_path)?;
@@ -69,7 +69,7 @@ impl CacheManifest {
 
     /// Always loads the manifest. If an error occured, log and return an empty manifest.
     #[must_use]
-    pub fn load(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Self {
+    pub fn load(cache_dir: &Path, treefmt_toml: &Path) -> Self {
         match Self::try_load(cache_dir, treefmt_toml) {
             Ok(manifest) => manifest,
             Err(err) => {
@@ -83,7 +83,7 @@ impl CacheManifest {
     }
 
     /// Seralizes back the manifest into place.
-    pub fn try_write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> Result<()> {
+    pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path) -> Result<()> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
         CLOG.debug(&format!("cache: writing to {}", manifest_path.display()));
         let mut f = File::create(manifest_path)?;
@@ -100,7 +100,7 @@ impl CacheManifest {
     }
 
     /// Seralizes back the manifest into place.
-    pub fn write(self, cache_dir: &PathBuf, treefmt_toml: &PathBuf) {
+    pub fn write(self, cache_dir: &Path, treefmt_toml: &Path) {
         if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
             CLOG.warn(&format!("cache: failed to write to disk: {}", err));
         };
@@ -224,7 +224,7 @@ fn load_formatter_info(fmt: &Formatter) -> Result<FormatterInfo> {
 }
 
 /// Derive the manifest filename from the treefmt_toml path.
-fn get_manifest_path(cache_dir: &PathBuf, treefmt_toml: &PathBuf) -> PathBuf {
+fn get_manifest_path(cache_dir: &Path, treefmt_toml: &Path) -> PathBuf {
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
     // FIXME: it's a shame that we can't access the underlying OsStr bytes

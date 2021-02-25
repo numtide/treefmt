@@ -6,9 +6,10 @@ use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{fmt, path::PathBuf};
 use std::{
+    fmt,
     path::Path,
+    path::PathBuf,
     process::{Command, Output},
 };
 use which::which;
@@ -119,7 +120,7 @@ impl Formatter {
     }
 
     /// Load the formatter matcher from a config fragment
-    pub fn from_config(config_dir: &PathBuf, name: &str, cfg: &FmtConfig) -> Result<Self> {
+    pub fn from_config(config_dir: &Path, name: &str, cfg: &FmtConfig) -> Result<Self> {
         let name = FormatterName(name.to_string());
         // Expand the work_dir to an absolute path, using the config directory as a reference.
         let work_dir = expand_path(&cfg.work_dir, config_dir);

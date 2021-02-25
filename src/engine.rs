@@ -4,14 +4,14 @@ use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use ignore::WalkBuilder;
 use std::iter::Iterator;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, time::Instant};
 
 /// Run the treefmt
 pub fn run_treefmt(
-    work_dir: &PathBuf,
-    cache_dir: &PathBuf,
-    treefmt_toml: &PathBuf,
+    work_dir: &Path,
+    cache_dir: &Path,
+    treefmt_toml: &Path,
     paths: &[PathBuf],
     clear_cache: bool,
 ) -> anyhow::Result<()> {

@@ -1,9 +1,9 @@
 //! Contains the project configuration schema and parsing
 use anyhow::Result;
 use serde::Deserialize;
-use std::collections::BTreeMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::{collections::BTreeMap, path::Path};
 
 /// Name of the config file
 pub const FILENAME: &str = "treefmt.toml";
@@ -41,8 +41,8 @@ fn cwd() -> PathBuf {
 
 /// Returns an absolute path to the treefmt.toml file. From the current folder, and up.
 #[must_use]
-pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
-    let mut cwd = dir.clone();
+pub fn lookup(dir: &Path) -> Option<PathBuf> {
+    let mut cwd = dir.to_path_buf();
     loop {
         let config_file = cwd.join(FILENAME);
         if config_file.exists() {
@@ -58,7 +58,7 @@ pub fn lookup(dir: &PathBuf) -> Option<PathBuf> {
 }
 
 /// Loads the treefmt.toml config from the given file path.
-pub fn from_path(file_path: &PathBuf) -> Result<Root> {
+pub fn from_path(file_path: &Path) -> Result<Root> {
     // Load the file
     let content = read_to_string(file_path)?;
     // Parse the config

@@ -13,9 +13,9 @@ use customlog::CustomLogOutput;
 use filetime::FileTime;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::fs::Metadata;
 use std::path::PathBuf;
+use std::{fmt, path::Path};
 
 /// The global custom log and user-facing message output.
 pub static CLOG: CustomLogOutput = CustomLogOutput::new();
@@ -31,7 +31,7 @@ impl fmt::Display for Mtime {
 }
 
 /// Small utility that stat() and retrieve the mtime of a file path
-pub fn get_path_mtime(path: &PathBuf) -> Result<Mtime> {
+pub fn get_path_mtime(path: &Path) -> Result<Mtime> {
     let metadata = std::fs::metadata(path)?;
     Ok(get_meta_mtime(&metadata))
 }
@@ -45,9 +45,9 @@ pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
 /// Returns an absolute path. If the path is absolute already, leave it alone. Otherwise join it to the reference path.
 /// Then clean all superfluous ../
 #[must_use]
-pub fn expand_path(path: &PathBuf, reference: &PathBuf) -> PathBuf {
+pub fn expand_path(path: &Path, reference: &Path) -> PathBuf {
     let new_path = if path.is_absolute() {
-        path.clone()
+        path.to_path_buf()
     } else {
         reference.join(path)
     };
