@@ -3,6 +3,7 @@
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use ignore::WalkBuilder;
+use rayon::prelude::*;
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, time::Instant};
@@ -22,7 +23,7 @@ pub fn run_treefmt(
     let start_time = Instant::now();
     let mut traversed_files: usize = 0;
     let mut matched_files: usize = 0;
-    let mut filtered_files: usize = 0;
+    let filtered_files: usize;
     let mut reformatted_files: usize = 0;
 
     // unwrap: since the file must be in a folder, the parent path must exist
@@ -148,50 +149,54 @@ pub fn run_treefmt(
 
     CLOG.debug(&format!("filter_matches: {:?}", start_time.elapsed()));
 
-    // Start another collection of formatter names to path to mtime.
-    //
-    // This time to collect the new paths that have been formatted.
-    let mut new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = BTreeMap::new();
+    // Keep track of the paths that are actually going to be formatted
+    filtered_files = matches.values().map(|x| x.len()).sum();
 
-    // Now run all the formatters and collect the formatted paths
+    // Now run all the formatters and collect the formatted paths.
     // TODO: do this in parallel
-    for (formatter_name, path_mtime) in matches.clone() {
-        let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
-        // unwrap: the key exists since matches was built from that previous collection
-        let formatter = formatters.get(&formatter_name).unwrap();
+    let new_matches = matches
+        .par_iter()
+        .map(|(formatter_name, path_mtime)| {
+            let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
+            // unwrap: the key exists since matches was built from that previous collection
+            let formatter = formatters.get(&formatter_name).unwrap();
 
-        if !paths.is_empty() {
-            // Keep track of the paths that are actually going to be formatted
-            filtered_files += paths.len();
+            // Don't run the formatter if there are no paths to format!
+            if paths.is_empty() {
+                (formatter_name.clone(), path_mtime.clone())
+            } else {
+                let start_time = Instant::now();
 
-            let start_time = Instant::now();
+                match formatter.clone().fmt(&paths) {
+                    // FIXME: do we care about the output?
+                    Ok(_) => {
+                        CLOG.info(&format!(
+                            "{}: {} files formatted in {:?}",
+                            formatter.name,
+                            paths.len(),
+                            start_time.elapsed()
+                        ));
 
-            match formatter.clone().fmt(&paths.clone()) {
-                // FIXME: do we care about the output?
-                Ok(_) => {
-                    CLOG.info(&format!(
-                        "{}: {} files formatted in {:?}",
-                        formatter.name,
-                        paths.len(),
-                        start_time.elapsed()
-                    ));
-
-                    // Get the new mtimes and compare them to the original ones
-                    let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
-                        // unwrap: assume that the file still exists after formatting
-                        let mtime = get_path_mtime(&path).unwrap();
-                        sum.insert(path, mtime);
-                        sum
-                    });
-                    new_matches.insert(formatter_name.clone(), new_paths);
-                }
-                Err(err) => {
-                    // FIXME: What is the right behaviour if a formatter has failed running?
-                    CLOG.error(&format!("{} failed: {}", &formatter, err));
+                        // Get the new mtimes and compare them to the original ones
+                        let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
+                            // unwrap: assume that the file still exists after formatting
+                            let mtime = get_path_mtime(&path).unwrap();
+                            sum.insert(path, mtime);
+                            sum
+                        });
+                        // Return the new mtimes
+                        (formatter_name.clone(), new_paths)
+                    }
+                    Err(err) => {
+                        // FIXME: What is the right behaviour if a formatter has failed running?
+                        CLOG.error(&format!("{} failed: {}", &formatter, err));
+                        // Assume the paths were not formatted
+                        (formatter_name.clone(), path_mtime.clone())
+                    }
                 }
             }
-        }
-    }
+        })
+        .collect::<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>>();
     CLOG.debug(&format!("format: {:?}", start_time.elapsed()));
 
     // Record the new matches in the cache
