@@ -9,33 +9,30 @@
 
 [![Support room on Matrix](https://img.shields.io/matrix/treefmt:numtide.com.svg?label=%23treefmt%3Anumtide.com&logo=matrix&server_fqdn=matrix.numtide.com)](https://matrix.to/#/#treefmt:numtide.com)
 
-**Status: experimental** -- not all the features described here are working
+**Status: experimental** -- not all features described here are working
 yet.
 
-Every project has different languages and code formatters, with possibly
-different configurations. When jumping between project it always takes a bit
-of time to get accustomed to them and update our editor configuration.
+Every project has different languages and set of code formatters, with
+different configurations. When jumping between projects, it always takes a bit
+of time to get accustomed to them and update the editor configuration.
 
 This project solves that problem by proposing a unified CLI interface that
-traverses the project file tree, and maps each file to a different code
-formatter. Type `treefmt` and it re-formats the repository.
-
-Treefmt also includes some file traversal optimizations which should make the
-common invocation faster.
+traverses the project file tree and maps each file to a different code
+formatter. Type `treefmt`, and it re-formats the repository.
 
 ## Design decisions
 
-We assume that project code is checked into source control. Therefor, the
+We assume that the project code is checked into source control. Therefore, the
 default should be to write formatter changes back in place. Options like
-`--dry-run` are not needed, the source control is relied upon to revert or
+`--dry-run` are not needed; the source control is relied upon to revert or
 check for code changes.
 
 `treefmt` is responsible for traversing the file-system and mapping files to
 specific code formatters.
 
 Only _one_ formatter per file. `treefmt` enforces that only one tool is
-executed per file. Guaranteeing two tools to product idempotent outputs is
-quite difficult.
+executed per file. Guaranteeing two tools to produce idempotent outputs is
+quite tricky.
 
 ## Usage
 
@@ -109,9 +106,9 @@ formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh > formatt
 
 ### CI integration
 
-We can assume that code lives in a source control.
+We can assume that code lives in source control.
 
-For example a Git integration would look like this:
+For example, a Git integration would look like this:
 
 ```sh
 #!/usr/bin/env bash
