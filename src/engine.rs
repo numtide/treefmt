@@ -50,10 +50,7 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
-    CLOG.debug(&format!(
-        "load config: {}",
-        start_time.elapsed().as_millis()
-    ));
+    CLOG.debug(&format!("load config: {:?}", start_time.elapsed()));
 
     // Load all the formatter instances from the config. Ignore the ones that failed.
     let formatters =
@@ -73,10 +70,7 @@ pub fn run_treefmt(
                 sum
             });
 
-    CLOG.debug(&format!(
-        "load formatters: {}",
-        start_time.elapsed().as_millis()
-    ));
+    CLOG.debug(&format!("load formatters: {:?}", start_time.elapsed()));
 
     // Load the eval cache
     let cache = if clear_cache {
@@ -85,7 +79,7 @@ pub fn run_treefmt(
     } else {
         CacheManifest::load(&cache_dir, &treefmt_toml)
     };
-    CLOG.debug(&format!("load cache: {}", start_time.elapsed().as_millis()));
+    CLOG.debug(&format!("load cache: {:?}", start_time.elapsed()));
     // Insert the new formatter configs
     let cache = cache.update_formatters(formatters.clone());
 
@@ -98,6 +92,8 @@ pub fn run_treefmt(
             builder.add(path);
         }
         // TODO: builder has a lot of interesting options.
+        // TODO: use build_parallel with a Visitor.
+        //       See https://docs.rs/ignore/0.4.17/ignore/struct.WalkParallel.html#method.visit
         builder.build()
     };
 
@@ -142,15 +138,12 @@ pub fn run_treefmt(
             }
         }
     }
-    CLOG.debug(&format!("tree walk: {}", start_time.elapsed().as_millis()));
+    CLOG.debug(&format!("tree walk: {:?}", start_time.elapsed()));
 
     // Filter out all of the paths that were already in the cache
     let matches = cache.clone().filter_matches(matches);
 
-    CLOG.debug(&format!(
-        "filter_matches: {}",
-        start_time.elapsed().as_millis()
-    ));
+    CLOG.debug(&format!("filter_matches: {:?}", start_time.elapsed()));
 
     // Start another collection of formatter names to path to mtime.
     //
@@ -173,10 +166,10 @@ pub fn run_treefmt(
                 // FIXME: do we care about the output?
                 Ok(_) => {
                     CLOG.info(&format!(
-                        "{}: {} files formatted in {} millis",
+                        "{}: {} files formatted in {:?}",
                         formatter.name,
                         paths.len(),
-                        start_time.elapsed().as_millis()
+                        start_time.elapsed()
                     ));
 
                     // Get the new mtimes and compare them to the original ones
@@ -194,16 +187,13 @@ pub fn run_treefmt(
             }
         }
     }
-    CLOG.debug(&format!("format: {}", start_time.elapsed().as_millis()));
+    CLOG.debug(&format!("format: {:?}", start_time.elapsed()));
 
     // Record the new matches in the cache
     let cache = cache.add_results(new_matches.clone());
     // And write to disk
     cache.write(cache_dir, treefmt_toml);
-    CLOG.debug(&format!(
-        "write cache: {}",
-        start_time.elapsed().as_millis()
-    ));
+    CLOG.debug(&format!("write cache: {:?}", start_time.elapsed()));
 
     // Diff the old matches with the new matches
     let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> =
@@ -242,13 +232,13 @@ traversed {} files
 matched {} files to formatters
 left with {} files after cache
 of whom {} files were re-formatted
-all of this in {} milliseconds
+all of this in {:?}
         "#,
         traversed_files,
         matched_files,
         filtered_files,
         reformatted_files,
-        start_time.elapsed().as_millis()
+        start_time.elapsed()
     );
 
     Ok(())
