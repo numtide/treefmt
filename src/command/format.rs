@@ -11,6 +11,7 @@ pub fn format_cmd(
     work_dir: &Path,
     paths: &[PathBuf],
     clear_cache: bool,
+    fail_on_change: bool,
 ) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
@@ -67,6 +68,7 @@ pub fn format_cmd(
         &config_file,
         &paths,
         clear_cache,
+        fail_on_change,
     )?;
 
     Ok(())

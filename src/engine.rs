@@ -2,6 +2,7 @@
 
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
+use anyhow::anyhow;
 use ignore::WalkBuilder;
 use rayon::prelude::*;
 use std::iter::Iterator;
@@ -16,6 +17,7 @@ pub fn run_treefmt(
     treefmt_toml: &Path,
     paths: &[PathBuf],
     clear_cache: bool,
+    fail_on_change: bool,
 ) -> anyhow::Result<()> {
     assert!(tree_root.is_absolute());
     assert!(work_dir.is_absolute());
@@ -250,6 +252,11 @@ all of this in {:?}
         reformatted_files,
         start_time.elapsed()
     );
+
+    // Fail if --fail-on-change was passed.
+    if reformatted_files > 0 && fail_on_change {
+        return Err(anyhow!("fail-on-change"));
+    }
 
     Ok(())
 }

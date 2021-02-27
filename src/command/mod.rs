@@ -30,6 +30,10 @@ pub struct Cli {
     #[structopt(long = "clear-cache")]
     pub clear_cache: bool,
 
+    /// Exit with error if any changes were made. Useful for CI.
+    #[structopt(long = "fail-on-change")]
+    pub fail_on_change: bool,
+
     /// Log verbosity is based off the number of v used
     #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
     pub verbosity: u8,
@@ -76,7 +80,13 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
     } else {
-        format_cmd(&cli.tree_root, &cli.work_dir, &cli.paths, cli.clear_cache)?
+        format_cmd(
+            &cli.tree_root,
+            &cli.work_dir,
+            &cli.paths,
+            cli.clear_cache,
+            cli.fail_on_change,
+        )?
     }
 
     Ok(())

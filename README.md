@@ -46,12 +46,13 @@ USAGE:
     treefmt [FLAGS] [OPTIONS] [paths]...
 
 FLAGS:
-        --clear-cache    Clear the evaluation cache. Use in case the cache is not precise enough
-    -h, --help           Prints help information
-        --init           Create a new treefmt.toml
-    -q, --quiet          No output printed to stdout
-    -V, --version        Prints version information
-    -v, --verbose        Log verbosity is based off the number of v used
+        --clear-cache       Clear the evaluation cache. Use in case the cache is not precise enough
+        --fail-on-change    Exit with error if any changes were made. Useful for CI
+    -h, --help              Prints help information
+        --init              Create a new treefmt.toml
+    -q, --quiet             No output printed to stdout
+    -V, --version           Prints version information
+    -v, --verbose           Log verbosity is based off the number of v used
 
 OPTIONS:
         --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
@@ -109,24 +110,17 @@ formatted code out. Eg: `cat ./my_file.sh | treefmt --stdin my_file.sh > formatt
 
 ### CI integration
 
-We can assume that code lives in source control.
+The `--fail-on-change` flag can be used to exit with error if any files were
+re-formatted.
 
-For example, a Git integration would look like this:
+Eg:
 
 ```sh
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Format all of the code
-treefmt
-
-# Check that there are no changes in the code
-if [[ -n "$(git status --porcelain -unormal)" ]]; then
-  echo "Some code needs formatting! Please run \`treefmt\`.
-  git status -unormal
-  exit 1
-fi
-echo "OK"
+# Format all of the code and exit with error if there are any changes
+treefmt --fail-on-change
 ```
 
 ## Interfaces
