@@ -120,10 +120,10 @@ impl Formatter {
     }
 
     /// Load the formatter matcher from a config fragment
-    pub fn from_config(config_dir: &Path, name: &str, cfg: &FmtConfig) -> Result<Self> {
+    pub fn from_config(tree_root: &Path, name: &str, cfg: &FmtConfig) -> Result<Self> {
         let name = FormatterName(name.to_string());
-        // Expand the work_dir to an absolute path, using the config directory as a reference.
-        let work_dir = expand_path(&cfg.work_dir, config_dir);
+        // Expand the work_dir to an absolute path, using the project root as a reference.
+        let work_dir = expand_path(&cfg.work_dir, tree_root);
         // Resolve the path to the binary
         let command = which(&cfg.command)?;
         CLOG.debug(&format!(
