@@ -46,6 +46,10 @@ pub struct Cli {
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
     pub work_dir: PathBuf,
 
+    #[structopt(long = "tree-root")]
+    /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
+    pub tree_root: Option<PathBuf>,
+
     #[structopt(default_value = ".")]
     /// Paths to format
     pub paths: Vec<PathBuf>,
@@ -59,6 +63,11 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
     // Make sure the work_dir is an absolute path. Don't use the stdlib canonicalize() function
     // because symlinks should not be resolved.
     cli.work_dir = expand_path(&cli.work_dir, &cwd);
+
+    // Make sure the tree_root is an absolute path.
+    if let Some(tree_root) = cli.tree_root {
+        cli.tree_root = Some(expand_path(&tree_root, &cwd));
+    }
     Ok(cli)
 }
 
@@ -67,7 +76,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
     } else {
-        format_cmd(&cli.work_dir, &cli.paths, cli.clear_cache)?
+        format_cmd(&cli.tree_root, &cli.work_dir, &cli.paths, cli.clear_cache)?
     }
 
     Ok(())

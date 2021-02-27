@@ -46,15 +46,17 @@ USAGE:
     treefmt [FLAGS] [OPTIONS] [paths]...
 
 FLAGS:
-    -h, --help       Prints help information
-        --init       Create a new treefmt.toml
-    -q, --quiet      No output printed to stdout
-    -V, --version    Prints version information
-    -v, --verbose    Log verbosity is based off the number of v used
+        --clear-cache    Clear the evaluation cache. Use in case the cache is not precise enough
+    -h, --help           Prints help information
+        --init           Create a new treefmt.toml
+    -q, --quiet          No output printed to stdout
+    -V, --version        Prints version information
+    -v, --verbose        Log verbosity is based off the number of v used
 
 OPTIONS:
         --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
                                    info, warn, error] [default: debug]
+        --tree-root <tree-root>    Set the location of the tree root. Defaults to the location of the treefmt.toml file
     -C <work-dir>                  Run as if treefmt was started in <work-dir> instead of the current working directory
                                    [default: .]
 

@@ -10,12 +10,14 @@ use std::{collections::BTreeMap, time::Instant};
 
 /// Run the treefmt
 pub fn run_treefmt(
+    tree_root: &Path,
     work_dir: &Path,
     cache_dir: &Path,
     treefmt_toml: &Path,
     paths: &[PathBuf],
     clear_cache: bool,
 ) -> anyhow::Result<()> {
+    assert!(tree_root.is_absolute());
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
@@ -25,9 +27,6 @@ pub fn run_treefmt(
     let mut matched_files: usize = 0;
     let filtered_files: usize;
     let mut reformatted_files: usize = 0;
-
-    // unwrap: since the file must be in a folder, the parent path must exist
-    let tree_root = treefmt_toml.parent().unwrap().to_path_buf();
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
@@ -60,7 +59,7 @@ pub fn run_treefmt(
             .formatter
             .iter()
             .fold(BTreeMap::new(), |mut sum, (name, fmt_config)| {
-                match Formatter::from_config(&tree_root.clone(), &name, &fmt_config) {
+                match Formatter::from_config(&tree_root, &name, &fmt_config) {
                     Ok(fmt_matcher) => {
                         sum.insert(fmt_matcher.name.clone(), fmt_matcher);
                     }
