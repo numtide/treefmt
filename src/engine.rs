@@ -25,6 +25,7 @@ pub fn run_treefmt(
     let mut filtered_files: usize = 0;
     let mut reformatted_files: usize = 0;
 
+    // unwrap: since the file must be in a folder, the parent path must exist
     let tree_root = treefmt_toml.parent().unwrap().to_path_buf();
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
@@ -86,6 +87,7 @@ pub fn run_treefmt(
     // Configure the tree walker
     let walker = {
         // For some reason the WalkBuilder must start with one path, but can add more paths later.
+        // unwrap: we checked before that there is at least one path in the vector
         let mut builder = WalkBuilder::new(paths.first().unwrap());
         // Add the other paths
         for path in paths[1..].iter() {
@@ -117,6 +119,7 @@ pub fn run_treefmt(
                                 // Keep track of how many files were associated with a formatter
                                 matched_files += 1;
 
+                                // unwrap: since the file exists, we assume that the metadata is also available
                                 let mtime = get_meta_mtime(&dir_entry.metadata().unwrap());
 
                                 matches
@@ -154,6 +157,7 @@ pub fn run_treefmt(
     // TODO: do this in parallel
     for (formatter_name, path_mtime) in matches.clone() {
         let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
+        // unwrap: the key exists since matches was built from that previous collection
         let formatter = formatters.get(&formatter_name).unwrap();
 
         if !paths.is_empty() {
@@ -174,6 +178,7 @@ pub fn run_treefmt(
 
                     // Get the new mtimes and compare them to the original ones
                     let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
+                        // unwrap: assume that the file still exists after formatting
                         let mtime = get_path_mtime(&path).unwrap();
                         sum.insert(path, mtime);
                         sum
@@ -200,10 +205,12 @@ pub fn run_treefmt(
         new_matches
             .into_iter()
             .fold(BTreeMap::new(), |mut sum, (name, new_paths)| {
+                // unwrap: we know that the name exists
                 let old_paths = matches.get(&name).unwrap().clone();
                 let filtered = new_paths
                     .iter()
                     .filter_map(|(k, v)| {
+                        // unwrap: we know that the key exists
                         if old_paths.get(k).unwrap() == v {
                             None
                         } else {
