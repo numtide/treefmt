@@ -50,8 +50,8 @@ pub struct Cli {
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
     pub tree_root: Option<PathBuf>,
 
-    #[structopt(default_value = ".")]
-    /// Paths to format
+    #[structopt()]
+    /// Paths to format. Defaults to formatting the whole tree.
     pub paths: Vec<PathBuf>,
 }
 

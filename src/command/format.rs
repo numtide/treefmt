@@ -39,6 +39,13 @@ pub fn format_cmd(
         config_file.clone().parent().unwrap().to_path_buf()
     });
 
+    // Default to the tree root if no paths have been given
+    let paths = if paths.is_empty() {
+        vec![tree_root.clone()]
+    } else {
+        paths.to_owned()
+    };
+
     let cache_dir = proj_dirs.cache_dir().join("eval-cache");
     // Make sure the cache directory exists.
     fs::create_dir_all(&cache_dir)?;
