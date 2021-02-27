@@ -3,6 +3,7 @@
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use ignore::WalkBuilder;
+use rayon::prelude::*;
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, time::Instant};
@@ -154,7 +155,7 @@ pub fn run_treefmt(
     // Now run all the formatters and collect the formatted paths.
     // TODO: do this in parallel
     let new_matches = matches
-        .iter()
+        .par_iter()
         .map(|(formatter_name, path_mtime)| {
             let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
             // unwrap: the key exists since matches was built from that previous collection
