@@ -153,7 +153,6 @@ pub fn run_treefmt(
     filtered_files = matches.values().map(|x| x.len()).sum();
 
     // Now run all the formatters and collect the formatted paths.
-    // TODO: do this in parallel
     let new_matches = matches
         .par_iter()
         .map(|(formatter_name, path_mtime)| {
