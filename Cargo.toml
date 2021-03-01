@@ -3,7 +3,6 @@ name = "treefmt"
 version = "0.1.0"
 authors = [
   "Andika Demas Riyandi <andika.riyan@gmail.com>",
-  "Basile Henry <bjm.henry@gmail.com>",
   "Jonas Chevalier <zimbatm@zimbatm.com>",
 ]
 edition = "2018"
