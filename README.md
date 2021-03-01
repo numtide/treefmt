@@ -151,4 +151,4 @@ If you want to discuss, we have a public Matrix channel:
 
 ## License
 
-MIT - (c) 2020 NumTide Ltd.
+MIT - (c) 2021 NumTide Ltd and contributors.
