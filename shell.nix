@@ -1,2 +1,2 @@
 { system ? builtins.currentSystem }:
-(import ./. { inherit system; }).shellNix
+(import ./flake-compat.nix { inherit system; }).shellNix

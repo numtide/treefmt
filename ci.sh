@@ -13,4 +13,4 @@ cargo test
 cargo run -- --fail-on-change
 
 # Build the nix package
-nix-build -A defaultNix.defaultPackage.x86_64-linux
+nix-build
