@@ -171,7 +171,7 @@ pub fn run_treefmt(
                     // FIXME: do we care about the output?
                     Ok(_) => {
                         CLOG.info(&format!(
-                            "{}: {} files formatted in {:?}",
+                            "{}: {} files processed in {:?}",
                             formatter.name,
                             paths.len(),
                             start_time.elapsed()
