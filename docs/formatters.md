@@ -51,7 +51,8 @@ includes = ["*.go"]
 
 ## [Ormolu](https://github.com/tweag/ormolu)
 
-Haskell formatter
+Haskell formatter. Make sure to use ormolu 0.1.4.0+ as older versions don't
+adhere to the spec.
 
 ```toml
 command = "ormolu"
@@ -84,7 +85,8 @@ includes = ["*.rs"]
 
 ## cargo fmt
 
-`cargo fmt` is not supported as it doesn't follow the spec.
+`cargo fmt` is not supported as it doesn't follow the spec. It doesn't allow
+to pass arbitrary files to be formatted, which treefmt relies on.
 
 ## [shfmt](https://github.com/mvdan/sh)
 
