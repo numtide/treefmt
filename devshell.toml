@@ -20,5 +20,7 @@ packages = [
   "nixpkgs-fmt",
   "nodePackages.prettier",
   "python3.pkgs.black",
-  "shfmt"
+  "shfmt",
+  
+  "mdbook"
 ]
