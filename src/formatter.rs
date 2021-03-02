@@ -1,7 +1,7 @@
 //! Utilities for the formatters themselves.
 use crate::config::FmtConfig;
-use crate::expand_path;
 use crate::CLOG;
+use crate::{expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::de::{self, Visitor};
@@ -137,8 +137,8 @@ impl Formatter {
         if cfg.includes.is_empty() {
             return Err(anyhow!("{} doesn't have any includes", name));
         }
-        let includes = patterns_to_glob_set(&cfg.includes)?;
-        let excludes = patterns_to_glob_set(&cfg.excludes)?;
+        let includes = patterns_to_glob_set(tree_root, &cfg.includes)?;
+        let excludes = patterns_to_glob_set(tree_root, &cfg.excludes)?;
 
         Ok(Self {
             name,
@@ -159,9 +159,10 @@ impl fmt::Display for Formatter {
 }
 
 /// Small utility to convert config globs to a GlobSet.
-fn patterns_to_glob_set(patterns: &[String]) -> Result<GlobSet> {
+fn patterns_to_glob_set(tree_root: &Path, patterns: &[String]) -> Result<GlobSet> {
     let mut sum = GlobSetBuilder::new();
     for pattern in patterns {
+        let pattern = expand_if_path(pattern.to_string(), &tree_root);
         let glob = GlobBuilder::new(&pattern).build()?;
         sum.add(glob);
     }
