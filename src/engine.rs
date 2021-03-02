@@ -25,6 +25,18 @@ pub fn run_treefmt(
     assert!(treefmt_toml.is_absolute());
 
     let start_time = Instant::now();
+    let mut phase_time = Instant::now();
+    let mut timed_debug = |description: &str| {
+        let now = Instant::now();
+        CLOG.debug(&format!(
+            "{}: {:.2?} (Δ {:.2?})",
+            description,
+            start_time.elapsed(),
+            now.saturating_duration_since(phase_time)
+        ));
+        phase_time = now;
+    };
+
     let mut traversed_files: usize = 0;
     let mut matched_files: usize = 0;
     let filtered_files: usize;
@@ -53,7 +65,7 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
-    CLOG.debug(&format!("load config: {:?}", start_time.elapsed()));
+    timed_debug("load config");
 
     // Load all the formatter instances from the config. Ignore the ones that failed.
     let formatters =
@@ -73,7 +85,7 @@ pub fn run_treefmt(
                 sum
             });
 
-    CLOG.debug(&format!("load formatters: {:?}", start_time.elapsed()));
+    timed_debug("load formatters");
 
     // Load the eval cache
     let cache = if clear_cache {
@@ -82,7 +94,7 @@ pub fn run_treefmt(
     } else {
         CacheManifest::load(&cache_dir, &treefmt_toml)
     };
-    CLOG.debug(&format!("load cache: {:?}", start_time.elapsed()));
+    timed_debug("load cache");
     // Insert the new formatter configs
     let cache = cache.update_formatters(formatters.clone());
 
@@ -143,12 +155,12 @@ pub fn run_treefmt(
             }
         }
     }
-    CLOG.debug(&format!("tree walk: {:?}", start_time.elapsed()));
+    timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
     let matches = cache.clone().filter_matches(matches);
 
-    CLOG.debug(&format!("filter_matches: {:?}", start_time.elapsed()));
+    timed_debug("filter_matches");
 
     // Keep track of the paths that are actually going to be formatted
     filtered_files = matches.values().map(|x| x.len()).sum();
@@ -171,7 +183,7 @@ pub fn run_treefmt(
                     // FIXME: do we care about the output?
                     Ok(_) => {
                         CLOG.info(&format!(
-                            "{}: {} files processed in {:?}",
+                            "{}: {} files processed in {:.2?}",
                             formatter.name,
                             paths.len(),
                             start_time.elapsed()
@@ -197,13 +209,13 @@ pub fn run_treefmt(
             }
         })
         .collect::<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>>();
-    CLOG.debug(&format!("format: {:?}", start_time.elapsed()));
+    timed_debug("format");
 
     // Record the new matches in the cache
     let cache = cache.add_results(new_matches.clone());
     // And write to disk
     cache.write(cache_dir, treefmt_toml);
-    CLOG.debug(&format!("write cache: {:?}", start_time.elapsed()));
+    timed_debug("write cache");
 
     // Diff the old matches with the new matches
     let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> =
@@ -244,7 +256,7 @@ traversed {} files
 matched {} files to formatters
 left with {} files after cache
 of whom {} files were re-formatted
-all of this in {:?}
+all of this in {:.2?}
         "#,
         traversed_files,
         matched_files,
