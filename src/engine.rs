@@ -183,7 +183,7 @@ pub fn run_treefmt(
                     // FIXME: do we care about the output?
                     Ok(_) => {
                         CLOG.info(&format!(
-                            "{}: {} files processed in {:?}",
+                            "{}: {} files processed in {:.2?}",
                             formatter.name,
                             paths.len(),
                             start_time.elapsed()
@@ -256,7 +256,7 @@ traversed {} files
 matched {} files to formatters
 left with {} files after cache
 of whom {} files were re-formatted
-all of this in {:?}
+all of this in {:.2?}
         "#,
         traversed_files,
         matched_files,
