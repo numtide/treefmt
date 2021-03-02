@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="assets/logo.svg" alt="logo" width="200">
+  <img src="docs/assets/logo.svg" alt="logo" width="200">
   <br>
   treefmt - one CLI to format the code tree
   <br>
@@ -68,28 +68,18 @@ ARGS:
 
 ## Configuration format
 
-`treefmt` depends on the `treefmt.toml` to map file extensions to actual code
-formatters. That file is searched for recursively from the current folder and
-up unless the `--config <path>` option is passed.
+In order to use `treefmt` in the project, `treefmt.toml` should exists in the root folder. For example, we want to use [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt) on our Nix project and rustfmt on our Rust project, then the `treefmt.toml` will be written as follows:
 
-### `[formatter.<name>]`
+```
+[formatters.nix]
+command = "nixpkgs-fmt"
+include = ["*.nix"]
 
-This section describes the integration between a single formatter and
-`treefmt`.
-
-- `command`: A list of arguments to execute the formatter. This will be
-  composed with the `options` attribute during invocation. The first argument
-  is the name of the executable to run.
-
-- `options`: A list of extra arguments to add to the command. This is typically
-  project-specific arguments.
-
-- `includes`: A list of glob patterns used to select files. Usually this would be
-  something like `[ "*.sh" ]` to select all the shell scripts. Sometimes,
-  full filenames can be passed. Eg: `[ "Makefile" ]`.
-
-- `excludes`: A list of glob patterns to deny. If any of these patterns match,
-  the file will be excluded.
+[formatter.rust]
+command = "rustfmt"
+options = ["--edition", "2018"]
+includes = ["*.rs"]
+```
 
 ## Use cases
 
@@ -128,7 +118,7 @@ treefmt --fail-on-change
 In order to keep the design of treefmt simple, we ask code formatters to
 adhere to the following specification.
 
-[treefmt formatter spec](docs/formatter_spec.md)
+[treefmt formatter spec](./docs/src/)
 
 If they don't, the best is to create a wrapper script that transforms the
 usage to match that spec.
@@ -143,12 +133,8 @@ usage to match that spec.
 ## Contributing
 
 All contributions are welcome! We try to keep the project simple and focused
-so not everything will be accepted. Please open an issue to discuss before
-working on a big item.
-
-If you want to discuss, we have a public Matrix channel:
-[#treefmt:numtide.com](https://matrix.to/#/#treefmt:numtide.com)
+so not everything will be accepted. Please refer to [Contributing](./docs/contributing.md) guidelines for more information.
 
 ## License
 
-MIT - (c) 2021 NumTide Ltd and contributors.
+Unless explicitly stated otherwise, any contribution intentionally submitted for inclusion in the work by you shall be licensed under the [MIT license](LICENSE.md), without any additional terms or conditions.
