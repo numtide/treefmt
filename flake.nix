@@ -15,9 +15,9 @@
             inherit system;
             # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
             config = { };
-            # crossOverlays = [
-            #   (import "${nixpkgs}/pkgs/top-level/static.nix")
-            # ];
+            crossOverlays = [
+              (import "${nixpkgs}/pkgs/top-level/static.nix")
+            ];
             crossSystem = {
                 isStatic = true;
                 config = "x86_64-unknown-linux-musl";
@@ -29,10 +29,16 @@
           };
         in
         {
-          defaultPackage = pkgs.naersk.buildPackage {
+          defaultPackage = (pkgs.naersk.override {
+            rustc = pkgs.rustPackages.rustc;
+            cargo = pkgs.rustPackages.cargo;
+          }).buildPackage {
             src = self;
             remapPathPrefix = true;
             nativeBuildInputs = with pkgs.buildPackages; [ pkgconfig ];
+            PKG_CONFIG_ALLOW_CROSS = "true";
+            PKG_CONFIG_ALL_STATIC = "true";
+            LIBZ_SYS_STATIC = "1";
             CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
             CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${pkgs.buildPackages.llvmPackages_10.lld}/bin/lld";   
           };
