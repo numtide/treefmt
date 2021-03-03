@@ -27,6 +27,8 @@
           };
 
           devShell = pkgs.devshell.fromTOML ./devshell.toml;
+
+          docs = pkgs.callPackage ./docs {};
         }
       )
     );

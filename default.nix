@@ -1,4 +1,9 @@
 { system ? builtins.currentSystem }:
-(import ./flake-compat.nix {
-  inherit system;
-}).defaultNix.defaultPackage.${system}
+
+let outputs = (import ./flake-compat.nix {
+      inherit system;
+    }).defaultNix;
+in {
+  treefmt = outputs.defaultPackage.${system};
+  docs = outputs.docs.${system};
+}

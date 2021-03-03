@@ -35,7 +35,7 @@ and find the `treefmt` binary in the `target` folder.
 This repository can be used using plain `nix-build` or `nix-shell`. This is possible with the help of `flake-compat` as mentioned in [default.nix](./default.nix). To build the package, just run:
 
 ```
-$ nix-build -A defaultNix.legacyPackages.x86_64-linux
+$ nix-build -A treefmt
 ```
 
 #### Nix-flake user
