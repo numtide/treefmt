@@ -86,7 +86,7 @@ pub fn run_treefmt(
     timed_debug("load formatters");
 
     // Load the eval cache
-    let cache = if clear_cache {
+    let mut cache = if clear_cache {
         // Start with an empty cache
         CacheManifest::default()
     } else {
@@ -94,7 +94,7 @@ pub fn run_treefmt(
     };
     timed_debug("load cache");
     // Insert the new formatter configs
-    let cache = cache.update_formatters(formatters.clone());
+    cache.update_formatters(formatters.clone());
 
     // Configure the tree walker
     let walker = {
@@ -153,7 +153,7 @@ pub fn run_treefmt(
     timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
-    let matches = cache.clone().filter_matches(matches);
+    let matches = cache.filter_matches(matches);
 
     timed_debug("filter_matches");
 
@@ -207,7 +207,7 @@ pub fn run_treefmt(
     timed_debug("format");
 
     // Record the new matches in the cache
-    let cache = cache.add_results(new_matches.clone());
+    cache.add_results(new_matches.clone());
     // And write to disk
     cache.write(cache_dir, treefmt_toml);
     timed_debug("write cache");

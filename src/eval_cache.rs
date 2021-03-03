@@ -9,10 +9,10 @@ use anyhow::Result;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
+use std::collections::BTreeMap;
 use std::fs::{read_to_string, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{borrow::BorrowMut, collections::BTreeMap};
 
 /// Metadata about the formatter
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
@@ -106,21 +106,19 @@ impl CacheManifest {
 
     /// Checks and inserts the formatter info into the cache.
     /// If the formatter info has changed, invalidate all the old paths.
-    #[must_use]
-    pub fn update_formatters(self, formatters: BTreeMap<FormatterName, Formatter>) -> Self {
-        let mut new_formatters = BTreeMap::new();
-        let mut new_paths = self.matches.clone();
+    pub fn update_formatters(&mut self, formatters: BTreeMap<FormatterName, Formatter>) {
+        let mut old_formatters = std::mem::replace(&mut self.formatters, BTreeMap::new());
         for (name, fmt) in formatters {
-            match load_formatter_info(&fmt) {
+            match load_formatter_info(fmt) {
                 Ok(new_fmt_info) => {
-                    if let Some(old_fmt_info) = self.formatters.get(&name) {
+                    if let Some(old_fmt_info) = old_formatters.remove(&name) {
                         // Invalidate the old paths if the formatter config has changed.
-                        if old_fmt_info != &new_fmt_info {
-                            new_paths.remove(&name);
+                        if old_fmt_info != new_fmt_info {
+                            self.matches.remove(&name);
                         }
                     }
                     // Record the new formatter info
-                    new_formatters.insert(name, new_fmt_info);
+                    self.formatters.insert(name, new_fmt_info);
                 }
                 Err(err) => {
                     // TODO: This probably means that there is a deeper issue with the formatter and
@@ -131,23 +129,15 @@ impl CacheManifest {
         }
 
         // Now discard all the paths who don't have an associated formatter
-        for (name, _) in self.matches {
-            if !new_formatters.contains_key(&name) {
-                new_paths.remove(&name);
-            }
-        }
-
-        // Replace with the new info
-        Self {
-            formatters: new_formatters,
-            matches: new_paths,
+        for name in old_formatters.keys() {
+            self.matches.remove(&name);
         }
     }
 
     /// Returns a new map with all the paths that haven't changed
     #[must_use]
     pub fn filter_matches(
-        self,
+        &self,
         matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
     ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> {
         matches
@@ -175,41 +165,26 @@ impl CacheManifest {
     }
 
     /// Merge recursively the new matches with the existing entries in the cache
-    #[must_use]
-    pub fn add_results(self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>) -> Self {
-        // Get a copy of the old matches
-        let mut new_matches = self.matches.to_owned();
-        // This is really ugly. Get a second copy to work around lifetime issues.
-        let mut new_matches_cmp = self.matches.to_owned();
-
-        // Merge all the new matches into it
+    pub fn add_results(&mut self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>) {
         for (name, path_infos) in matches {
-            let mut def = BTreeMap::new();
-            let merged_path_infos = new_matches_cmp
-                .get_mut(&name)
-                .unwrap_or_else(|| def.borrow_mut());
-            for (path, mtime) in path_infos {
-                merged_path_infos.insert(path.clone(), mtime);
+            if let Some(old_path_infos) = self.matches.get_mut(&name) {
+                old_path_infos.extend(path_infos);
+            } else {
+                self.matches.insert(name, path_infos);
             }
-            new_matches.insert(name, merged_path_infos.to_owned());
-        }
-
-        Self {
-            formatters: self.formatters,
-            matches: new_matches,
         }
     }
 }
 
 /// Gets all the info we want from the formatter
-fn load_formatter_info(fmt: &Formatter) -> Result<FormatterInfo> {
-    let command = fmt.command.clone();
+fn load_formatter_info(fmt: Formatter) -> Result<FormatterInfo> {
+    let command = fmt.command;
     let command_mtime = get_path_mtime(&command)?;
     // Resolve symlinks and everything
     let command_resolved = std::fs::canonicalize(command.clone())?;
     let command_resolved_mtime = get_path_mtime(&command_resolved)?;
-    let options = fmt.options.clone();
-    let work_dir = fmt.work_dir.clone();
+    let options = fmt.options;
+    let work_dir = fmt.work_dir;
     // TODO: does it matter if the includes and excludes are missing?
     Ok(FormatterInfo {
         command,
