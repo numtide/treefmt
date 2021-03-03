@@ -9,16 +9,12 @@ pub mod eval_cache;
 pub mod formatter;
 
 use anyhow::Result;
-use customlog::CustomLogOutput;
 use filetime::FileTime;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::fs::Metadata;
 use std::path::PathBuf;
 use std::{fmt, path::Path};
-
-/// The global custom log and user-facing message output.
-pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 
 /// Mtime represents a unix epoch file modification time
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]

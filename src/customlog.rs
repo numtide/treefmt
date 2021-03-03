@@ -3,119 +3,61 @@
 
 use console::style;
 use console::Emoji;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use log::{Level, Metadata, Record};
 
 pub static FOLDER: Emoji = Emoji("\u{1f4c2}", "");
 pub static WARN: Emoji = Emoji("\u{26a0}\u{fe0f}", ":-)");
 pub static ERROR: Emoji = Emoji("\u{26d4}", "");
 pub static INFO: Emoji = Emoji("\u{2139}\u{fe0f}", "");
 pub static DEBUG: Emoji = Emoji("\u{1f41b}", "");
+pub static TRACE: Emoji = Emoji("🔎", "");
 
-#[repr(u8)]
-#[derive(Debug, Clone, Copy)]
-/// The log level for treefmt
-// Important! the least verbose must be at
-// the top and the most verbose at the bottom
-pub enum LogLevel {
-    /// Logs only error
-    Error,
-    /// Logs only warn and error
-    Warn,
-    /// Logs warn, error and info
-    Info,
-    /// Logs everything
-    Debug,
-}
-
-impl std::str::FromStr for LogLevel {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        match s {
-            "error" => Ok(LogLevel::Error),
-            "warn" => Ok(LogLevel::Warn),
-            "info" => Ok(LogLevel::Info),
-            "debug" => Ok(LogLevel::Debug),
-            _ => anyhow::bail!("Unknown log-level: {}", s),
-        }
-    }
-}
+pub static CUSTOM_LOG: CustomLog = CustomLog {};
 
 /// Synchronized log bar and status message printing.
-pub struct CustomLogOutput {
-    quiet: AtomicBool,
-    log_level: AtomicU8,
-}
+pub struct CustomLog {}
 
-impl CustomLogOutput {
-    /// Returns a new CustomLogOutput
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            quiet: AtomicBool::new(false),
-            log_level: AtomicU8::new(LogLevel::Info as u8),
+impl log::Log for CustomLog {
+    fn enabled(&self, _metadata: &Metadata) -> bool {
+        // The log crate already has log::set_max_level to filter out the logs.
+        // We don't need more than that.
+        true
+    }
+
+    fn log(&self, record: &Record) {
+        match record.level() {
+            Level::Trace => eprintln!(
+                "{} {}: {}",
+                TRACE,
+                style("[DEBUG]").bold().dim(),
+                record.args()
+            ),
+            Level::Debug => eprintln!(
+                "{} {}: {}",
+                DEBUG,
+                style("[DEBUG]").bold().dim(),
+                record.args()
+            ),
+            Level::Info => eprintln!(
+                "{} {}: {}",
+                INFO,
+                style("[INFO]").bold().dim(),
+                record.args()
+            ),
+            Level::Warn => eprintln!(
+                "{} {}: {}",
+                WARN,
+                style("[WARN]").bold().dim(),
+                record.args()
+            ),
+            Level::Error => eprintln!(
+                "{} {}: {}",
+                ERROR,
+                style("[ERR]").bold().dim(),
+                record.args()
+            ),
         }
     }
-
-    /// Print the given message.
-    fn message(&self, message: &str) {
-        eprintln!("{}", message);
-    }
-
-    /// Returns whether it should silence stdout or not
-    pub fn quiet(&self) -> bool {
-        self.quiet.load(Ordering::SeqCst)
-    }
-
-    /// Causes it to silence stdout
-    pub fn set_quiet(&self, quiet: bool) {
-        self.quiet.store(quiet, Ordering::SeqCst);
-    }
-
-    /// Returns whether the specified log level is enabled or not
-    pub fn is_log_enabled(&self, level: LogLevel) -> bool {
-        (level as u8) <= self.log_level.load(Ordering::SeqCst)
-    }
-
-    /// Sets the log level for treefmt
-    pub fn set_log_level(&self, log_level: LogLevel) {
-        self.log_level.store(log_level as u8, Ordering::SeqCst);
-    }
-
-    /// Add debug message.
-    pub fn debug(&self, message: &str) {
-        if !self.quiet() && self.is_log_enabled(LogLevel::Debug) {
-            let debug = format!("{} {}: {}", DEBUG, style("[DEBUG]").bold().dim(), message,);
-            self.message(&debug);
-        }
-    }
-
-    /// Add an informational message.
-    pub fn info(&self, message: &str) {
-        if !self.quiet() && self.is_log_enabled(LogLevel::Info) {
-            let info = format!("{} {}: {}", INFO, style("[INFO]").bold().dim(), message,);
-            self.message(&info);
-        }
-    }
-
-    /// Add a warning message.
-    pub fn warn(&self, message: &str) {
-        if !self.quiet() && self.is_log_enabled(LogLevel::Warn) {
-            let warn = format!("{} {}: {}", WARN, style("[WARN]").bold().dim(), message);
-            self.message(&warn);
-        }
-    }
-
-    /// Add an error message.
-    pub fn error(&self, message: &str) {
-        if self.is_log_enabled(LogLevel::Error) {
-            let err = format!("{} {}: {}", ERROR, style("[ERR]").bold().dim(), message);
-            self.message(&err);
-        }
-    }
-}
-
-impl Default for CustomLogOutput {
-    fn default() -> Self {
-        CustomLogOutput::new()
-    }
+    // ignore, stderr is already flushed by default
+    fn flush(&self) {}
 }

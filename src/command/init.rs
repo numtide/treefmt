@@ -1,7 +1,7 @@
 use crate::config;
-use crate::CLOG;
 use anyhow::Context;
 use console::style;
+use log::info;
 use std::fs;
 use std::path::Path;
 
@@ -31,9 +31,6 @@ excludes = []
         )
     })?;
 
-    CLOG.info(&format!(
-        "Generated treefmt template at {}",
-        file_path.display()
-    ));
+    info!("Generated treefmt template at {}", file_path.display());
     Ok(())
 }

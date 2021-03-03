@@ -50,13 +50,11 @@ FLAGS:
         --fail-on-change    Exit with error if any changes were made. Useful for CI
     -h, --help              Prints help information
         --init              Create a new treefmt.toml
-    -q, --quiet             No output printed to stdout
+    -q, --quiet             No output printed to stderr
     -V, --version           Prints version information
     -v, --verbose           Log verbosity is based off the number of v used
 
 OPTIONS:
-        --log-level <log-level>    The maximum level of messages that should be logged by treefmt. [possible values:
-                                   info, warn, error] [default: debug]
         --tree-root <tree-root>    Set the path to the tree root directory. Defaults to the folder holding the
                                    treefmt.toml file
     -C <work-dir>                  Run as if treefmt was started in <work-dir> instead of the current working directory

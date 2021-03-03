@@ -1,8 +1,8 @@
 use crate::config;
 use crate::engine::run_treefmt;
-use crate::CLOG;
 use anyhow::anyhow;
 use directories::ProjectDirs;
+use log::debug;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -51,14 +51,14 @@ pub fn format_cmd(
     // Make sure the cache directory exists.
     fs::create_dir_all(&cache_dir)?;
 
-    CLOG.debug(&format!(
+    debug!(
         "tree_root={} work_dir={} cache_dir={} config_file={} paths={:?}",
         tree_root.display(),
         work_dir.display(),
         cache_dir.display(),
         config_file.display(),
         paths
-    ));
+    );
 
     // Finally run the main formatter logic from the engine.
     run_treefmt(
