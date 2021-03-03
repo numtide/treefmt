@@ -6,7 +6,6 @@ mod init;
 
 use self::format::format_cmd;
 use self::init::init_cmd;
-use super::customlog::LogLevel;
 use crate::expand_path;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -39,12 +38,8 @@ pub struct Cli {
     pub verbosity: u8,
 
     #[structopt(long = "quiet", short = "q")]
-    /// No output printed to stdout
+    /// No output printed to stderr
     pub quiet: bool,
-
-    #[structopt(long = "log-level", default_value = "debug")]
-    /// The maximum level of messages that should be logged by treefmt. [possible values: info, warn, error]
-    pub log_level: LogLevel,
 
     #[structopt(short = "C", default_value = ".")]
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.

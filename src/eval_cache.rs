@@ -2,10 +2,11 @@
 use crate::{
     customlog,
     formatter::{Formatter, FormatterName},
-    get_path_mtime, Mtime, CLOG,
+    get_path_mtime, Mtime,
 };
 
 use anyhow::Result;
+use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::fs::{read_to_string, File};
@@ -61,7 +62,7 @@ impl CacheManifest {
     /// Loads the manifest and returns an error if it failed
     pub fn try_load(cache_dir: &Path, treefmt_toml: &Path) -> Result<Self> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
-        CLOG.debug(&format!("cache: loading from {}", manifest_path.display()));
+        debug!("cache: loading from {}", manifest_path.display());
         let content = read_to_string(&manifest_path)?;
         let manifest = toml::from_str(&content)?;
         Ok(manifest)
@@ -73,10 +74,7 @@ impl CacheManifest {
         match Self::try_load(cache_dir, treefmt_toml) {
             Ok(manifest) => manifest,
             Err(err) => {
-                CLOG.warn(&format!(
-                    "cache: failed to load the manifest due to: {}",
-                    err
-                ));
+                warn!("cache: failed to load the manifest due to: {}", err);
                 Self::default()
             }
         }
@@ -85,7 +83,7 @@ impl CacheManifest {
     /// Seralizes back the manifest into place.
     pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path) -> Result<()> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
-        CLOG.debug(&format!("cache: writing to {}", manifest_path.display()));
+        debug!("cache: writing to {}", manifest_path.display());
         let mut f = File::create(manifest_path)?;
         f.write_all(
             format!(
@@ -102,7 +100,7 @@ impl CacheManifest {
     /// Seralizes back the manifest into place.
     pub fn write(self, cache_dir: &Path, treefmt_toml: &Path) {
         if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
-            CLOG.warn(&format!("cache: failed to write to disk: {}", err));
+            warn!("cache: failed to write to disk: {}", err);
         };
     }
 
@@ -127,7 +125,7 @@ impl CacheManifest {
                 Err(err) => {
                     // TODO: This probably means that there is a deeper issue with the formatter and
                     //       the formatter will fail down the line.
-                    CLOG.error(&format!("cache: failed to load the formatter info {}", err))
+                    error!("cache: failed to load the formatter info {}", err)
                 }
             }
         }

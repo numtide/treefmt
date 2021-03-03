@@ -1,9 +1,9 @@
 //! Utilities for the formatters themselves.
 use crate::config::FmtConfig;
-use crate::CLOG;
 use crate::{expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
+use log::debug;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -126,11 +126,7 @@ impl Formatter {
         let work_dir = expand_path(&cfg.work_dir, tree_root);
         // Resolve the path to the binary
         let command = which(&cfg.command)?;
-        CLOG.debug(&format!(
-            "Found {} at {}",
-            cfg.command.display(),
-            command.display()
-        ));
+        debug!("Found {} at {}", cfg.command.display(), command.display());
         assert!(command.is_absolute());
 
         // Build the include and exclude globs
