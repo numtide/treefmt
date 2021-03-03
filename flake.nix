@@ -15,9 +15,9 @@
             inherit system;
             # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
             config = { };
-            crossOverlays = [
-              (import "${nixpkgs}/pkgs/top-level/static.nix")
-            ];
+            # crossOverlays = [
+            #   (import "${nixpkgs}/pkgs/top-level/static.nix")
+            # ];
             crossSystem = {
                 isStatic = true;
                 config = "x86_64-unknown-linux-musl";
