@@ -1,9 +1,10 @@
 //! The main formatting engine logic is in this module.
 
-use crate::{config, eval_cache::CacheManifest, formatter::FormatterName, CLOG};
+use crate::{config, eval_cache::CacheManifest, formatter::FormatterName};
 use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
 use anyhow::anyhow;
 use ignore::WalkBuilder;
+use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
@@ -28,12 +29,12 @@ pub fn run_treefmt(
     let mut phase_time = Instant::now();
     let mut timed_debug = |description: &str| {
         let now = Instant::now();
-        CLOG.debug(&format!(
+        debug!(
             "{}: {:.2?} (Δ {:.2?})",
             description,
             start_time.elapsed(),
             now.saturating_duration_since(phase_time)
-        ));
+        );
         phase_time = now;
     };
 
@@ -48,17 +49,17 @@ pub fn run_treefmt(
         if abs_path.starts_with(&tree_root) {
             sum.push(abs_path);
         } else {
-            CLOG.warn(&format!(
+            warn!(
                 "Ignoring path {}, it is not in the project root",
                 path.display()
-            ));
+            );
         }
         sum
     });
 
     // Let's check that there is at least one path to format.
     if paths.is_empty() {
-        CLOG.warn(&"Aborting, no paths to format".to_string());
+        warn!("Aborting, no paths to format");
         return Ok(());
     }
 
@@ -77,10 +78,7 @@ pub fn run_treefmt(
                     Ok(fmt_matcher) => {
                         sum.insert(fmt_matcher.name.clone(), fmt_matcher);
                     }
-                    Err(err) => CLOG.error(&format!(
-                        "Ignoring formatter #{} due to error: {}",
-                        name, err
-                    )),
+                    Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
                 };
                 sum
             });
@@ -88,7 +86,7 @@ pub fn run_treefmt(
     timed_debug("load formatters");
 
     // Load the eval cache
-    let cache = if clear_cache {
+    let mut cache = if clear_cache {
         // Start with an empty cache
         CacheManifest::default()
     } else {
@@ -96,7 +94,7 @@ pub fn run_treefmt(
     };
     timed_debug("load cache");
     // Insert the new formatter configs
-    let cache = cache.update_formatters(formatters.clone());
+    cache.update_formatters(formatters.clone());
 
     // Configure the tree walker
     let walker = {
@@ -144,21 +142,18 @@ pub fn run_treefmt(
                         }
                     }
                 } else {
-                    CLOG.warn(&format!(
-                        "Couldn't get file type for {:?}",
-                        dir_entry.path()
-                    ))
+                    warn!("Couldn't get file type for {:?}", dir_entry.path())
                 }
             }
             Err(err) => {
-                CLOG.warn(&format!("traversal error: {}", err));
+                warn!("traversal error: {}", err);
             }
         }
     }
     timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
-    let matches = cache.clone().filter_matches(matches);
+    let matches = cache.filter_matches(matches);
 
     timed_debug("filter_matches");
 
@@ -182,12 +177,12 @@ pub fn run_treefmt(
                 match formatter.clone().fmt(&paths) {
                     // FIXME: do we care about the output?
                     Ok(_) => {
-                        CLOG.info(&format!(
+                        info!(
                             "{}: {} files processed in {:.2?}",
                             formatter.name,
                             paths.len(),
                             start_time.elapsed()
-                        ));
+                        );
 
                         // Get the new mtimes and compare them to the original ones
                         let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
@@ -201,7 +196,7 @@ pub fn run_treefmt(
                     }
                     Err(err) => {
                         // FIXME: What is the right behaviour if a formatter has failed running?
-                        CLOG.error(&format!("{} failed: {}", &formatter, err));
+                        error!("{} failed: {}", &formatter, err);
                         // Assume the paths were not formatted
                         (formatter_name.clone(), path_mtime.clone())
                     }
@@ -212,7 +207,7 @@ pub fn run_treefmt(
     timed_debug("format");
 
     // Record the new matches in the cache
-    let cache = cache.add_results(new_matches.clone());
+    cache.add_results(new_matches.clone());
     // And write to disk
     cache.write(cache_dir, treefmt_toml);
     timed_debug("write cache");

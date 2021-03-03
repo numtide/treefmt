@@ -9,16 +9,12 @@ pub mod eval_cache;
 pub mod formatter;
 
 use anyhow::Result;
-use customlog::CustomLogOutput;
 use filetime::FileTime;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::fs::Metadata;
 use std::path::PathBuf;
 use std::{fmt, path::Path};
-
-/// The global custom log and user-facing message output.
-pub static CLOG: CustomLogOutput = CustomLogOutput::new();
 
 /// Mtime represents a unix epoch file modification time
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
@@ -52,4 +48,15 @@ pub fn expand_path(path: &Path, reference: &Path) -> PathBuf {
         reference.join(path)
     };
     new_path.clean()
+}
+
+/// Only expands the path if the string contains a slash (/) in it. Otherwise consider it as a string.
+pub fn expand_if_path(str: String, reference: &Path) -> String {
+    if str.contains('/') {
+        expand_path(Path::new(&str), reference)
+            .to_string_lossy()
+            .to_string()
+    } else {
+        str
+    }
 }

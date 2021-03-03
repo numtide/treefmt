@@ -9,7 +9,9 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-20.04 ]
+        os:
+          - macos-latest
+          - ubuntu-20.04
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -19,3 +21,26 @@ jobs:
           name: numtide
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: ./ci.sh
+  docs:
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: numtide
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: |
+          nix-build -A docs
+          cp -r "$(readlink ./result)" book
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/master'
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: book
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

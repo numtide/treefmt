@@ -1,9 +1,9 @@
 //! Utilities for the formatters themselves.
 use crate::config::FmtConfig;
-use crate::expand_path;
-use crate::CLOG;
+use crate::{expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
+use log::debug;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -126,19 +126,15 @@ impl Formatter {
         let work_dir = expand_path(&cfg.work_dir, tree_root);
         // Resolve the path to the binary
         let command = which(&cfg.command)?;
-        CLOG.debug(&format!(
-            "Found {} at {}",
-            cfg.command.display(),
-            command.display()
-        ));
+        debug!("Found {} at {}", cfg.command.display(), command.display());
         assert!(command.is_absolute());
 
         // Build the include and exclude globs
         if cfg.includes.is_empty() {
             return Err(anyhow!("{} doesn't have any includes", name));
         }
-        let includes = patterns_to_glob_set(&cfg.includes)?;
-        let excludes = patterns_to_glob_set(&cfg.excludes)?;
+        let includes = patterns_to_glob_set(tree_root, &cfg.includes)?;
+        let excludes = patterns_to_glob_set(tree_root, &cfg.excludes)?;
 
         Ok(Self {
             name,
@@ -159,9 +155,10 @@ impl fmt::Display for Formatter {
 }
 
 /// Small utility to convert config globs to a GlobSet.
-fn patterns_to_glob_set(patterns: &[String]) -> Result<GlobSet> {
+fn patterns_to_glob_set(tree_root: &Path, patterns: &[String]) -> Result<GlobSet> {
     let mut sum = GlobSetBuilder::new();
     for pattern in patterns {
+        let pattern = expand_if_path(pattern.to_string(), &tree_root);
         let glob = GlobBuilder::new(&pattern).build()?;
         sum.add(glob);
     }

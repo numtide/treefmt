@@ -29,6 +29,8 @@ excludes = ["examples/haskell/"]
 [formatter.nix]
 command = "nixpkgs-fmt"
 includes = ["*.nix"]
+# Act as an example on how to exlude specific files
+excludes = ["examples/nix/sources.nix"]
 
 [formatter.prettier]
 command = "prettier"

@@ -9,7 +9,7 @@
 
   outputs = { self, nixpkgs, naersk, flake-utils, devshell }:
     (
-      flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
+      flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -27,22 +27,32 @@
               devshell.overlay
             ];
           };
+
+          treefmt = (pkgs.naersk.override {
+              rustc = pkgs.rustPackages.rustc;
+              cargo = pkgs.rustPackages.cargo;
+            }).buildPackage {
+              src = self;
+              remapPathPrefix = true;
+              nativeBuildInputs = with pkgs.buildPackages; [ pkgconfig ];
+              PKG_CONFIG_ALLOW_CROSS = "true";
+              PKG_CONFIG_ALL_STATIC = "true";
+              LIBZ_SYS_STATIC = "1";
+              CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+              CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${pkgs.buildPackages.llvmPackages_10.lld}/bin/lld";
+            };
         in
         {
-          defaultPackage = (pkgs.naersk.override {
-            rustc = pkgs.rustPackages.rustc;
-            cargo = pkgs.rustPackages.cargo;
-          }).buildPackage {
-            src = self;
-            remapPathPrefix = true;
-            nativeBuildInputs = with pkgs.buildPackages; [ pkgconfig ];
-            PKG_CONFIG_ALLOW_CROSS = "true";
-            PKG_CONFIG_ALL_STATIC = "true";
-            LIBZ_SYS_STATIC = "1";
-            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-            CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${pkgs.buildPackages.llvmPackages_10.lld}/bin/lld";   
+          # What is used when invoking `nix run github:numtide/treefmt`
+          defaultPackage = treefmt;
+
+          # A collection of packages for the project
+          packages = {
+            inherit treefmt;
+            docs = pkgs.callPackage ./docs { };
           };
 
+          # The development environment
           devShell = pkgs.devshell.fromTOML ./devshell.toml;
         }
       )
