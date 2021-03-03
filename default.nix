@@ -1,9 +1,8 @@
 { system ? builtins.currentSystem }:
-let outputs = (import ./flake-compat.nix {
-  inherit system;
-}).defaultNix;
+let
+  flake-compat = import ./flake-compat.nix {
+    inherit system;
+  };
 in
-{
-  treefmt = outputs.defaultPackage.${system};
-  docs = outputs.docs.${system};
-}
+  flake-compat.defaultNix.packages.${system} or
+    (throw "The system '${system}' is not supported. Please open an issue!")
