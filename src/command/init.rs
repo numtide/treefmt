@@ -8,22 +8,7 @@ use std::path::Path;
 pub fn init_cmd(work_dir: &Path) -> anyhow::Result<()> {
     let file_path = work_dir.join(config::FILENAME);
     // TODO: detect if file exists
-    fs::write(
-        &file_path,
-        r#"# One CLI to format the code tree - https://github.com/numtide/treefmt
-
-[formatter.mylanguage]
-# Formatter to run
-command = "command-to-run"
-# Command-line arguments for the command
-options = []
-# Glob pattern of files to include
-includes = [ "*.<language-extension>" ]
-# Glob patterns of files to exclude
-excludes = []
-    "#,
-    )
-    .with_context(|| {
+    fs::write(&file_path, std::include_bytes!("init_treefmt.toml")).with_context(|| {
         format!(
             "{} `{}`",
             style("Error writing").bold().red(),
