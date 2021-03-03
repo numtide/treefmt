@@ -20,15 +20,23 @@
               devshell.overlay
             ];
           };
-        in
-        {
-          defaultPackage = pkgs.naersk.buildPackage {
+
+          treefmt = pkgs.naersk.buildPackage {
             src = self;
           };
+        in
+        {
+          # What is used when invoking `nix run github:numtide/treefmt`
+          defaultPackage = treefmt;
 
+          # A collection of packages for the project
+          packages = {
+            inherit treefmt;
+            docs = pkgs.callPackage ./docs { };
+          };
+
+          # The development environment
           devShell = pkgs.devshell.fromTOML ./devshell.toml;
-
-          docs = pkgs.callPackage ./docs { };
         }
       )
     );
