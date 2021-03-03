@@ -28,7 +28,7 @@
 
           devShell = pkgs.devshell.fromTOML ./devshell.toml;
 
-          docs = pkgs.callPackage ./docs {};
+          docs = pkgs.callPackage ./docs { };
         }
       )
     );
