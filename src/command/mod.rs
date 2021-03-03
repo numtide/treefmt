@@ -10,14 +10,6 @@ use crate::expand_path;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-/// The various kinds of commands that `treefmt` can execute.
-pub enum Command {
-    #[structopt(name = "--init")]
-    /// Init a new project with a default config
-    Init {},
-}
-
 /// ✨  format all your language!
 #[derive(Debug, StructOpt)]
 pub struct Cli {
