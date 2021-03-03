@@ -33,6 +33,18 @@ command = "black"
 includes = ["*.py"]
 ```
 
+## [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
+
+A tool to format C/C++/Java/JavaScript/Objective-C/Protobuf/C# code.
+
+```toml
+command = "clang-format"
+options = [ "-i" ]
+includes = [ "*.c", "*.cpp", "*.cc", "*.h", "*.hpp" ]
+```
+
+Note: This example focuses on C/C++ but can be modified to use with other languages.
+
 ## Elm
 
 ```toml
@@ -66,6 +78,16 @@ options = [
 includes = ["*.hs"]
 ```
 
+## [stylish-haskell](https://github.com/jaspervdj/stylish-haskell)
+
+Another Haskell formatter.
+
+```toml
+command = "stylish-haskell"
+options = [ "--inplace" ]
+includes = [ "*.hs" ]
+```
+
 ## [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt)
 
 Nix code formatter.
@@ -86,7 +108,8 @@ includes = ["*.rs"]
 ## cargo fmt
 
 `cargo fmt` is not supported as it doesn't follow the spec. It doesn't allow
-to pass arbitrary files to be formatted, which treefmt relies on.
+to pass arbitrary files to be formatted, which treefmt relies on. Use `rustfmt`
+instead (which is what `cargo fmt` uses under the hood).
 
 ## [shfmt](https://github.com/mvdan/sh)
 
