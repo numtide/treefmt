@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use ignore::WalkBuilder;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use std::io::{self, Write};
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, time::Instant};
@@ -266,4 +267,103 @@ all of this in {:.2?}
     }
 
     Ok(())
+}
+
+/// Run the treefmt in a stdin buffer, and print it out back to stdout
+pub fn run_treefmt_stdin(
+    tree_root: &Path,
+    work_dir: &Path,
+    cache_dir: &Path,
+    treefmt_toml: &Path,
+    path: &Path,
+) -> anyhow::Result<()> {
+    assert!(tree_root.is_absolute());
+    assert!(work_dir.is_absolute());
+    assert!(cache_dir.is_absolute());
+    assert!(treefmt_toml.is_absolute());
+    assert!(path.is_absolute());
+
+    // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
+    if !path.starts_with(&tree_root) {
+        anyhow!(
+            "Ignoring path {}, it is not in the project root",
+            path.display()
+        );
+    };
+
+    // Load the treefmt.toml file
+    let project_config = config::from_path(&treefmt_toml)?;
+
+    // Load all the formatter instances from the config. Ignore the ones that failed.
+    let formatters =
+        project_config
+            .formatter
+            .iter()
+            .fold(BTreeMap::new(), |mut sum, (name, fmt_config)| {
+                match Formatter::from_config(&tree_root, &name, &fmt_config) {
+                    Ok(fmt_matcher) => {
+                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                    }
+                    Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
+                };
+                sum
+            });
+
+    // Collect all formatters that match the path
+    let formatters: Vec<&Formatter> = formatters.values().filter(|f| f.is_match(&path)).collect();
+
+    if formatters.is_empty() {
+        warn!("no formatter found for path {:?}", path);
+        // Just copy stdin to stdout
+        io::copy(&mut io::stdin().lock(), &mut io::stdout().lock())?;
+    } else if formatters.len() > 1 {
+        warn!("multiple formatters matched the path. picking the first one");
+    } else {
+        info!("running {}", formatters.first().unwrap().name)
+    }
+
+    // Construct a "unique" filename. We want the code formatter to recognise the file type so it has the same extension. And it has to live in the project's folder.
+    // So we just put a _ in front of the original filename.
+    // This is clearly racey and need to be improved.
+    let temp_filename = path
+        .parent()
+        .unwrap()
+        .join(&format!("_{}", path.file_name().unwrap().to_string_lossy()));
+
+    // Create the file atomically
+    let mut tempfile = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(temp_filename.clone())?;
+
+    // Wrap this in a closure to control the error flow.
+    let run = || -> anyhow::Result<()> {
+        // Copy stdin to the file
+        io::copy(&mut io::stdin().lock(), &mut tempfile)?;
+
+        // Make sure the file is flushed.
+        tempfile.flush()?;
+        drop(tempfile);
+
+        // Now that the file has been written, invoke the formatter.
+        formatters
+            .first()
+            .unwrap()
+            .fmt(&vec![temp_filename.clone()])?;
+
+        // And now copy back to stdout
+        let mut tempfile = std::fs::File::open(&temp_filename)?;
+
+        // Copy the file to stdout
+        io::copy(&mut tempfile, &mut io::stdout().lock())?;
+
+        Ok(())
+    };
+
+    let ret = run();
+
+    // Always delete the tempfile
+    std::fs::remove_file(temp_filename)?;
+
+    ret
 }
