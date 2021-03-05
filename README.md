@@ -116,7 +116,7 @@ treefmt --fail-on-change
 In order to keep the design of treefmt simple, we ask code formatters to
 adhere to the following specification.
 
-[treefmt formatter spec](./docs/src/)
+[treefmt formatter spec](./docs/formatters-spec.md)
 
 If they don't, the best is to create a wrapper script that transforms the
 usage to match that spec.
