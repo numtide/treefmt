@@ -10,6 +10,14 @@ use std::iter::Iterator;
 use std::path::{Path, PathBuf};
 use std::{collections::BTreeMap, time::Instant};
 
+/// Controls how the information is displayed at the end of a run
+pub enum DisplayType {
+    /// Just display some numbers
+    Summary,
+    /// Display the list of files that were affected
+    Long,
+}
+
 /// Run the treefmt
 pub fn run_treefmt(
     tree_root: &Path,
@@ -40,8 +48,6 @@ pub fn run_treefmt(
 
     let mut traversed_files: usize = 0;
     let mut matched_files: usize = 0;
-    let filtered_files: usize;
-    let mut reformatted_files: usize = 0;
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
@@ -158,7 +164,7 @@ pub fn run_treefmt(
     timed_debug("filter_matches");
 
     // Keep track of the paths that are actually going to be formatted
-    filtered_files = matches.values().map(|x| x.len()).sum();
+    let filtered_files: usize = matches.values().map(|x| x.len()).sum();
 
     // Now run all the formatters and collect the formatted paths.
     let new_matches = matches
@@ -235,16 +241,59 @@ pub fn run_treefmt(
                 sum
             });
 
-    // Finally display all the paths that have been formatted
-    for (_name, paths) in changed_matches {
-        // Keep track of how many files were reformatted
-        reformatted_files += paths.len();
-        // println!("{}:", name);
-        // for path in paths {
-        //     println!("- {}", path.display());
-        // }
+    // Get how many files were reformatted.
+    let reformatted_files: usize = changed_matches.values().map(|x| x.len()).sum();
+    // TODO: this will be configurable by the user in the future.
+    let mut display_type = DisplayType::Summary;
+    let mut ret: anyhow::Result<()> = Ok(());
+
+    // Fail if --fail-on-change was passed.
+    if reformatted_files > 0 && fail_on_change {
+        // Switch the display type to long
+        display_type = DisplayType::Long;
+        ret = Err(anyhow!("fail-on-change"))
     }
 
+    match display_type {
+        DisplayType::Summary => {
+            print_summary(
+                traversed_files,
+                matched_files,
+                filtered_files,
+                reformatted_files,
+                start_time,
+            );
+        }
+        DisplayType::Long => {
+            print_summary(
+                traversed_files,
+                matched_files,
+                filtered_files,
+                reformatted_files,
+                start_time,
+            );
+            println!("\nformatted files:");
+            for (name, paths) in changed_matches {
+                if !paths.is_empty() {
+                    println!("{}:", name);
+                    for path in paths {
+                        println!("- {}", path.display());
+                    }
+                }
+            }
+        }
+    }
+
+    ret
+}
+
+fn print_summary(
+    traversed_files: usize,
+    matched_files: usize,
+    filtered_files: usize,
+    reformatted_files: usize,
+    start_time: std::time::Instant,
+) {
     println!(
         r#"
 traversed {} files
@@ -259,11 +308,4 @@ all of this in {:.2?}
         reformatted_files,
         start_time.elapsed()
     );
-
-    // Fail if --fail-on-change was passed.
-    if reformatted_files > 0 && fail_on_change {
-        return Err(anyhow!("fail-on-change"));
-    }
-
-    Ok(())
 }
