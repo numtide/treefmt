@@ -69,7 +69,7 @@ ARGS:
 In order to use `treefmt` in the project, `treefmt.toml` should exists in the root folder. For example, we want to use [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt) on our Nix project and rustfmt on our Rust project, then the `treefmt.toml` will be written as follows:
 
 ```
-[formatters.nix]
+[formatter.nix]
 command = "nixpkgs-fmt"
 include = ["*.nix"]
 
