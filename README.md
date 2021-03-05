@@ -89,8 +89,6 @@ to remember what tool to use, or their magic incantation.
 
 ### Editor integration
 
-TODO: not supported yet.
-
 Editors often want to be able to format a file, before it gets written to disk.
 
 Ideally, the editor would pipe the code in, pass the filename, and get the
