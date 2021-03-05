@@ -10,7 +10,7 @@ pub static WARN: Emoji = Emoji("\u{26a0}\u{fe0f}", ":-)");
 pub static ERROR: Emoji = Emoji("\u{26d4}", "");
 pub static INFO: Emoji = Emoji("\u{2139}\u{fe0f}", "");
 pub static DEBUG: Emoji = Emoji("\u{1f41b}", "");
-pub static TRACE: Emoji = Emoji("🔎", "");
+pub static TRACE: Emoji = Emoji("\u{1f50e}", "");
 
 pub static CUSTOM_LOG: CustomLog = CustomLog {};
 
