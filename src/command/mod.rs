@@ -2,9 +2,11 @@
 #![allow(clippy::redundant_closure)]
 
 mod format;
+mod format_stdin;
 mod init;
 
 use self::format::format_cmd;
+use self::format_stdin::format_stdin_cmd;
 use self::init::init_cmd;
 use crate::expand_path;
 use std::path::PathBuf;
@@ -17,12 +19,20 @@ pub struct Cli {
     #[structopt(long = "init")]
     pub init: bool,
 
+    /// Format the content passed in stdin
+    #[structopt(long = "stdin", conflicts_with("init"))]
+    pub stdin: bool,
+
     /// Clear the evaluation cache. Use in case the cache is not precise enough.
-    #[structopt(long = "clear-cache")]
+    #[structopt(long = "clear-cache", conflicts_with("stdin"), conflicts_with("init"))]
     pub clear_cache: bool,
 
     /// Exit with error if any changes were made. Useful for CI.
-    #[structopt(long = "fail-on-change")]
+    #[structopt(
+        long = "fail-on-change",
+        conflicts_with("stdin"),
+        conflicts_with("init")
+    )]
     pub fail_on_change: bool,
 
     /// Log verbosity is based off the number of v used
@@ -66,6 +76,8 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
 pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
+    } else if cli.stdin {
+        format_stdin_cmd(&cli.tree_root, &cli.work_dir, &cli.paths)?
     } else {
         format_cmd(
             &cli.tree_root,
