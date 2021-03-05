@@ -4,6 +4,7 @@ use crate::{expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use log::debug;
+use path_clean::PathClean;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
@@ -125,7 +126,7 @@ impl Formatter {
         // Expand the work_dir to an absolute path, using the project root as a reference.
         let work_dir = expand_path(&cfg.work_dir, tree_root);
         // Resolve the path to the binary
-        let command = which(&cfg.command)?;
+        let command = which(&cfg.command)?.clean();
         debug!("Found {} at {}", cfg.command.display(), command.display());
         assert!(command.is_absolute());
 
