@@ -4,5 +4,5 @@ let
     inherit system;
   };
 in
-  flake-compat.defaultNix.packages.${system} or
+  flake-compat.defaultNix.legacyPackages.${system} or
     (throw "The system '${system}' is not supported. Please open an issue!")

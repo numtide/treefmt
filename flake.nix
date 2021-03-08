@@ -23,35 +23,49 @@
             ];
           };
 
-          rust = pkgs.rust-bin.stable.latest.rust.override {
-            extensions = [
-              "clippy-preview"
-              "rustfmt-preview"
-              "rust-analysis"
-              "rust-std"
-              "rust-src"
-            ];
-            targets = [
-              "wasm32-unknown-unknown"
-              "x86_64-unknown-linux-musl"
-            ];
+          # TODO: filter the source to minimize rebuilds. Cargo.* src/
+          src = self;
+
+          treefmt = pkgs.naersk.buildPackage {
+            inherit src;
           };
 
-          treefmt = (pkgs.naersk.override {
-            rustc = rust;
-          }).buildPackage {
-            src = self;
-            CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-          };
+          treefmt-cross = targetSystem:
+            let
+              # TODO: pin nightly version
+              # We use nightly because naersk needs nighly for cargo
+              rust = pkgs.rust-bin.nightly.latest.rust.override {
+                extensions = [
+                  "rust-analysis"
+                  "rust-std"
+                  "rust-src"
+                ];
+                targets = [ targetSystem ];
+              };
+            in
+            (pkgs.naersk.override {
+              rustc = rust;
+              cargo = rust;
+            }).buildPackage {
+              inherit src;
+              CARGO_BUILD_TARGET = targetSystem;
+              # Rewrite /nix entries to make the target leaner
+              remapPathPrefix = true;
+            };
         in
         {
           # What is used when invoking `nix run github:numtide/treefmt`
           defaultPackage = treefmt;
 
           # A collection of packages for the project
-          packages = {
+          legacyPackages = {
             inherit treefmt;
             docs = pkgs.callPackage ./docs { };
+
+            # Cross for releases
+            release = {
+              linux = treefmt-cross "x86_64-unknown-linux-musl";
+            };
           };
 
           # The development environment
