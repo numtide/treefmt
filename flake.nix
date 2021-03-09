@@ -7,6 +7,7 @@
   inputs.naersk.inputs.nixpkgs.follows = "nixpkgs";
   inputs.naersk.url = "github:nmattia/naersk";
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, naersk, flake-utils, devshell, rust-overlay }:
     (
