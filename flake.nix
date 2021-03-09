@@ -65,6 +65,8 @@
             # Cross for releases
             release = {
               linux = treefmt-cross "x86_64-unknown-linux-musl";
+              macos = treefmt-cross "x86_64-apple-darwin";
+              windows = treefmt-cross "x86_64-pc-windows-gnu";
             };
           };
 
