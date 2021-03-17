@@ -125,6 +125,8 @@ usage to match that spec.
   configuration on a per-project basis.
 - [prettier](https://prettier.io/): and opinionated code formatter for a
   number of languages.
+- [Super-Linter](https://github.com/github/super-linter): a project by GitHub
+  to lint all of the code.
 
 ## Contributing
 
