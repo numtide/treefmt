@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Contributing - treefmt - one CLI to format the code tree</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded "><a href="index-formatters.html"><strong aria-hidden="true">4.</strong> Formatters</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="formatters-spec.html"><strong aria-hidden="true">4.1.</strong> Formatters Specification</a></li><li class="chapter-item expanded "><a href="formatters.html"><strong aria-hidden="true">4.2.</strong> List Known Formatters</a></li></ol></li><li class="chapter-item expanded "><a href="treefmt-configuration.html"><strong aria-hidden="true">5.</strong> Treefmt Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html" class="active"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">treefmt - one CLI to format the code tree</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#contribution-guidelines-for-the-treefmt-project" id="contribution-guidelines-for-the-treefmt-project">Contribution Guidelines for the treefmt Project</a></h1>
+<p>Thank you for considering contributing to <code>treefmt</code>. This file contains instructions that will help you to make a contribution.</p>
+<h2><a class="header" href="#before-contributing" id="before-contributing">Before Contributing</a></h2>
+<p>Before sending your pull requests, make sure that you <strong>read the whole guidelines</strong>. If you have any doubt on the contributing guide, please feel free to <a href="https://github.com/numtide/treefmt/issues/new">state it clearly in an issue</a> or ask the community in <a href="https://matrix.to/#/#treefmt:numtide.com">treefmt matrix server</a>.</p>
+<p>Use your best judgement, and feel free to propose changes to this document in a pull request.</p>
+<h2><a class="header" href="#guidelines-for-developers" id="guidelines-for-developers">Guidelines for Developers</a></h2>
+<h3><a class="header" href="#first-contribution" id="first-contribution">First contribution?</a></h3>
+<p>Please take a few minutes to read GitHub's guide on <a href="https://opensource.guide/how-to-contribute/">How to Contribute to Open Source</a>.
+It's a quick read, and it's a great way to introduce yourself to how things work behind the scenes in open-source projects.</p>
+<h3><a class="header" href="#getting-started" id="getting-started">Getting started</a></h3>
+<ul>
+<li>Make sure you have a <a href="https://github.com/join">GitHub account</a>.</li>
+<li>Take a look at <a href="https://github.com/numtide/treefmt/issues">existing issues</a>.</li>
+<li>If you need to create an issue:
+<ul>
+<li>Make sure to clearly describe it.</li>
+<li>Including steps to reproduce when it is a bug.</li>
+<li>Include the version of <code>treefmt</code> used.</li>
+<li>Include the database driver and version.</li>
+<li>Include the database version.</li>
+</ul>
+</li>
+</ul>
+<h3><a class="header" href="#making-changes" id="making-changes">Making changes</a></h3>
+<ul>
+<li>Fork the repository on GitHub.</li>
+<li>Create a branch on your fork.
+<ul>
+<li>You can usually base it on the <code>master</code> branch.</li>
+<li>Make sure not to commit directly to <code>master</code>.</li>
+</ul>
+</li>
+<li>Make commits of logical and atomic units.</li>
+<li>Make sure you have added the necessary tests for your changes.</li>
+<li>Push your changes to a topic branch in your fork of the repository.</li>
+<li>Submit a pull request to the original repository.</li>
+</ul>
+<h4><a class="header" href="#examples-of-git-history" id="examples-of-git-history">Examples of git history</a></h4>
+<details>
+<summary>Git history that we want to have</summary>
+<pre><code>*   e3ed88b (HEAD -&gt; contribution-guide, upstream/master, origin/master, origin/HEAD, master) Merge pull request #470 from zimbatm/fix_lru_cache
+|\
+| * 1ab7d9f Use rayon for multithreading command
+|/
+*   e9c5bb4 Merge pull request #468 from zimbatm/multithread
+|\
+| * de2d6cf Add lint property for Formatter struct
+| * cd2ed17 Fix impl on Formatter get_command() function
+|/
+*   028c344 Merge pull request #465 from rayon/0.15.0-release
+|\
+| * 7b619d6 0.15.0 release
+|/
+*   acdf7df Merge pull request #463 from zimbatm/support-multi-part-namespaces
+</code></pre>
+</details>
+<details>
+<summary>Git history that we are <b>trying</b> to avoid</summary>
+<pre><code>*   4c8aca8 Merge pull request #120 from zimbatm/add-rayon
+|\
+| * fc2b449 use rayon for engine now
+| * 2304683 add rayon config
+| * 5285bd3 bump base image to F30
+* |   4d0fbe2 Merge pull request #114 from rizary/create_method_create_release
+|\ \
+| * | 36a9396 test changed
+| * | 22f681d method create release for github created
+* | |   2ef4ea1 Merge pull request #119 from rizary/config.rs
+|\ \ \
+| |/ /
+|/| |
+| * | 5f1b8f0 unused functions removed
+* | |   a93c361 Merge pull request #117 from zimbatm/add-getreleases-to-abstract
+|\ \ \
+| |/ /
+|/| |
+| * | 0a97236 add get_releses for Cargo
+| * | 55e4c57 add get_releases/get_release into engine.rs
+|/ /
+* |   badeddd Merge pull request #101 from zimbatm/extreme-cachin
+</code></pre>
+</details>
+<h3><a class="header" href="#checkerslintersformatters" id="checkerslintersformatters">Checkers/linters/formatters</a></h3>
+<p>Run <code>treefmt</code> in the source directory before you commit your changes.</p>
+<hr />
+<p>Additionally, it's always good to work on improving/adding examples and documentation.</p>
+<p>Thank you for your interest!</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="treefmt-configuration.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="treefmt-configuration.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

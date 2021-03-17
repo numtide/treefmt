@@ -1,0 +1,525 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>treefmt - one CLI to format the code tree</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">3.</strong> Installation</a></li><li class="chapter-item expanded "><a href="index-formatters.html"><strong aria-hidden="true">4.</strong> Formatters</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="formatters-spec.html"><strong aria-hidden="true">4.1.</strong> Formatters Specification</a></li><li class="chapter-item expanded "><a href="formatters.html"><strong aria-hidden="true">4.2.</strong> List Known Formatters</a></li></ol></li><li class="chapter-item expanded "><a href="treefmt-configuration.html"><strong aria-hidden="true">5.</strong> Treefmt Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">treefmt - one CLI to format the code tree</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<p>Welcome to the <code>treefmt</code> book! This is a work-in-progress user guide for the <code>treefmt</code> project.</p>
+<p>If you're new to <code>treefmt</code>, try the <a href="./quickstart.html">Quick Start</a> tutorial first!</p>
+<h2><a class="header" href="#contributing" id="contributing">Contributing</a></h2>
+<p>The source repository for this book is <a href="https://github.com/numtide/treefmt/docs">hosted on GitHub</a>. Please refer to <a href="contributing.html">Contributing</a> guideline.</p>
+<h2><a class="header" href="#license" id="license">License</a></h2>
+<p>The <code>treefmt</code> bindings, and this user guide, are licensed under the <a href="LICENSE.html">MIT license</a>.</p>
+<h1><a class="header" href="#quickstart" id="quickstart">Quickstart</a></h1>
+<ol>
+<li><a href="installation.html">Install this tool.</a></li>
+<li>Run <code>treefmt --init</code>.</li>
+<li>edit the configuration in <code>treefmt.toml</code></li>
+<li>Run <code>treefmt</code>.</li>
+</ol>
+<h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+<p>You can install <code>treefmt</code> with two option below. The best option is to download the release binary as you will get the stable version of <code>treefmt</code>.</p>
+<h2><a class="header" href="#download-release-binary" id="download-release-binary">Download release binary</a></h2>
+<p>Download the stable version of <code>treefmt</code> from <a href="https://github.com/numtide/treefmt/releases">release binary</a>.</p>
+<h2><a class="header" href="#building-from-source" id="building-from-source">Building from source</a></h2>
+<h3><a class="header" href="#non-nix-user" id="non-nix-user">Non-Nix User</a></h3>
+<p>Install <code>rust</code> using <a href="https://rustup.rs/"><code>rustup</code></a> by following the instruction.</p>
+<p>To try the project, run:</p>
+<pre><code>$ cargo run -- --help
+</code></pre>
+<p>If you want to build the project, run:</p>
+<pre><code>$ cargo build
+</code></pre>
+<p>and find the <code>treefmt</code> binary in the <code>target</code> folder.</p>
+<h3><a class="header" href="#nix-user" id="nix-user">Nix User</a></h3>
+<h4><a class="header" href="#non-flake-user" id="non-flake-user">Non-flake user</a></h4>
+<p>This repository can be used using plain <code>nix-build</code> or <code>nix-shell</code>. This is possible with the help of <code>flake-compat</code> as mentioned in <a href="./default.nix">default.nix</a>. To build the package, just run:</p>
+<pre><code>$ nix-build -A treefmt
+</code></pre>
+<h4><a class="header" href="#nix-flake-user" id="nix-flake-user">Nix-flake user</a></h4>
+<p>If you want to use this repo with <code>flakes</code> feature, please enable it using the following method:</p>
+<p><strong>Linux and Windows Subsystem Linux 2 (WSL2)</strong></p>
+<p>Install Nix as instructed above. Next, install <code>nixUnstable</code> by running the following code:</p>
+<pre><code>nix-env -iA nixpkgs.nixFlakes
+</code></pre>
+<p>Lastly, open your <code>~/.config/nix/nix.conf</code> or <code>/etc/nix/nix.conf</code> file and add:</p>
+<pre><code>experimental-features = nix-command flakes
+</code></pre>
+<p><strong>NixOS</strong></p>
+<p>Add the following code into your <code>configuration.nix</code>:</p>
+<pre><code>{ pkgs, ... }: {
+  nix = {
+    package = pkgs.nixFlakes;
+      extraOptions = ''
+        experimental-features = nix-command flakes
+      '';
+  };
+}
+</code></pre>
+<p>And finally, run the following command:</p>
+<pre><code>$ nix build
+</code></pre>
+<p>The <code>treefmt</code> binary will be available in the <code>result</code> folder.</p>
+<p>Alternatively, you can run:</p>
+<pre><code>$ nix run . -- --help
+</code></pre>
+<p>From the root of this project.</p>
+<h1><a class="header" href="#formatters" id="formatters">Formatters</a></h1>
+<p>In order to catch up with all the formatter available for different programming language, we create two file as our guideline for each formatter's creator.</p>
+<ol>
+<li><a href="./formatters-spec.html">Formatter Specifications</a> - Guideline to have smooth integration with <code>treefmt</code></li>
+<li><a href="./formatters.html">Formatter Example</a> - List formatter available with the config example to be inserted in <code>treefmt.tom</code></li>
+</ol>
+<h1><a class="header" href="#formatter-spec" id="formatter-spec">Formatter spec</a></h1>
+<p>In order to keep the design of treefmt simple, we want all of the formatters
+to adhere to a unified specification. This document outlines that spec.</p>
+<h2><a class="header" href="#command-line-interface" id="command-line-interface">Command-line interface</a></h2>
+<p>A formatter MUST adhere to the following interface:</p>
+<pre><code>&lt;command&gt; [options] [...&lt;files&gt;]`
+</code></pre>
+<p>Where</p>
+<ul>
+<li><code>&lt;command&gt;</code> is the name of the formatter.</li>
+<li><code>[options]</code> is any number of flags and options that the formatter wants to
+provide.</li>
+<li><code>[...&lt;files&gt;]</code> is one or more files that the formatter should process.</li>
+</ul>
+<p>Whenever the program is invoked with the list of files, it MUST only process all the files that are passed and format them. Files that are not passed should never be formatted.</p>
+<p>If, and only if, a file format has changed, the formatter MUST write the new
+content in place of the original file.</p>
+<h3><a class="header" href="#example" id="example">Example</a></h3>
+<pre><code class="language-console">$ rustfmt --edition 2018 src/main.rs src/lib.rs
+</code></pre>
+<h2><a class="header" href="#formatting-details" id="formatting-details">Formatting details</a></h2>
+<p>A formatted file MUST be valid. This is a strong contract; the syntax or
+semantic must never be broken by the formatter.</p>
+<p>A formatted file SHOULD be idempotent. Meaning that if the formatter it run
+twice on a file, the file should not change on the second invocation.</p>
+<p>The formatter MUST NOT do file traversal when a list of files is passed to it.
+This is the responsibility of <code>treefmt</code>.</p>
+<h2><a class="header" href="#design-notes" id="design-notes">Design notes</a></h2>
+<p>We assume that the code is stored in source control, which is why it's fine to
+write the new content in place.</p>
+<h1><a class="header" href="#a-list-of-known-formatters" id="a-list-of-known-formatters">A list of known formatters</a></h1>
+<p>Here is a list of all the formatters we tested. Feel free to send a PR to add
+other ones!</p>
+<h2><a class="header" href="#a-hrefhttpsprettierioprettiera" id="a-hrefhttpsprettierioprettiera"><a href="https://prettier.io/">prettier</a></a></h2>
+<p>An opinionated code formatter that supports many languages.</p>
+<pre><code class="language-toml">command = &quot;prettier&quot;
+options = [&quot;--write&quot;]
+includes = [
+    &quot;*.css&quot;,
+    &quot;*.html&quot;,
+    &quot;*.js&quot;,
+    &quot;*.json&quot;,
+    &quot;*.jsx&quot;,
+    &quot;*.md&quot;,
+    &quot;*.mdx&quot;,
+    &quot;*.scss&quot;,
+    &quot;*.ts&quot;,
+    &quot;*.yaml&quot;,
+]
+</code></pre>
+<h2><a class="header" href="#a-hrefhttpsgithubcompsfblackblacka" id="a-hrefhttpsgithubcompsfblackblacka"><a href="https://github.com/psf/black">Black</a></a></h2>
+<p>A python formatter.</p>
+<pre><code class="language-toml">command = &quot;black&quot;
+includes = [&quot;*.py&quot;]
+</code></pre>
+<h2><a class="header" href="#a-hrefhttpsclangllvmorgdocsclangformathtmlclang-formata" id="a-hrefhttpsclangllvmorgdocsclangformathtmlclang-formata"><a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a></a></h2>
+<p>A tool to format C/C++/Java/JavaScript/Objective-C/Protobuf/C# code.</p>
+<pre><code class="language-toml">command = &quot;clang-format&quot;
+options = [ &quot;-i&quot; ]
+includes = [ &quot;*.c&quot;, &quot;*.cpp&quot;, &quot;*.cc&quot;, &quot;*.h&quot;, &quot;*.hpp&quot; ]
+</code></pre>
+<p>Note: This example focuses on C/C++ but can be modified to use with other languages.</p>
+<h2><a class="header" href="#elm" id="elm">Elm</a></h2>
+<pre><code class="language-toml">command = &quot;elm-format&quot;
+options = [&quot;--yes&quot;]
+includes = [&quot;*.elm&quot;]
+</code></pre>
+<h2><a class="header" href="#go" id="go">Go</a></h2>
+<pre><code class="language-toml">command = &quot;gofmt&quot;
+options = [&quot;-w&quot;]
+includes = [&quot;*.go&quot;]
+</code></pre>
+<h2><a class="header" href="#a-hrefhttpsgithubcomtweagormoluormolua" id="a-hrefhttpsgithubcomtweagormoluormolua"><a href="https://github.com/tweag/ormolu">Ormolu</a></a></h2>
+<p>Haskell formatter. Make sure to use ormolu 0.1.4.0+ as older versions don't
+adhere to the spec.</p>
+<pre><code class="language-toml">command = &quot;ormolu&quot;
+options = [
+    &quot;--ghc-opt&quot;, &quot;-XBangPatterns&quot;,
+    &quot;--ghc-opt&quot;, &quot;-XPatternSynonyms&quot;,
+    &quot;--ghc-opt&quot;, &quot;-XTypeApplications&quot;,
+    &quot;--mode&quot;, &quot;inplace&quot;,
+    &quot;--check-idempotence&quot;,
+]
+includes = [&quot;*.hs&quot;]
+</code></pre>
+<h2><a class="header" href="#a-hrefhttpsgithubcomjaspervdjstylish-haskellstylish-haskella" id="a-hrefhttpsgithubcomjaspervdjstylish-haskellstylish-haskella"><a href="https://github.com/jaspervdj/stylish-haskell">stylish-haskell</a></a></h2>
+<p>Another Haskell formatter.</p>
+<pre><code class="language-toml">command = &quot;stylish-haskell&quot;
+options = [ &quot;--inplace&quot; ]
+includes = [ &quot;*.hs&quot; ]
+</code></pre>
+<h2><a class="header" href="#a-hrefhttpsgithubcomnix-communitynixpkgs-fmtnixpkgs-fmta" id="a-hrefhttpsgithubcomnix-communitynixpkgs-fmtnixpkgs-fmta"><a href="https://github.com/nix-community/nixpkgs-fmt">nixpkgs-fmt</a></a></h2>
+<p>Nix code formatter.</p>
+<pre><code class="language-toml">command = &quot;nixpkgs-fmt&quot;
+includes = [&quot;*.nix&quot;]
+</code></pre>
+<h2><a class="header" href="#rustfmt" id="rustfmt">rustfmt</a></h2>
+<pre><code class="language-toml">command = &quot;rustfmt&quot;
+options = [&quot;--edition&quot;, &quot;2018&quot;]
+includes = [&quot;*.rs&quot;]
+</code></pre>
+<h2><a class="header" href="#cargo-fmt" id="cargo-fmt">cargo fmt</a></h2>
+<p><code>cargo fmt</code> is not supported as it doesn't follow the spec. It doesn't allow
+to pass arbitrary files to be formatted, which treefmt relies on. Use <code>rustfmt</code>
+instead (which is what <code>cargo fmt</code> uses under the hood).</p>
+<h2><a class="header" href="#a-hrefhttpsgithubcommvdanshshfmta" id="a-hrefhttpsgithubcommvdanshshfmta"><a href="https://github.com/mvdan/sh">shfmt</a></a></h2>
+<p>A shell code formatter.</p>
+<pre><code class="language-toml">command = &quot;shfmt&quot;
+options = [
+    &quot;-i&quot;,
+    &quot;2&quot;,  # indent 2
+    &quot;-s&quot;,  # simplify the code
+    &quot;-w&quot;,  # write back to the file
+]
+includes = [&quot;*.sh&quot;]
+</code></pre>
+<h1><a class="header" href="#configuration-format" id="configuration-format">Configuration format</a></h1>
+<p><code>treefmt</code> depends on the <code>treefmt.toml</code> to map file extensions to actual code
+formatters. That file is searched for recursively from the current folder and
+up unless the <code>--config &lt;path&gt;</code> option is passed.</p>
+<h2><a class="header" href="#formattername" id="formattername"><code>[formatter.&lt;name&gt;]</code></a></h2>
+<p>This section describes the integration between a single formatter and
+<code>treefmt</code>.</p>
+<ul>
+<li>
+<p><code>command</code>: A list of arguments to execute the formatter. This will be
+composed with the <code>options</code> attribute during invocation. The first argument
+is the name of the executable to run.</p>
+</li>
+<li>
+<p><code>options</code>: A list of extra arguments to add to the command. This is typically
+project-specific arguments.</p>
+</li>
+<li>
+<p><code>includes</code>: A list of glob patterns used to select files. Usually this would be
+something like <code>[ &quot;*.sh&quot; ]</code> to select all the shell scripts. Sometimes,
+full filenames can be passed. Eg: <code>[ &quot;Makefile&quot; ]</code>.</p>
+</li>
+<li>
+<p><code>excludes</code>: A list of glob patterns to deny. If any of these patterns match,
+the file will be excluded.</p>
+</li>
+</ul>
+<h1><a class="header" href="#contribution-guidelines-for-the-treefmt-project" id="contribution-guidelines-for-the-treefmt-project">Contribution Guidelines for the treefmt Project</a></h1>
+<p>Thank you for considering contributing to <code>treefmt</code>. This file contains instructions that will help you to make a contribution.</p>
+<h2><a class="header" href="#before-contributing" id="before-contributing">Before Contributing</a></h2>
+<p>Before sending your pull requests, make sure that you <strong>read the whole guidelines</strong>. If you have any doubt on the contributing guide, please feel free to <a href="https://github.com/numtide/treefmt/issues/new">state it clearly in an issue</a> or ask the community in <a href="https://matrix.to/#/#treefmt:numtide.com">treefmt matrix server</a>.</p>
+<p>Use your best judgement, and feel free to propose changes to this document in a pull request.</p>
+<h2><a class="header" href="#guidelines-for-developers" id="guidelines-for-developers">Guidelines for Developers</a></h2>
+<h3><a class="header" href="#first-contribution" id="first-contribution">First contribution?</a></h3>
+<p>Please take a few minutes to read GitHub's guide on <a href="https://opensource.guide/how-to-contribute/">How to Contribute to Open Source</a>.
+It's a quick read, and it's a great way to introduce yourself to how things work behind the scenes in open-source projects.</p>
+<h3><a class="header" href="#getting-started" id="getting-started">Getting started</a></h3>
+<ul>
+<li>Make sure you have a <a href="https://github.com/join">GitHub account</a>.</li>
+<li>Take a look at <a href="https://github.com/numtide/treefmt/issues">existing issues</a>.</li>
+<li>If you need to create an issue:
+<ul>
+<li>Make sure to clearly describe it.</li>
+<li>Including steps to reproduce when it is a bug.</li>
+<li>Include the version of <code>treefmt</code> used.</li>
+<li>Include the database driver and version.</li>
+<li>Include the database version.</li>
+</ul>
+</li>
+</ul>
+<h3><a class="header" href="#making-changes" id="making-changes">Making changes</a></h3>
+<ul>
+<li>Fork the repository on GitHub.</li>
+<li>Create a branch on your fork.
+<ul>
+<li>You can usually base it on the <code>master</code> branch.</li>
+<li>Make sure not to commit directly to <code>master</code>.</li>
+</ul>
+</li>
+<li>Make commits of logical and atomic units.</li>
+<li>Make sure you have added the necessary tests for your changes.</li>
+<li>Push your changes to a topic branch in your fork of the repository.</li>
+<li>Submit a pull request to the original repository.</li>
+</ul>
+<h4><a class="header" href="#examples-of-git-history" id="examples-of-git-history">Examples of git history</a></h4>
+<details>
+<summary>Git history that we want to have</summary>
+<pre><code>*   e3ed88b (HEAD -&gt; contribution-guide, upstream/master, origin/master, origin/HEAD, master) Merge pull request #470 from zimbatm/fix_lru_cache
+|\
+| * 1ab7d9f Use rayon for multithreading command
+|/
+*   e9c5bb4 Merge pull request #468 from zimbatm/multithread
+|\
+| * de2d6cf Add lint property for Formatter struct
+| * cd2ed17 Fix impl on Formatter get_command() function
+|/
+*   028c344 Merge pull request #465 from rayon/0.15.0-release
+|\
+| * 7b619d6 0.15.0 release
+|/
+*   acdf7df Merge pull request #463 from zimbatm/support-multi-part-namespaces
+</code></pre>
+</details>
+<details>
+<summary>Git history that we are <b>trying</b> to avoid</summary>
+<pre><code>*   4c8aca8 Merge pull request #120 from zimbatm/add-rayon
+|\
+| * fc2b449 use rayon for engine now
+| * 2304683 add rayon config
+| * 5285bd3 bump base image to F30
+* |   4d0fbe2 Merge pull request #114 from rizary/create_method_create_release
+|\ \
+| * | 36a9396 test changed
+| * | 22f681d method create release for github created
+* | |   2ef4ea1 Merge pull request #119 from rizary/config.rs
+|\ \ \
+| |/ /
+|/| |
+| * | 5f1b8f0 unused functions removed
+* | |   a93c361 Merge pull request #117 from zimbatm/add-getreleases-to-abstract
+|\ \ \
+| |/ /
+|/| |
+| * | 0a97236 add get_releses for Cargo
+| * | 55e4c57 add get_releases/get_release into engine.rs
+|/ /
+* |   badeddd Merge pull request #101 from zimbatm/extreme-cachin
+</code></pre>
+</details>
+<h3><a class="header" href="#checkerslintersformatters" id="checkerslintersformatters">Checkers/linters/formatters</a></h3>
+<p>Run <code>treefmt</code> in the source directory before you commit your changes.</p>
+<hr />
+<p>Additionally, it's always good to work on improving/adding examples and documentation.</p>
+<p>Thank you for your interest!</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
