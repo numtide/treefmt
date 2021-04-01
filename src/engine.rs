@@ -183,7 +183,26 @@ pub fn run_treefmt(
 
                 match formatter.clone().fmt(&paths) {
                     // FIXME: do we care about the output?
-                    Ok(_) => {
+                    Ok(out) => {
+                        if !out.status.success() {
+                            match out.status.code() {
+                                Some(scode) => {
+                                    error!(
+                                        "{}'s formatter failed: exit status {}",
+                                        &formatter, scode
+                                    );
+                                    return (formatter_name.clone(), path_mtime.clone());
+                                }
+                                None => {
+                                    error!(
+                                        "{}'s formatter failed: unknown formatter error",
+                                        &formatter
+                                    );
+                                    return (formatter_name.clone(), path_mtime.clone());
+                                }
+                            }
+                        }
+
                         info!(
                             "{}: {} files processed in {:.2?}",
                             formatter.name,
