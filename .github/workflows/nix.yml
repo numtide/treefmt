@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v13
-      - uses: cachix/cachix-action@v8
+      - uses: cachix/cachix-action@v9
         with:
           name: numtide
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v13
-      - uses: cachix/cachix-action@v8
+      - uses: cachix/cachix-action@v9
         with:
           name: numtide
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
