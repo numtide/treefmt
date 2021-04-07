@@ -177,7 +177,7 @@ pub fn run_treefmt(
 
             // Don't run the formatter if there are no paths to format!
             if paths.is_empty() {
-                (formatter_name.clone(), path_mtime.clone())
+                Ok((formatter_name.clone(), path_mtime.clone()))
             } else {
                 let start_time = Instant::now();
 
@@ -187,18 +187,17 @@ pub fn run_treefmt(
                         if !out.status.success() {
                             match out.status.code() {
                                 Some(scode) => {
-                                    error!(
+                                    return Err(anyhow!(
                                         "{}'s formatter failed: exit status {}",
-                                        &formatter, scode
-                                    );
-                                    return (formatter_name.clone(), path_mtime.clone());
+                                        &formatter,
+                                        scode
+                                    ));
                                 }
                                 None => {
-                                    error!(
+                                    return Err(anyhow!(
                                         "{}'s formatter failed: unknown formatter error",
                                         &formatter
-                                    );
-                                    return (formatter_name.clone(), path_mtime.clone());
+                                    ));
                                 }
                             }
                         }
@@ -218,18 +217,18 @@ pub fn run_treefmt(
                             sum
                         });
                         // Return the new mtimes
-                        (formatter_name.clone(), new_paths)
+                        Ok((formatter_name.clone(), new_paths))
                     }
                     Err(err) => {
                         // FIXME: What is the right behaviour if a formatter has failed running?
-                        error!("{} failed: {}", &formatter, err);
+                        // error!("{} failed: {}", &formatter, err);
                         // Assume the paths were not formatted
-                        (formatter_name.clone(), path_mtime.clone())
+                        return Err(anyhow!("{} failed: {}", &formatter, err));
                     }
                 }
             }
         })
-        .collect::<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>>();
+        .collect::<Result<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>, _>>()?;
     timed_debug("format");
 
     // Record the new matches in the cache
