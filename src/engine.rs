@@ -168,7 +168,7 @@ pub fn run_treefmt(
     let filtered_files: usize = matches.values().map(|x| x.len()).sum();
 
     // Now run all the formatters and collect the formatted paths.
-    let new_matches = matches
+    let new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = matches
         .par_iter()
         .map(|(formatter_name, path_mtime)| {
             let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
@@ -181,53 +181,30 @@ pub fn run_treefmt(
             } else {
                 let start_time = Instant::now();
 
-                match formatter.clone().fmt(&paths) {
-                    // FIXME: do we care about the output?
-                    Ok(out) => {
-                        if !out.status.success() {
-                            match out.status.code() {
-                                Some(scode) => {
-                                    return Err(anyhow!(
-                                        "{}'s formatter failed: exit status {}",
-                                        &formatter,
-                                        scode
-                                    ));
-                                }
-                                None => {
-                                    return Err(anyhow!(
-                                        "{}'s formatter failed: unknown formatter error",
-                                        &formatter
-                                    ));
-                                }
-                            }
-                        }
+                info!(
+                    "{}: {} files processed in {:.2?}",
+                    formatter.name,
+                    paths.len(),
+                    start_time.elapsed()
+                );
 
-                        info!(
-                            "{}: {} files processed in {:.2?}",
-                            formatter.name,
-                            paths.len(),
-                            start_time.elapsed()
-                        );
+                // Get the new mtimes and compare them to the original ones
+                let new_paths = paths
+                    .clone()
+                    .into_iter()
+                    .fold(BTreeMap::new(), |mut sum, path| {
+                        // unwrap: assume that the file still exists after formatting
+                        let mtime = get_path_mtime(&path).unwrap();
+                        sum.insert(path, mtime);
+                        sum
+                    });
 
-                        // Get the new mtimes and compare them to the original ones
-                        let new_paths = paths.into_iter().fold(BTreeMap::new(), |mut sum, path| {
-                            // unwrap: assume that the file still exists after formatting
-                            let mtime = get_path_mtime(&path).unwrap();
-                            sum.insert(path, mtime);
-                            sum
-                        });
-                        // Return the new mtimes
-                        Ok((formatter_name.clone(), new_paths))
-                    }
-                    Err(err) => {
-                        // FIXME: What is the right behaviour if a formatter has failed running?
-                        // Assume the paths were not formatted
-                        return Err(anyhow!("{} failed: {}", &formatter, err));
-                    }
-                }
+                formatter.clone().fmt(&paths)?;
+                // Return the new mtimes
+                Ok((formatter_name.clone(), new_paths))
             }
         })
-        .collect::<Result<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>, _>>()?;
+        .collect::<anyhow::Result<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>>>()?;
     timed_debug("format");
 
     // Record the new matches in the cache
