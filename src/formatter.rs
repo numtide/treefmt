@@ -98,7 +98,11 @@ impl Formatter {
         // Append all of the file paths to format.
         cmd_arg.args(paths);
         // And run
-        Ok(cmd_arg.output()?)
+        match cmd_arg.output() {
+            Ok(out) => Ok(out),
+            Err(err) => Err(anyhow!("formatting error due to {}", err))
+        }
+        // Ok(cmd_arg.output()?)
     }
 
     /// Returns the formatter if the path matches the formatter rules.

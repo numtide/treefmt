@@ -221,7 +221,6 @@ pub fn run_treefmt(
                     }
                     Err(err) => {
                         // FIXME: What is the right behaviour if a formatter has failed running?
-                        // error!("{} failed: {}", &formatter, err);
                         // Assume the paths were not formatted
                         return Err(anyhow!("{} failed: {}", &formatter, err));
                     }
