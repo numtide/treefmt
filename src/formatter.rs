@@ -7,12 +7,7 @@ use log::debug;
 use path_clean::PathClean;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{
-    fmt,
-    path::Path,
-    path::PathBuf,
-    process::{Command, Output},
-};
+use std::{fmt, path::Path, path::PathBuf, process::Command};
 use which::which;
 
 /// newtype for the formatter name
@@ -89,7 +84,7 @@ pub struct Formatter {
 impl Formatter {
     /// Run the formatter on the given paths
     // TODO: handle E2BIG
-    pub fn fmt(&self, paths: &[PathBuf]) -> Result<Output> {
+    pub fn fmt(&self, paths: &[PathBuf]) -> Result<()> {
         let mut cmd_arg = Command::new(&self.command);
         // Set the command to run under its working directory.
         cmd_arg.current_dir(&self.work_dir);
@@ -98,7 +93,32 @@ impl Formatter {
         // Append all of the file paths to format.
         cmd_arg.args(paths);
         // And run
-        Ok(cmd_arg.output()?)
+        match cmd_arg.output() {
+            Ok(out) => {
+                if !out.status.success() {
+                    match out.status.code() {
+                        Some(scode) => {
+                            return Err(anyhow!(
+                                "{}'s formatter failed: exit status {}",
+                                &self,
+                                scode
+                            ));
+                        }
+                        None => {
+                            return Err(anyhow!(
+                                "{}'s formatter failed: unknown formatter error",
+                                &self
+                            ));
+                        }
+                    }
+                }
+                Ok(())
+            }
+            Err(err) => {
+                // Assume the paths were not formatted
+                Err(anyhow!("{} failed: {}", &self, err))
+            }
+        }
     }
 
     /// Returns the formatter if the path matches the formatter rules.
