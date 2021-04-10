@@ -181,13 +181,6 @@ pub fn run_treefmt(
             } else {
                 let start_time = Instant::now();
 
-                info!(
-                    "{}: {} files processed in {:.2?}",
-                    formatter.name,
-                    paths.len(),
-                    start_time.elapsed()
-                );
-
                 // Get the new mtimes and compare them to the original ones
                 let new_paths = paths
                     .clone()
@@ -200,6 +193,14 @@ pub fn run_treefmt(
                     });
 
                 formatter.clone().fmt(&paths)?;
+
+                info!(
+                    "{}: {} files processed in {:.2?}",
+                    formatter.name,
+                    paths.len(),
+                    start_time.elapsed()
+                );
+
                 // Return the new mtimes
                 Ok((formatter_name.clone(), new_paths))
             }
