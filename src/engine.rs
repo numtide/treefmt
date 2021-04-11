@@ -380,7 +380,7 @@ pub fn run_treefmt_stdin(
         formatters
             .first()
             .unwrap()
-            .fmt(&vec![tmpfile.path().to_path_buf()])?;
+            .fmt(&[tmpfile.path().to_path_buf()])?;
 
         // Seek back to start
         let mut tmpfile = tmpfile.reopen()?;

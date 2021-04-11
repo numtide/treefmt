@@ -107,7 +107,7 @@ impl CacheManifest {
     /// Checks and inserts the formatter info into the cache.
     /// If the formatter info has changed, invalidate all the old paths.
     pub fn update_formatters(&mut self, formatters: BTreeMap<FormatterName, Formatter>) {
-        let mut old_formatters = std::mem::replace(&mut self.formatters, BTreeMap::new());
+        let mut old_formatters = std::mem::take(&mut self.formatters);
         for (name, fmt) in formatters {
             match load_formatter_info(fmt) {
                 Ok(new_fmt_info) => {
