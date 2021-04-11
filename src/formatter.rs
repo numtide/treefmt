@@ -2,6 +2,7 @@
 use crate::config::FmtConfig;
 use crate::{expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
+use console::style;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use log::debug;
 use path_clean::PathClean;
@@ -96,6 +97,14 @@ impl Formatter {
         match cmd_arg.output() {
             Ok(out) => {
                 if !out.status.success() {
+                    debug!(
+                        "Error using formatter {}:\n{stdout}:\n{}\n{stderr}:\n{}",
+                        self.name,
+                        String::from_utf8_lossy(&out.stdout),
+                        String::from_utf8_lossy(&out.stderr),
+                        stdout = style("• [STDOUT]").bold().dim(),
+                        stderr = style("• [STDERR]").bold().dim(),
+                    );
                     match out.status.code() {
                         Some(scode) => {
                             return Err(anyhow!(
