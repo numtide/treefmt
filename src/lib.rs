@@ -50,13 +50,9 @@ pub fn expand_path(path: &Path, reference: &Path) -> PathBuf {
     new_path.clean()
 }
 
-/// Only expands the path if the string contains a slash (/) in it. Otherwise consider it as a string.
+/// Always expand the path that set in treefmt.toml
 pub fn expand_if_path(str: String, reference: &Path) -> String {
-    if str.contains('/') {
-        expand_path(Path::new(&str), reference)
-            .to_string_lossy()
-            .to_string()
-    } else {
-        str
-    }
+    expand_path(Path::new(&str), reference)
+        .to_string_lossy()
+        .to_string()
 }
