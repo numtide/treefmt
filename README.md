@@ -37,9 +37,8 @@ quite tricky.
 ## Usage
 
 `$ cargo run -- --help`
-
 ```
-treefmt 0.1.0
+treefmt 0.1.1
 ✨  format all your language!
 
 USAGE:
@@ -51,6 +50,7 @@ FLAGS:
     -h, --help              Prints help information
         --init              Create a new treefmt.toml
     -q, --quiet             No output printed to stderr
+        --stdin             Format the content passed in stdin
     -V, --version           Prints version information
     -v, --verbose           Log verbosity is based off the number of v used
 
