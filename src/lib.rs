@@ -118,7 +118,7 @@ mod tests {
         let path = vec![
             "/Foo.hs",
             "/nested/Foo.hs",
-            "/nested/nested_again/Foo.hs",
+            "/nested/nested/Foo.hs",
             "/different_folder/Foo.hs",
             "/nested/different_folder/Foo.hs",
             "/nested/Bar.hs",
