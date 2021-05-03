@@ -8,7 +8,7 @@ to adhere to a unified specification. This document outlines that spec.
 A formatter MUST adhere to the following interface:
 
 ```
-<command> [options] [...<files>]`
+<command> [options] [...<files>]
 ```
 
 Where
