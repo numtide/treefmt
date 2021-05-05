@@ -23,8 +23,8 @@ options = [
     "--mode", "inplace",
     "--check-idempotence",
 ]
-includes = ["Foo.hs"]
-
+includes = ["*.hs"]
+excludes = ["examples/haskell/"]
 
 [formatter.nix]
 command = "nixpkgs-fmt"
