@@ -47,6 +47,7 @@ includes = [
     "*.ts",
     "*.yaml",
 ]
+excludes = ["CHANGELOG.md"]
 
 [formatter.rust]
 command = "rustfmt"
