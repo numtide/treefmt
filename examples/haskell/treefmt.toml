@@ -1,0 +1,10 @@
+[formatter.haskell]
+command = "ormolu"
+options = [
+    "--ghc-opt", "-XBangPatterns",
+    "--ghc-opt", "-XPatternSynonyms",
+    "--ghc-opt", "-XTypeApplications",
+    "--mode", "inplace",
+    "--check-idempotence",
+]
+includes = ["Foo.hs"]

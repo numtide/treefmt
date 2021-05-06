@@ -17,6 +17,7 @@ packages = [
   "elmPackages.elm-format",
   "go",
   "haskellPackages.ormolu",
+  "haskellPackages.cabal-fmt",
   "nixpkgs-fmt",
   "nodePackages.prettier",
   "python3.pkgs.black",
