@@ -16,12 +16,17 @@ packages = [
   # Code formatters
   "elmPackages.elm-format",
   "go",
-  "haskellPackages.ormolu",
   "haskellPackages.cabal-fmt",
+  "haskellPackages.ormolu",
   "nixpkgs-fmt",
   "nodePackages.prettier",
   "python3.pkgs.black",
   "shfmt",
+  "terraform",
   
   "mdbook"
 ]
+
+[[env]]
+name = "PATH"
+eval = "$PWD/target/debug:$PATH"

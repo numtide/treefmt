@@ -37,6 +37,7 @@ quite tricky.
 ## Usage
 
 `$ cargo run -- --help`
+
 ```
 treefmt 0.1.1
 ✨  format all your language!

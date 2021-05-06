@@ -63,3 +63,7 @@ options = [
     "-w",  # write back to the file
 ]
 includes = ["*.sh"]
+
+[formatter.terraform]
+command = "./scripts/terraform-fmt"
+includes = ["*.tf"]

@@ -125,3 +125,8 @@ options = [
 ]
 includes = ["*.sh"]
 ```
+
+## terraform
+
+terraform fmt only supports formatting one file at the time. See
+https://github.com/hashicorp/terraform/pull/28191
