@@ -57,17 +57,16 @@ pub fn expand_if_path(str: String, reference: &Path) -> String {
             .to_string_lossy()
             .to_string()
     } else {
-        format!("*/{}",str)
+        format!("*/{}", str)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{path::Path};
-    use globset::{GlobBuilder, GlobSetBuilder};
     use super::expand_if_path;
-    
-    
+    use globset::{GlobBuilder, GlobSetBuilder};
+    use std::path::Path;
+
     #[test]
     fn test_expand_if_path_single_pattern() {
         let path = vec![
@@ -84,7 +83,11 @@ mod tests {
         let glob = GlobBuilder::new(&pat).build().unwrap();
         sum.add(glob);
         let result = sum.build().unwrap();
-        let test = path.clone().into_iter().filter(|p| result.is_match(p)).collect::<Vec<&str>>();
+        let test = path
+            .clone()
+            .into_iter()
+            .filter(|p| result.is_match(p))
+            .collect::<Vec<&str>>();
 
         assert_eq!(path, test);
     }
@@ -98,9 +101,9 @@ mod tests {
             "/different_folder/Foo.hs",
             "/nested/different_folder/Foo.hs",
             "/nested/Bar.hs",
-            "/nested/different_folder/Bar.hs"
+            "/nested/different_folder/Bar.hs",
         ];
-        
+
         let pattern = "*.hs";
         let mut sum = GlobSetBuilder::new();
         let tree_root = Path::new("/");
@@ -108,11 +111,15 @@ mod tests {
         let glob = GlobBuilder::new(&pat).build().unwrap();
         sum.add(glob);
         let result = sum.build().unwrap();
-        let test = path.clone().into_iter().filter(|p| result.is_match(p)).collect::<Vec<&str>>();
+        let test = path
+            .clone()
+            .into_iter()
+            .filter(|p| result.is_match(p))
+            .collect::<Vec<&str>>();
 
         assert_eq!(path, test);
     }
-    
+
     #[test]
     fn test_expand_if_path_single_pattern_with_slash() {
         let path = vec![
@@ -122,7 +129,7 @@ mod tests {
             "/different_folder/Foo.hs",
             "/nested/different_folder/Foo.hs",
             "/nested/Bar.hs",
-            "/nested/different_folder/Bar.hs"
+            "/nested/different_folder/Bar.hs",
         ];
         let pattern = "nested/Foo.hs";
         let mut sum = GlobSetBuilder::new();
@@ -131,8 +138,11 @@ mod tests {
         let glob = GlobBuilder::new(&pat).build().unwrap();
         sum.add(glob);
         let result = sum.build().unwrap();
-        let test = path.into_iter().filter(|p| result.is_match(p)).collect::<Vec<&str>>();
-        
+        let test = path
+            .into_iter()
+            .filter(|p| result.is_match(p))
+            .collect::<Vec<&str>>();
+
         assert_eq!(vec!["/nested/Foo.hs"], test);
     }
 }
