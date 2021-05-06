@@ -19,7 +19,7 @@ pub struct Root {
 #[derive(Debug, Deserialize)]
 pub struct FmtConfig {
     /// Command formatter to run
-    pub command: PathBuf,
+    pub command: String,
     /// Working directory for formatter
     #[serde(default = "cwd")]
     pub work_dir: PathBuf,

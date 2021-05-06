@@ -1,15 +1,13 @@
 //! Utilities for the formatters themselves.
 use crate::config::FmtConfig;
-use crate::{expand_if_path, expand_path};
+use crate::{expand_exe, expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use console::style;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use log::debug;
-use path_clean::PathClean;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, path::Path, path::PathBuf, process::Command};
-use which::which;
 
 /// newtype for the formatter name
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -153,10 +151,10 @@ impl Formatter {
     pub fn from_config(tree_root: &Path, name: &str, cfg: &FmtConfig) -> Result<Self> {
         let name = FormatterName(name.to_string());
         // Expand the work_dir to an absolute path, using the project root as a reference.
-        let work_dir = expand_path(&cfg.work_dir, tree_root);
+        let work_dir = expand_path(&cfg.work_dir, &tree_root);
         // Resolve the path to the binary
-        let command = which(&cfg.command)?.clean();
-        debug!("Found {} at {}", cfg.command.display(), command.display());
+        let command = expand_exe(&cfg.command, &tree_root)?;
+        debug!("Found {} at {}", cfg.command, command.display());
         assert!(command.is_absolute());
 
         // Build the include and exclude globs
