@@ -127,11 +127,14 @@ usage to match that spec.
   number of languages.
 - [Super-Linter](https://github.com/github/super-linter): a project by GitHub
   to lint all of the code.
+- [pre-commit](https://pre-commit.com/): a framework for managing and
+  maintaining multi-language pre-commit hooks.
 
 ## Contributing
 
 All contributions are welcome! We try to keep the project simple and focused
-so not everything will be accepted. Please refer to [Contributing](./docs/contributing.md) guidelines for more information.
+so not everything will be accepted. Please refer to
+[Contributing](./docs/contributing.md) guidelines for more information.
 
 ## License
 
