@@ -12,10 +12,11 @@ use anyhow::Result;
 use filetime::FileTime;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs::Metadata;
 use std::path::PathBuf;
 use std::{fmt, path::Path};
-use which::which;
+use which::which_in;
 
 /// Mtime represents a unix epoch file modification time
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
@@ -41,17 +42,7 @@ pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
 
 /// Resolve the command into an absolute path.
 fn expand_exe(command: &String, reference: &Path) -> Result<PathBuf> {
-    let path = if let Some(_) = command.find('/') {
-        let path = Path::new(&command);
-        if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            reference.join(path)
-        }
-    } else {
-        which(command)?
-    };
-    Ok(path.clean())
+    Ok(which_in(command, env::var_os("PATH"), reference)?.clean())
 }
 
 /// Returns an absolute path. If the path is absolute already, leave it alone. Otherwise join it to the reference path.
