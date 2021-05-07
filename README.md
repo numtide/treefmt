@@ -9,16 +9,17 @@
 
 [![Support room on Matrix](https://img.shields.io/matrix/treefmt:numtide.com.svg?label=%23treefmt%3Anumtide.com&logo=matrix&server_fqdn=matrix.numtide.com)](https://matrix.to/#/#treefmt:numtide.com)
 
-**Status: experimental** -- not all features described here are working
-yet.
+**Status: alpha**
 
-Every project has different languages and set of code formatters, with
-different configurations. When jumping between projects, it always takes a bit
-of time to get accustomed to them and update the editor configuration.
+When working on large code trees, it's common to have multiple code
+formatters run against it. And have one script that loops over all of them.
+`treefmt` makes that nicer.
 
-This project solves that problem by proposing a unified CLI interface that
-traverses the project file tree and maps each file to a different code
-formatter. Type `treefmt`, and it re-formats the repository.
+- A unified CLI and output
+- Run all the formatters in parallel.
+- Cache which files have changed for super fast re-formatting.
+
+Just type `treefmt` in any folder and it reformats the whole code tree.
 
 ## Design decisions
 
