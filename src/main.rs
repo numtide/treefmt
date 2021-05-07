@@ -8,7 +8,7 @@ fn main() {
     // Configure the logger
     log::set_logger(&CUSTOM_LOG).expect("Could not set the logger");
     // The default log level
-    log::set_max_level(log::LevelFilter::Debug);
+    log::set_max_level(log::LevelFilter::Info);
 
     if let Err(e) = run() {
         error!("{}", e);
