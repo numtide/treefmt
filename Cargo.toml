@@ -1,15 +1,21 @@
 [package]
 name = "treefmt"
 version = "0.2.0"
+edition = "2018"
+description = "one CLI to format the code tree"
+license = "MIT"
 authors = [
   "Andika Demas Riyandi <andika.riyan@gmail.com>",
   "Basile Henry <bjm.henry@gmail.com>",
   "Jonas Chevalier <zimbatm@zimbatm.com>",
 ]
-edition = "2018"
-description = "one CLI to format the code tree"
-license = "MIT"
+homepage = "https://numtide.github.io/treefmt"
+documentation = "https://numtide.github.io/treefmt"
 repository = "https://github.com/numtide/treefmt"
+readme = "README.md"
+keywords = ["formatting"]
+categories = ["command-line-utilities", "development-tools"]
+include = ["src/**/*", "/Cross.toml", "/LICENSE.md", "/README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
