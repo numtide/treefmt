@@ -105,6 +105,17 @@ options = ["--edition", "2018"]
 includes = ["*.rs"]
 ```
 
+## [rufo](https://github.com/ruby-formatter/rufo)
+
+Rufo is an opinionated ruby formatter. By default it exits with status 3 on
+file change so we have to pass the `-x` option.
+
+```toml
+command = "rufo"
+options = ["-x"]
+includes = ["*.rb"]
+```
+
 ## cargo fmt
 
 `cargo fmt` is not supported as it doesn't follow the spec. It doesn't allow
@@ -118,10 +129,10 @@ A shell code formatter.
 ```toml
 command = "shfmt"
 options = [
-    "-i",
-    "2",  # indent 2
-    "-s",  # simplify the code
-    "-w",  # write back to the file
+  "-i",
+  "2",  # indent 2
+  "-s",  # simplify the code
+  "-w",  # write back to the file
 ]
 includes = ["*.sh"]
 ```

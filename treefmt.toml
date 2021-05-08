@@ -32,6 +32,11 @@ includes = ["*.nix"]
 # Act as an example on how to exlude specific files
 excludes = ["examples/nix/sources.nix"]
 
+[formatter.ruby]
+command = "rufo"
+options = ["-x"]
+includes = ["*.rb"]
+
 [formatter.prettier]
 command = "prettier"
 options = ["--write"]
