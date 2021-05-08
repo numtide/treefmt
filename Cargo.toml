@@ -15,7 +15,13 @@ repository = "https://github.com/numtide/treefmt"
 readme = "README.md"
 keywords = ["formatting"]
 categories = ["command-line-utilities", "development-tools"]
-include = ["src/**/*", "/Cross.toml", "/LICENSE.md", "/README.md"]
+include = [
+  "/Cross.toml",
+  "/LICENSE.md",
+  "/README.md",
+  "/benches/**/*",
+  "/src/**/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
