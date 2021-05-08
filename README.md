@@ -37,10 +37,10 @@ quite tricky.
 
 ## Usage
 
-`$ cargo run -- --help`
+`$ treefmt --help`
 
 ```
-treefmt 0.2.0
+treefmt 0.2.1
 ✨  format all your language!
 
 USAGE:
