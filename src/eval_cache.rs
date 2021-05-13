@@ -1,6 +1,5 @@
 //! Keep track of evaluations
 use crate::{
-    customlog,
     formatter::{Formatter, FormatterName},
     get_path_mtime, Mtime,
 };
@@ -87,9 +86,7 @@ impl CacheManifest {
         let mut f = File::create(manifest_path)?;
         f.write_all(
             format!(
-                "# {} DO NOT HAND EDIT THIS FILE {}\n\n{}",
-                customlog::WARN,
-                customlog::WARN,
+                "# DO NOT HAND EDIT THIS FILE\n\n{}",
                 toml::to_string_pretty(&self)?
             )
             .as_bytes(),
