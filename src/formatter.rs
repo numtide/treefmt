@@ -84,15 +84,17 @@ impl Formatter {
     /// Run the formatter on the given paths
     // TODO: handle E2BIG
     pub fn fmt(&self, paths: &[PathBuf]) -> Result<()> {
-        let mut cmd_arg = Command::new(&self.command);
+        let mut cmd = Command::new(&self.command);
         // Set the command to run under its working directory.
-        cmd_arg.current_dir(&self.work_dir);
+        cmd.current_dir(&self.work_dir);
         // Append the default options to the command.
-        cmd_arg.args(&self.options);
+        cmd.args(&self.options);
         // Append all of the file paths to format.
-        cmd_arg.args(paths);
+        cmd.args(paths);
+
+        debug!("running {:?}", cmd);
         // And run
-        match cmd_arg.output() {
+        match cmd.output() {
             Ok(out) => {
                 if !out.status.success() {
                     debug!(
