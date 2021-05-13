@@ -18,31 +18,11 @@ impl log::Log for CustomLog {
 
     fn log(&self, record: &Record) {
         match record.level() {
-            Level::Trace => eprintln!(
-                "{}: {}",
-                style("[DEBUG]").bold().dim(),
-                record.args()
-            ),
-            Level::Debug => eprintln!(
-                "{}: {}",
-                style("[DEBUG]").bold().dim(),
-                record.args()
-            ),
-            Level::Info => eprintln!(
-                "{}: {}",
-                style("[INFO]").bold().dim(),
-                record.args()
-            ),
-            Level::Warn => eprintln!(
-                "{}: {}",
-                style("[WARN]").bold().dim(),
-                record.args()
-            ),
-            Level::Error => eprintln!(
-                "{}: {}",
-                style("[ERR]").bold().dim(),
-                record.args()
-            ),
+            Level::Trace => eprintln!("{}: {}", style("[DEBUG]").bold().dim(), record.args()),
+            Level::Debug => eprintln!("{}: {}", style("[DEBUG]").bold().dim(), record.args()),
+            Level::Info => eprintln!("{}: {}", style("[INFO]").bold().dim(), record.args()),
+            Level::Warn => eprintln!("{}: {}", style("[WARN]").bold().dim(), record.args()),
+            Level::Error => eprintln!("{}: {}", style("[ERR]").bold().dim(), record.args()),
         }
     }
     // ignore, stderr is already flushed by default
