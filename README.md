@@ -73,7 +73,7 @@ In order to use `treefmt` in the project, `treefmt.toml` should exists in the ro
 ```
 [formatter.nix]
 command = "nixpkgs-fmt"
-include = ["*.nix"]
+includes = ["*.nix"]
 
 [formatter.rust]
 command = "rustfmt"
