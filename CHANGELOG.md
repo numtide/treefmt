@@ -1,4 +1,10 @@
 
+0.2.2 / 2021-05-31
+==================
+
+  * print the executed formatters in debug mode
+  * customlog: remove emojis
+
 0.2.1 / 2021-05-08
 ==================
 
