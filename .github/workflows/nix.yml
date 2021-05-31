@@ -19,7 +19,7 @@ jobs:
       - uses: cachix/cachix-action@v10
         with:
           name: numtide
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: ./ci.sh
   docs:
     strategy:
@@ -32,7 +32,7 @@ jobs:
       - uses: cachix/cachix-action@v10
         with:
           name: numtide
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - run: |
           nix-build -A docs
           cp -r "$(readlink ./result)" book
