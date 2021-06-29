@@ -1,8 +1,29 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem
+, inputs ? import ./flake.lock.nix { }
+}:
 let
-  flake-compat = import ./flake-compat.nix {
+  nixpkgs = import inputs.nixpkgs {
     inherit system;
+    # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
+    config = { };
   };
+
+  devshell = import inputs.devshell {
+    inherit system;
+    pkgs = nixpkgs;
+  };
+
+  naersk = nixpkgs.callPackage inputs.naersk { };
 in
-  flake-compat.defaultNix.packages.${system} or
-    (throw "The system '${system}' is not supported. Please open an issue!")
+{
+  # What is used when invoking `nix run github:numtide/treefmt`
+  treefmt = naersk.buildPackage {
+    src = nixpkgs.lib.cleanSource ./.;
+  };
+
+  # A collection of packages for the project
+  docs = nixpkgs.callPackage ./docs { };
+
+  # The development environment
+  devShell = devshell.fromTOML ./devshell.toml;
+}
