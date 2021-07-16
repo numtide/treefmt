@@ -73,7 +73,10 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
-    let global_excludes = project_config.excludes;
+    let global_excludes = project_config
+        .global
+        .map(|g| g.excludes)
+        .unwrap_or_default();
 
     timed_debug("load config");
 
@@ -333,7 +336,10 @@ pub fn run_treefmt_stdin(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
-    let global_excludes = project_config.excludes;
+    let global_excludes = project_config
+        .global
+        .map(|g| g.excludes)
+        .unwrap_or_default();
 
     // Load all the formatter instances from the config. Ignore the ones that failed.
     let formatters = project_config.formatter.into_iter().fold(

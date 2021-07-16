@@ -11,11 +11,18 @@ pub const FILENAME: &str = "treefmt.toml";
 /// treefmt.toml structure
 #[derive(Debug, Deserialize)]
 pub struct Root {
+    /// Config that applies to every formatter
+    pub global: Option<GlobalConfig>,
+    /// Map of formatters into the config
+    pub formatter: BTreeMap<String, FmtConfig>,
+}
+
+/// Global config which applies to every formatter
+#[derive(Debug, Deserialize)]
+pub struct GlobalConfig {
     /// Global glob to exclude files or folder for all formatters
     #[serde(default)]
     pub excludes: Vec<String>,
-    /// Map of formatters into the config
-    pub formatter: BTreeMap<String, FmtConfig>,
 }
 
 /// Config for each formatters
