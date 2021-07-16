@@ -22,3 +22,12 @@ This section describes the integration between a single formatter and
 
 - `excludes`: A list of glob patterns to deny. If any of these patterns match,
   the file will be excluded.
+
+## Global config
+
+This section describes the config that applies to every formatters.
+In the top level of `treefmt.toml`:
+
+- `excludes`: A list of glob patterns to deny. If any of these patterns match,
+  the file will be excluded. This list is appended to individual formatters'
+  exclude lists.

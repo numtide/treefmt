@@ -73,22 +73,24 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
+    let global_excludes = project_config.excludes;
+
     timed_debug("load config");
 
     // Load all the formatter instances from the config. Ignore the ones that failed.
-    let formatters =
-        project_config
-            .formatter
-            .iter()
-            .fold(BTreeMap::new(), |mut sum, (name, fmt_config)| {
-                match Formatter::from_config(&tree_root, &name, &fmt_config) {
-                    Ok(fmt_matcher) => {
-                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                    }
-                    Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
-                };
-                sum
-            });
+    let formatters = project_config.formatter.into_iter().fold(
+        BTreeMap::new(),
+        |mut sum, (name, mut fmt_config)| {
+            fmt_config.excludes.extend_from_slice(&global_excludes);
+            match Formatter::from_config(&tree_root, &name, &fmt_config) {
+                Ok(fmt_matcher) => {
+                    sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                }
+                Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
+            };
+            sum
+        },
+    );
 
     timed_debug("load formatters");
 
@@ -331,20 +333,22 @@ pub fn run_treefmt_stdin(
     // Load the treefmt.toml file
     let project_config = config::from_path(&treefmt_toml)?;
 
+    let global_excludes = project_config.excludes;
+
     // Load all the formatter instances from the config. Ignore the ones that failed.
-    let formatters =
-        project_config
-            .formatter
-            .iter()
-            .fold(BTreeMap::new(), |mut sum, (name, fmt_config)| {
-                match Formatter::from_config(&tree_root, &name, &fmt_config) {
-                    Ok(fmt_matcher) => {
-                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                    }
-                    Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
-                };
-                sum
-            });
+    let formatters = project_config.formatter.into_iter().fold(
+        BTreeMap::new(),
+        |mut sum, (name, mut fmt_config)| {
+            fmt_config.excludes.extend_from_slice(&global_excludes);
+            match Formatter::from_config(&tree_root, &name, &fmt_config) {
+                Ok(fmt_matcher) => {
+                    sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                }
+                Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
+            };
+            sum
+        },
+    );
 
     // Collect all formatters that match the path
     let formatters: Vec<&Formatter> = formatters.values().filter(|f| f.is_match(&path)).collect();
