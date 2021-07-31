@@ -9,7 +9,7 @@
 
 [![Support room on Matrix](https://img.shields.io/matrix/treefmt:numtide.com.svg?label=%23treefmt%3Anumtide.com&logo=matrix&server_fqdn=matrix.numtide.com)](https://matrix.to/#/#treefmt:numtide.com)
 
-**Status: alpha**
+**Status: beta**
 
 When working on large code trees, it's common to have multiple code
 formatters run against it. And have one script that loops over all of them.
