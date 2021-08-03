@@ -127,7 +127,10 @@ pub fn run_treefmt(
         match walk_entry {
             Ok(dir_entry) => {
                 if let Some(file_type) = dir_entry.file_type() {
-                    if !file_type.is_dir() {
+                    // Ignore folders and symlinks. We don't want to format files outside the
+                    // directory, and if the symlink destination is in the repo, it'll be matched
+                    // when iterating over it.
+                    if !file_type.is_dir() && !file_type.is_symlink() {
                         // Keep track of how many files were traversed
                         traversed_files += 1;
 
