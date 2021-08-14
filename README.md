@@ -40,7 +40,7 @@ quite tricky.
 `$ treefmt --help`
 
 ```
-treefmt 0.2.4
+treefmt 0.2.5
 ✨  format all your language!
 
 USAGE:
