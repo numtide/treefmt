@@ -38,6 +38,7 @@ quite tricky.
 ## Usage
 
 `$ treefmt --help`
+
 ```
 treefmt 0.2.3
 ✨  format all your language!
