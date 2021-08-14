@@ -973,7 +973,7 @@ dependencies = [
 
 [[package]]
 name = "treefmt"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "console",
