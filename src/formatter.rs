@@ -4,7 +4,7 @@ use crate::{expand_exe, expand_if_path, expand_path};
 use anyhow::{anyhow, Result};
 use console::style;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
-use log::debug;
+use log::{debug, info};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt, path::Path, path::PathBuf, process::Command};
@@ -97,7 +97,7 @@ impl Formatter {
         match cmd.output() {
             Ok(out) => {
                 if !out.status.success() {
-                    debug!(
+                    info!(
                         "Error using formatter {}:\n{stdout}:\n{}\n{stderr}:\n{}",
                         self.name,
                         String::from_utf8_lossy(&out.stdout),
