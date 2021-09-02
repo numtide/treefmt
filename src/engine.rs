@@ -307,7 +307,7 @@ traversed {} files
 matched {} files to formatters
 left with {} files after cache
 of whom {} files were re-formatted
-all of this in {:.2?}
+all of this in {:.0?}
         "#,
         traversed_files,
         matched_files,
