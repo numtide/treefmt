@@ -13,6 +13,8 @@ packages = [
   # Build tools
   "rust-analyzer",
 
+  "rust.packages.stable.rustPlatform.rustLibSrc",
+
   # Code formatters
   "elmPackages.elm-format",
   "go",
@@ -31,3 +33,4 @@ packages = [
 [[env]]
 name = "PATH"
 eval = "$PWD/target/debug:$PATH"
+
