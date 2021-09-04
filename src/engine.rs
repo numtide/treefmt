@@ -48,7 +48,6 @@ pub fn run_treefmt(
     };
 
     let mut traversed_files: usize = 0;
-    let mut matched_files: usize = 0;
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
@@ -143,9 +142,6 @@ pub fn run_treefmt(
                         // FIXME: complain if multiple matchers match the same path.
                         for (_, fmt) in formatters.clone() {
                             if fmt.clone().is_match(&path) {
-                                // Keep track of how many files were associated with a formatter
-                                matched_files += 1;
-
                                 // unwrap: since the file exists, we assume that the metadata is also available
                                 let mtime = get_meta_mtime(&dir_entry.metadata().unwrap());
 
@@ -171,9 +167,6 @@ pub fn run_treefmt(
     let matches = cache.filter_matches(matches);
 
     timed_debug("filter_matches");
-
-    // Keep track of the paths that are actually going to be formatted
-    let filtered_files: usize = matches.values().map(|x| x.len()).sum();
 
     // Now run all the formatters and collect the formatted paths.
     let new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = matches
@@ -263,22 +256,10 @@ pub fn run_treefmt(
 
     match display_type {
         DisplayType::Summary => {
-            print_summary(
-                traversed_files,
-                matched_files,
-                filtered_files,
-                reformatted_files,
-                start_time,
-            );
+            print_summary(traversed_files, reformatted_files, start_time);
         }
         DisplayType::Long => {
-            print_summary(
-                traversed_files,
-                matched_files,
-                filtered_files,
-                reformatted_files,
-                start_time,
-            );
+            print_summary(traversed_files, reformatted_files, start_time);
             println!("\nformatted files:");
             for (name, paths) in changed_matches {
                 if !paths.is_empty() {
@@ -294,25 +275,11 @@ pub fn run_treefmt(
     ret
 }
 
-fn print_summary(
-    traversed_files: usize,
-    matched_files: usize,
-    filtered_files: usize,
-    reformatted_files: usize,
-    start_time: std::time::Instant,
-) {
+fn print_summary(traversed_files: usize, reformatted_files: usize, start_time: std::time::Instant) {
     println!(
-        r#"
-traversed {} files
-matched {} files to formatters
-left with {} files after cache
-of whom {} files were re-formatted
-all of this in {:.0?}
-        "#,
-        traversed_files,
-        matched_files,
-        filtered_files,
+        "\n{} file(s) changed (processed {} file(s) in {:.0?})\n",
         reformatted_files,
+        traversed_files,
         start_time.elapsed()
     );
 }
@@ -413,4 +380,10 @@ pub fn run_treefmt_stdin(
     tmpfile.close()?;
 
     ret
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn output() {}
 }
