@@ -1,10 +1,6 @@
-#!/usr/bin/env nix-shell
-#!nix-shell -i bash
+#!/usr/bin/env bash
 # nix-shell loads the devshell making rust and all the formatters available.
-# shellcheck shell=bash
-set -euo pipefail
-
-set -x
+set -exuo pipefail
 
 # Quick sanity check
 cargo test
@@ -13,4 +9,4 @@ cargo test
 cargo run -- --fail-on-change
 
 # Build the nix package
-nix-build
+nix-build --no-out-link
