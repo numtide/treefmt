@@ -1,4 +1,3 @@
-use crate::config;
 use crate::engine::run_treefmt;
 use anyhow::anyhow;
 use directories::ProjectDirs;
@@ -9,6 +8,7 @@ use std::path::{Path, PathBuf};
 pub fn format_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
+    config_file: &PathBuf,
     paths: &[PathBuf],
     clear_cache: bool,
     fail_on_change: bool,
@@ -19,18 +19,6 @@ pub fn format_cmd(
             return Err(anyhow!(
             "Could not find the project directories. On Unix, check if the HOME env is missing."
         ))
-        }
-    };
-
-    // Search for the treefmt.toml from there.
-    let config_file = match config::lookup(&work_dir) {
-        Some(path) => path,
-        None => {
-            return Err(anyhow!(
-                "{} could not be found in {} and up. Use the --init option to create one.",
-                config::FILENAME,
-                work_dir.display()
-            ))
         }
     };
 
