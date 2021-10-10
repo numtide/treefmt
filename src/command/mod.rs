@@ -8,7 +8,9 @@ mod init;
 use self::format::format_cmd;
 use self::format_stdin::format_stdin_cmd;
 use self::init::init_cmd;
+use crate::config;
 use crate::expand_path;
+use anyhow::anyhow;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -51,6 +53,10 @@ pub struct Cli {
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
     pub tree_root: Option<PathBuf>,
 
+    #[structopt(long = "config-file")]
+    /// Run with the specified config file, which is not required to be in the tree to be formatted.
+    pub config_file: Option<PathBuf>,
+
     #[structopt()]
     /// Paths to format. Defaults to formatting the whole tree.
     pub paths: Vec<PathBuf>,
@@ -69,6 +75,26 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
     if let Some(tree_root) = cli.tree_root {
         cli.tree_root = Some(expand_path(&tree_root, &cwd));
     }
+
+    match cli.config_file {
+        None => {
+            // Find the config file if not specified by the user.
+            cli.config_file = config::lookup(&cli.work_dir);
+        }
+        Some(_) => {
+            if cli.tree_root.is_none() {
+                return Err(anyhow!(
+                    "If --config-file is set, --tree-root must also be set"
+                ));
+            }
+        }
+    }
+
+    // Make sure the config_file points to an absolute path.
+    if let Some(config_file) = cli.config_file {
+        cli.config_file = Some(expand_path(&config_file, &cwd));
+    }
+
     Ok(cli)
 }
 
@@ -79,9 +105,22 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     } else if cli.stdin {
         format_stdin_cmd(&cli.tree_root, &cli.work_dir, &cli.paths)?
     } else {
+        // Fail if configuration could not be found. This is checked
+        // here to avoid aborting before init_cmd.
+        if cli.config_file.is_none() {
+            return Err(anyhow!(
+                "{} could not be found in {} and up. Use the --init option to create one or specify --config-file if it is in a non-standard location.",
+                config::FILENAME,
+                cli.work_dir.display(),
+            ));
+        }
+
         format_cmd(
             &cli.tree_root,
             &cli.work_dir,
+            &cli.config_file
+                .as_ref()
+                .expect("presence asserted in ::cli_from_args"),
             &cli.paths,
             cli.clear_cache,
             cli.fail_on_change,
