@@ -96,7 +96,7 @@ let
                 (resolveInput lockFile.nodes.${nodeName}.inputs.${builtins.head path})
                 (builtins.tail path);
 
-          result = sourceInfo // { inherit inputs;inherit sourceInfo; };
+          result = sourceInfo // { inherit inputs; inherit sourceInfo; };
         in
         if node.flake or true then
           result

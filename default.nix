@@ -13,13 +13,15 @@ let
     pkgs = nixpkgs;
   };
 
-  naersk = nixpkgs.callPackage inputs.naersk { };
+  cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
 in
 {
   # What is used when invoking `nix run github:numtide/treefmt`
-  treefmt = naersk.buildPackage
+  treefmt = nixpkgs.pkgs.rustPlatform.buildRustPackage
     {
       src = nixpkgs.lib.cleanSource ./.;
+      inherit (cargoToml.package) name version;
+      cargoLock.lockFile = ./Cargo.lock;
     } // { meta.description = "one CLI to format the code tree"; };
 
   # A collection of packages for the project
