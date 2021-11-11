@@ -17,9 +17,10 @@ let
 in
 {
   # What is used when invoking `nix run github:numtide/treefmt`
-  treefmt = naersk.buildPackage {
-    src = nixpkgs.lib.cleanSource ./.;
-  };
+  treefmt = naersk.buildPackage
+    {
+      src = nixpkgs.lib.cleanSource ./.;
+    } // { meta.description = "one CLI to format the code tree"; };
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };
