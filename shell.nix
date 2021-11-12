@@ -1,2 +1,2 @@
 { system ? builtins.currentSystem }:
-(import ./. { inherit system; }).devShell
+(import ./. { inherit system; }).treefmt

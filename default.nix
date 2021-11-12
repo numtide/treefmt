@@ -1,32 +1,51 @@
 { system ? builtins.currentSystem
 , inputs ? import ./flake.lock.nix { }
-}:
-let
-  nixpkgs = import inputs.nixpkgs {
+, nixpkgs ? import inputs.nixpkgs {
     inherit system;
     # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
     config = { };
-  };
-
-  devshell = import inputs.devshell {
-    inherit system;
-    pkgs = nixpkgs;
-  };
-
+    overlays = [ ];
+  }
+}:
+let
   cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
 in
 {
   # What is used when invoking `nix run github:numtide/treefmt`
-  treefmt = nixpkgs.pkgs.rustPlatform.buildRustPackage
-    {
-      src = nixpkgs.lib.cleanSource ./.;
-      inherit (cargoToml.package) name version;
-      cargoLock.lockFile = ./Cargo.lock;
-    } // { meta.description = "one CLI to format the code tree"; };
+  treefmt = nixpkgs.pkgs.rustPlatform.buildRustPackage {
+    inherit (cargoToml.package) name version;
+
+    src = nixpkgs.lib.cleanSource ./.;
+
+    # Those are being used in tests
+    nativeBuildInputs = with nixpkgs; [
+      # Build tools
+      rust-analyzer
+
+      # Code formatters
+      elmPackages.elm-format
+      go
+      haskellPackages.cabal-fmt
+      haskellPackages.ormolu
+      nixpkgs-fmt
+      nodePackages.prettier
+      python3.pkgs.black
+      rufo
+      shfmt
+      terraform
+
+      mdbook
+    ];
+
+    buildInputs = with nixpkgs; lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security libiconv ];
+
+    doCheck = true;
+
+    cargoLock.lockFile = ./Cargo.lock;
+
+    meta.description = "one CLI to format the code tree";
+  };
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };
-
-  # The development environment
-  devShell = devshell.fromTOML ./devshell.toml;
 }
