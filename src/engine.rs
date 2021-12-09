@@ -369,6 +369,7 @@ pub fn run_treefmt_stdin(
         warn!("no formatter found for path {:?}", path);
         // Just copy stdin to stdout
         io::copy(&mut io::stdin().lock(), &mut io::stdout().lock())?;
+        return Ok(()); // Nothing more to do here
     } else if formatters.len() > 1 {
         warn!("multiple formatters matched the path. picking the first one");
     } else {
