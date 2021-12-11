@@ -118,7 +118,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
         format_cmd(
             &cli.tree_root,
             &cli.work_dir,
-            &cli.config_file
+            cli.config_file
                 .as_ref()
                 .expect("presence asserted in ::cli_from_args"),
             &cli.paths,

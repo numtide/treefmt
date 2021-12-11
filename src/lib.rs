@@ -41,7 +41,7 @@ pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
 }
 
 /// Resolve the command into an absolute path.
-fn expand_exe(command: &String, reference: &Path) -> Result<PathBuf> {
+fn expand_exe(command: &str, reference: &Path) -> Result<PathBuf> {
     Ok(which_in(command, env::var_os("PATH"), reference)?.clean())
 }
 

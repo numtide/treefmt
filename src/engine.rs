@@ -71,7 +71,7 @@ pub fn run_treefmt(
     }
 
     // Load the treefmt.toml file
-    let project_config = config::from_path(&treefmt_toml)?;
+    let project_config = config::from_path(treefmt_toml)?;
 
     let global_excludes = project_config
         .global
@@ -85,7 +85,7 @@ pub fn run_treefmt(
         BTreeMap::new(),
         |mut sum, (name, mut fmt_config)| {
             fmt_config.excludes.extend_from_slice(&global_excludes);
-            match Formatter::from_config(&tree_root, &name, &fmt_config) {
+            match Formatter::from_config(tree_root, &name, &fmt_config) {
                 Ok(fmt_matcher) => {
                     sum.insert(fmt_matcher.name.clone(), fmt_matcher);
                 }
@@ -102,7 +102,7 @@ pub fn run_treefmt(
         // Start with an empty cache
         CacheManifest::default()
     } else {
-        CacheManifest::load(&cache_dir, &treefmt_toml)
+        CacheManifest::load(cache_dir, treefmt_toml)
     };
     timed_debug("load cache");
     // Insert the new formatter configs
@@ -181,7 +181,7 @@ pub fn run_treefmt(
         .map(|(formatter_name, path_mtime)| {
             let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
             // unwrap: the key exists since matches was built from that previous collection
-            let formatter = formatters.get(&formatter_name).unwrap();
+            let formatter = formatters.get(formatter_name).unwrap();
 
             // Don't run the formatter if there are no paths to format!
             if paths.is_empty() {
@@ -191,7 +191,7 @@ pub fn run_treefmt(
 
                 // Run the formatter
                 for path_chunks in paths.chunks(1024) {
-                    formatter.clone().fmt(&path_chunks)?;
+                    formatter.clone().fmt(path_chunks)?;
                 }
 
                 // Get the new mtimes and compare them to the original ones
@@ -340,7 +340,7 @@ pub fn run_treefmt_stdin(
     };
 
     // Load the treefmt.toml file
-    let project_config = config::from_path(&treefmt_toml)?;
+    let project_config = config::from_path(treefmt_toml)?;
 
     let global_excludes = project_config
         .global
@@ -352,7 +352,7 @@ pub fn run_treefmt_stdin(
         BTreeMap::new(),
         |mut sum, (name, mut fmt_config)| {
             fmt_config.excludes.extend_from_slice(&global_excludes);
-            match Formatter::from_config(&tree_root, &name, &fmt_config) {
+            match Formatter::from_config(tree_root, &name, &fmt_config) {
                 Ok(fmt_matcher) => {
                     sum.insert(fmt_matcher.name.clone(), fmt_matcher);
                 }

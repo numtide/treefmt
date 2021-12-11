@@ -8,15 +8,16 @@
   outputs = { self, nixpkgs, flake-utils }@inputs:
     flake-utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
       let
-        pkgs = import ./. {
-          inherit system inputs;
+        pkgs = import self {
+          inherit system;
+          inputs = null;
           nixpkgs = nixpkgs.legacyPackages.${system};
         };
       in
       {
-        defaultPackage = pkgs.treefmt;
-        packages = pkgs;
-        devShell = pkgs.treefmt;
+        defaultPackage = pkgs.defaultPackage;
+        legacyPackages = pkgs;
+        devShell = pkgs.devShell;
       }
     );
 }

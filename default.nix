@@ -6,13 +6,13 @@
     config = { };
     overlays = [ ];
   }
+, rustPackages ? nixpkgs.rustPackages
 }:
 let
   cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
-in
-{
+
   # What is used when invoking `nix run github:numtide/treefmt`
-  treefmt = nixpkgs.pkgs.rustPlatform.buildRustPackage {
+  treefmt = rustPackages.rustPlatform.buildRustPackage {
     inherit (cargoToml.package) name version;
 
     src = nixpkgs.lib.cleanSource ./.;
@@ -20,6 +20,7 @@ in
     # Those are being used in tests
     nativeBuildInputs = with nixpkgs; [
       # Build tools
+      rustPackages.clippy
       rust-analyzer
 
       # Code formatters
@@ -45,7 +46,14 @@ in
 
     meta.description = "one CLI to format the code tree";
   };
+in
+{
+  inherit treefmt;
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };
+
+  # Flake attributes
+  defaultPackage = treefmt;
+  devShell = treefmt;
 }
