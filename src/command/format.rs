@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 pub fn format_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
-    config_file: &PathBuf,
+    config_file: &Path,
     paths: &[PathBuf],
     clear_cache: bool,
     fail_on_change: bool,
@@ -25,7 +25,7 @@ pub fn format_cmd(
     // Default the tree root to the folder that contains the config file
     let tree_root = tree_root.clone().unwrap_or_else(|| {
         // unwrap: since the config_file is a file, there MUST be a parent folder.
-        config_file.clone().parent().unwrap().to_path_buf()
+        config_file.parent().unwrap().to_path_buf()
     });
 
     // Default to the tree root if no paths have been given
@@ -51,9 +51,9 @@ pub fn format_cmd(
     // Finally run the main formatter logic from the engine.
     run_treefmt(
         &tree_root,
-        &work_dir,
+        work_dir,
         &cache_dir,
-        &config_file,
+        config_file,
         &paths,
         clear_cache,
         fail_on_change,

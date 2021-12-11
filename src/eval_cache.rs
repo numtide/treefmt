@@ -127,7 +127,7 @@ impl CacheManifest {
 
         // Now discard all the paths who don't have an associated formatter
         for name in old_formatters.keys() {
-            self.matches.remove(&name);
+            self.matches.remove(name);
         }
     }
 

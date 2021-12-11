@@ -22,7 +22,7 @@ pub fn format_stdin_cmd(
     };
 
     // Search for the treefmt.toml from there.
-    let config_file = match config::lookup(&work_dir) {
+    let config_file = match config::lookup(work_dir) {
         Some(path) => path,
         None => {
             return Err(anyhow!(
@@ -62,7 +62,7 @@ pub fn format_stdin_cmd(
     );
 
     // Finally run the main formatter logic from the engine.
-    run_treefmt_stdin(&tree_root, &work_dir, &cache_dir, &config_file, &path)?;
+    run_treefmt_stdin(&tree_root, work_dir, &cache_dir, &config_file, &path)?;
 
     Ok(())
 }

@@ -153,9 +153,9 @@ impl Formatter {
     pub fn from_config(tree_root: &Path, name: &str, cfg: &FmtConfig) -> Result<Self> {
         let name = FormatterName(name.to_string());
         // Expand the work_dir to an absolute path, using the project root as a reference.
-        let work_dir = expand_path(&cfg.work_dir, &tree_root);
+        let work_dir = expand_path(&cfg.work_dir, tree_root);
         // Resolve the path to the binary
-        let command = expand_exe(&cfg.command, &tree_root)?;
+        let command = expand_exe(&cfg.command, tree_root)?;
         debug!("Found {} at {}", cfg.command, command.display());
         assert!(command.is_absolute());
 
@@ -188,7 +188,7 @@ impl fmt::Display for Formatter {
 fn patterns_to_glob_set(tree_root: &Path, patterns: &[String]) -> Result<GlobSet> {
     let mut sum = GlobSetBuilder::new();
     for pattern in patterns {
-        let pattern = expand_if_path(pattern.to_string(), &tree_root);
+        let pattern = expand_if_path(pattern.to_string(), tree_root);
         let glob = GlobBuilder::new(&pattern).build()?;
         sum.add(glob);
     }
