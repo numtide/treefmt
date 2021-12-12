@@ -70,5 +70,15 @@ options = [
 includes = ["*.sh"]
 
 [formatter.terraform]
-command = "./scripts/terraform-fmt"
+# Terraform fmt only takes one file at the time so we create a wrapper.
+# See https://github.com/numtide/treefmt/issues/97
+command = "/bin/sh"
+options = [
+    "-euc",
+    """
+for f in "$@"; do
+  terraform fmt "$f"
+done
+    """
+]
 includes = ["*.tf"]
