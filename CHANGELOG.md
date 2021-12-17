@@ -1,4 +1,16 @@
 
+0.3.0 / 2021-12-17
+==================
+
+  * formatter: noop on zero args
+  * treefmt.toml: add shellcheck example
+  * doc: add inline script example
+  * Handle the case where no formatter match path for stdin (#138)
+  * Trade in naersk for a newer version of nixpkgs (#134)
+  * Add meta.description to play nicely with devshell menu (#132)
+  * allow config files to be independent from worktree location (#131)
+  * display round ms
+
 0.2.6 / 2021-08-31
 ==================
 

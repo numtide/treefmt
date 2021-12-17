@@ -1,6 +1,6 @@
 [package]
 name = "treefmt"
-version = "0.2.6"
+version = "0.3.0"
 edition = "2018"
 description = "one CLI to format the code tree"
 license = "MIT"

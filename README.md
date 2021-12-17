@@ -38,9 +38,8 @@ quite tricky.
 ## Usage
 
 `$ treefmt --help`
-
 ```
-treefmt 0.2.6
+treefmt 0.3.0
 ✨  format all your language!
 
 USAGE:
@@ -57,10 +56,12 @@ FLAGS:
     -v, --verbose           Log verbosity is based off the number of v used
 
 OPTIONS:
-        --tree-root <tree-root>    Set the path to the tree root directory. Defaults to the folder holding the
-                                   treefmt.toml file
-    -C <work-dir>                  Run as if treefmt was started in <work-dir> instead of the current working directory
-                                   [default: .]
+        --config-file <config-file>    Run with the specified config file, which is not required to be in the tree to be
+                                       formatted
+        --tree-root <tree-root>        Set the path to the tree root directory. Defaults to the folder holding the
+                                       treefmt.toml file
+    -C <work-dir>                      Run as if treefmt was started in <work-dir> instead of the current working
+                                       directory [default: .]
 
 ARGS:
     <paths>...    Paths to format. Defaults to formatting the whole tree
