@@ -30,22 +30,13 @@ pub struct FormatterInfo {
     pub work_dir: PathBuf,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 /// RootManifest
 pub struct CacheManifest {
     /// Map of all the formatter infos
     pub formatters: BTreeMap<FormatterName, FormatterInfo>,
     /// Map of all the formatted paths
     pub matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
-}
-
-impl Default for CacheManifest {
-    fn default() -> Self {
-        Self {
-            formatters: BTreeMap::new(),
-            matches: BTreeMap::new(),
-        }
-    }
 }
 
 impl Clone for CacheManifest {
