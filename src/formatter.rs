@@ -84,6 +84,11 @@ impl Formatter {
     /// Run the formatter on the given paths
     // TODO: handle E2BIG
     pub fn fmt(&self, paths: &[PathBuf]) -> Result<()> {
+        // Don't run the formatter if there is nothing to format
+        if paths.is_empty() {
+            return Ok(());
+        }
+
         let mut cmd = Command::new(&self.command);
         // Set the command to run under its working directory.
         cmd.current_dir(&self.work_dir);
