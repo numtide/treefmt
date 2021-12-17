@@ -33,6 +33,7 @@ let
       python3.pkgs.black
       rufo
       rustPackages.rustfmt
+      shellcheck
       shfmt
       terraform
 

@@ -60,12 +60,16 @@ options = ["--edition", "2018"]
 includes = ["*.rs"]
 
 [formatter.shell]
-command = "shfmt"
+command = "/bin/sh"
 options = [
-    "-i",
-    "2",  # indent 2
-    "-s",  # simplify the code
-    "-w",  # write back to the file
+    "-euc",
+    """
+# First lint all the scripts
+shellcheck "$@"
+
+# Then format them
+shfmt -i 2 -s -w "$@"
+    """
 ]
 includes = ["*.sh"]
 
