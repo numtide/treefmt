@@ -32,6 +32,7 @@ let
       nodePackages.prettier
       python3.pkgs.black
       rufo
+      rustPackages.rustfmt
       shfmt
       terraform
 
