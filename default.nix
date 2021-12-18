@@ -28,6 +28,7 @@ let
       go
       haskellPackages.cabal-fmt
       haskellPackages.ormolu
+      mdsh
       nixpkgs-fmt
       nodePackages.prettier
       python3.pkgs.black
@@ -39,6 +40,11 @@ let
 
       mdbook
     ];
+
+    shellHook = ''
+      # Put the treefmt binary on the PATH when it's built
+      export PATH=$PWD/target/debug:$PATH
+    '';
 
     buildInputs = with nixpkgs; lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security libiconv ];
 
