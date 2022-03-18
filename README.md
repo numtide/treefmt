@@ -83,6 +83,8 @@ options = ["--edition", "2018"]
 includes = ["*.rs"]
 ```
 
+See the [wiki](https://github.com/numtide/treefmt/wiki) for more examples.
+
 ## Use cases
 
 ### CLI usage
