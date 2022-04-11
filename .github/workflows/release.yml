@@ -107,7 +107,7 @@ jobs:
           cd -
 
       - name: Deploy | Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
