@@ -1,4 +1,21 @@
 
+0.4.0 / 2022-05-02
+==================
+
+  * Cargo update (#158)
+  * cli: add --no-cache option (#157)
+  * cache: also track file sizes (#155)
+  * build(deps): bump actions/download-artifact from 2 to 3 (#152)
+  * build(deps): bump actions/upload-artifact from 2 to 3 (#151)
+  * build(deps): bump cachix/install-nix-action from 16 to 17 (#150)
+  * build(deps): bump actions/cache from 2 to 3 (#148)
+  * README: link to wiki (#147)
+  * build(deps): bump actions/checkout from 2 to 3 (#146)
+  * website: remove landing page (#145)
+  * Update rust.yml
+  * nix: add mdsh to the devenv
+  * treefmt.toml: fix shell invocation
+
 0.3.0 / 2021-12-17
 ==================
 
