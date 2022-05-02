@@ -343,10 +343,10 @@ pub fn run_treefmt_stdin(
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     if !path.starts_with(&tree_root) {
-        anyhow!(
+        return Err(anyhow!(
             "Ignoring path {}, it is not in the project root",
             path.display()
-        );
+        ));
     };
 
     // Load the treefmt.toml file

@@ -29,7 +29,7 @@ pub fn format_stdin_cmd(
                 "{} could not be found in {} and up. Use the --init option to create one.",
                 config::FILENAME,
                 work_dir.display()
-            ))
+            ));
         }
     };
 
@@ -41,9 +41,14 @@ pub fn format_stdin_cmd(
 
     // Check that only one path was provided
     if paths.is_empty() {
-        anyhow!("--stdin requires the path of the target file as an argument");
+        return Err(anyhow!(
+            "--stdin requires the path of the target file as an argument"
+        ));
     } else if paths.len() > 1 {
-        anyhow!("--stdin requires one path but was given {}", paths.len());
+        return Err(anyhow!(
+            "--stdin requires one path but was given {}",
+            paths.len()
+        ));
     }
 
     let path = expand_path(paths.first().unwrap(), work_dir);
