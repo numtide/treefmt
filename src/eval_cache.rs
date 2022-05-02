@@ -1,7 +1,7 @@
 //! Keep track of evaluations
 use crate::{
     formatter::{Formatter, FormatterName},
-    get_path_mtime, Mtime,
+    get_path_meta, FileMeta,
 };
 
 use anyhow::Result;
@@ -18,16 +18,20 @@ use std::path::{Path, PathBuf};
 pub struct FormatterInfo {
     /// Absolute path to the command
     pub command: PathBuf,
-    /// Mtime of the command
-    pub command_mtime: Mtime,
     /// Absolute and symlink-resolved path to the command
     pub command_resolved: PathBuf,
-    /// mtime of the above
-    pub command_resolved_mtime: Mtime,
+
     /// formatter options
     pub options: Vec<String>,
     /// work_dir
     pub work_dir: PathBuf,
+
+    // Note that the fields below must come last due to the way toml serialization
+    // works which requires tables to be emitted after all values.
+    /// Metadata of the command
+    pub command_meta: FileMeta,
+    /// Metadata of the above
+    pub command_resolved_meta: FileMeta,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -36,7 +40,7 @@ pub struct CacheManifest {
     /// Map of all the formatter infos
     pub formatters: BTreeMap<FormatterName, FormatterInfo>,
     /// Map of all the formatted paths
-    pub matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
+    pub matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>,
 }
 
 impl Clone for CacheManifest {
@@ -126,8 +130,8 @@ impl CacheManifest {
     #[must_use]
     pub fn filter_matches(
         &self,
-        matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>,
-    ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> {
+        matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>,
+    ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> {
         matches
             .into_iter()
             .fold(BTreeMap::new(), |mut sum, (key, path_infos)| {
@@ -135,12 +139,14 @@ impl CacheManifest {
                     Some(prev_paths) => {
                         path_infos
                             .into_iter()
-                            .fold(BTreeMap::new(), |mut sum, (path, mtime)| {
-                                // Mtime(-1) is not a valid mtime and will therefor never match
-                                let prev_mtime = prev_paths.get(&path).unwrap_or(&Mtime(-1));
-                                if prev_mtime != &mtime {
-                                    // Keep the path if the mtimes don't match
-                                    sum.insert(path, mtime);
+                            .fold(BTreeMap::new(), |mut sum, (path, meta)| {
+                                // -1 is not a valid mtime and will therefor never match
+                                let prev_meta = prev_paths
+                                    .get(&path)
+                                    .unwrap_or(&FileMeta { mtime: -1, size: 0 });
+                                if prev_meta != &meta {
+                                    // Keep the path if the mtimes or file sizes don't match
+                                    sum.insert(path, meta);
                                 }
                                 sum
                             })
@@ -153,7 +159,7 @@ impl CacheManifest {
     }
 
     /// Merge recursively the new matches with the existing entries in the cache
-    pub fn add_results(&mut self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>) {
+    pub fn add_results(&mut self, matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>) {
         for (name, path_infos) in matches {
             if let Some(old_path_infos) = self.matches.get_mut(&name) {
                 old_path_infos.extend(path_infos);
@@ -167,18 +173,18 @@ impl CacheManifest {
 /// Gets all the info we want from the formatter
 fn load_formatter_info(fmt: Formatter) -> Result<FormatterInfo> {
     let command = fmt.command;
-    let command_mtime = get_path_mtime(&command)?;
+    let command_meta = get_path_meta(&command)?;
     // Resolve symlinks and everything
     let command_resolved = std::fs::canonicalize(command.clone())?;
-    let command_resolved_mtime = get_path_mtime(&command_resolved)?;
+    let command_resolved_meta = get_path_meta(&command_resolved)?;
     let options = fmt.options;
     let work_dir = fmt.work_dir;
     // TODO: does it matter if the includes and excludes are missing?
     Ok(FormatterInfo {
         command,
-        command_mtime,
+        command_meta,
         command_resolved,
-        command_resolved_mtime,
+        command_resolved_meta,
         options,
         work_dir,
     })

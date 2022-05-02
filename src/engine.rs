@@ -1,7 +1,7 @@
 //! The main formatting engine logic is in this module.
 
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName};
-use crate::{expand_path, formatter::Formatter, get_meta_mtime, get_path_mtime, Mtime};
+use crate::{expand_path, formatter::Formatter, get_meta, get_path_meta, FileMeta};
 use anyhow::anyhow;
 use ignore::WalkBuilder;
 use log::{debug, error, info, warn};
@@ -124,7 +124,7 @@ pub fn run_treefmt(
     };
 
     // Start a collection of formatter names to path to mtime
-    let mut matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = BTreeMap::new();
+    let mut matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> = BTreeMap::new();
 
     // Now traverse the filesystem and classify each file. We also want the file mtime to see if it changed
     // afterwards.
@@ -147,7 +147,7 @@ pub fn run_treefmt(
                                 matched_files += 1;
 
                                 // unwrap: since the file exists, we assume that the metadata is also available
-                                let mtime = get_meta_mtime(&dir_entry.metadata().unwrap());
+                                let mtime = get_meta(&dir_entry.metadata().unwrap());
 
                                 matches
                                     .entry(fmt.name)
@@ -176,7 +176,7 @@ pub fn run_treefmt(
     let filtered_files: usize = matches.values().map(|x| x.len()).sum();
 
     // Now run all the formatters and collect the formatted paths.
-    let new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>> = matches
+    let new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> = matches
         .par_iter()
         .map(|(formatter_name, path_mtime)| {
             let paths: Vec<PathBuf> = path_mtime.keys().cloned().collect();
@@ -200,7 +200,7 @@ pub fn run_treefmt(
                     .into_iter()
                     .fold(BTreeMap::new(), |mut sum, path| {
                         // unwrap: assume that the file still exists after formatting
-                        let mtime = get_path_mtime(&path).unwrap();
+                        let mtime = get_path_meta(&path).unwrap();
                         sum.insert(path, mtime);
                         sum
                     });
@@ -216,7 +216,7 @@ pub fn run_treefmt(
                 Ok((formatter_name.clone(), new_paths))
             }
         })
-        .collect::<anyhow::Result<BTreeMap<FormatterName, BTreeMap<PathBuf, Mtime>>>>()?;
+        .collect::<anyhow::Result<BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>>>()?;
     timed_debug("format");
 
     // Record the new matches in the cache
