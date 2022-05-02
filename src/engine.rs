@@ -26,6 +26,7 @@ pub fn run_treefmt(
     cache_dir: &Path,
     treefmt_toml: &Path,
     paths: &[PathBuf],
+    no_cache: bool,
     clear_cache: bool,
     fail_on_change: bool,
 ) -> anyhow::Result<()> {
@@ -98,15 +99,18 @@ pub fn run_treefmt(
     timed_debug("load formatters");
 
     // Load the eval cache
-    let mut cache = if clear_cache {
+    let mut cache = if no_cache || clear_cache {
         // Start with an empty cache
         CacheManifest::default()
     } else {
         CacheManifest::load(cache_dir, treefmt_toml)
     };
     timed_debug("load cache");
-    // Insert the new formatter configs
-    cache.update_formatters(formatters.clone());
+
+    if !no_cache {
+        // Insert the new formatter configs
+        cache.update_formatters(formatters.clone());
+    }
 
     // Configure the tree walker
     let walker = {
@@ -168,7 +172,11 @@ pub fn run_treefmt(
     timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
-    let matches = cache.filter_matches(matches);
+    let matches = if !no_cache {
+        cache.filter_matches(matches)
+    } else {
+        matches
+    };
 
     timed_debug("filter_matches");
 
@@ -219,11 +227,13 @@ pub fn run_treefmt(
         .collect::<anyhow::Result<BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>>>()?;
     timed_debug("format");
 
-    // Record the new matches in the cache
-    cache.add_results(new_matches.clone());
-    // And write to disk
-    cache.write(cache_dir, treefmt_toml);
-    timed_debug("write cache");
+    if !no_cache {
+        // Record the new matches in the cache
+        cache.add_results(new_matches.clone());
+        // And write to disk
+        cache.write(cache_dir, treefmt_toml);
+        timed_debug("write cache");
+    }
 
     // Diff the old matches with the new matches
     let changed_matches: BTreeMap<FormatterName, Vec<PathBuf>> =
