@@ -14,30 +14,32 @@ use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::Metadata;
-use std::path::PathBuf;
-use std::{fmt, path::Path};
+use std::path::{Path, PathBuf};
 use which::which_in;
 
-/// Mtime represents a unix epoch file modification time
+/// FileMeta represents file meta that change on file modification
+/// It currently stores a file mtime and size tuple.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Copy, Clone)]
-pub struct Mtime(i64);
-
-impl fmt::Display for Mtime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
+pub struct FileMeta {
+    /// File mtime
+    pub mtime: i64,
+    /// File size
+    pub size: u64,
 }
 
 /// Small utility that stat() and retrieve the mtime of a file path
-pub fn get_path_mtime(path: &Path) -> Result<Mtime> {
+pub fn get_path_meta(path: &Path) -> Result<FileMeta> {
     let metadata = std::fs::metadata(path)?;
-    Ok(get_meta_mtime(&metadata))
+    Ok(get_meta(&metadata))
 }
 
 /// Small utility that stat() and retrieve the mtime of a file metadata
 #[must_use]
-pub fn get_meta_mtime(metadata: &Metadata) -> Mtime {
-    Mtime(FileTime::from_last_modification_time(metadata).unix_seconds())
+pub fn get_meta(metadata: &Metadata) -> FileMeta {
+    FileMeta {
+        mtime: FileTime::from_last_modification_time(metadata).unix_seconds(),
+        size: metadata.len(),
+    }
 }
 
 /// Resolve the command into an absolute path.
