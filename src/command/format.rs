@@ -10,6 +10,7 @@ pub fn format_cmd(
     work_dir: &Path,
     config_file: &Path,
     paths: &[PathBuf],
+    no_cache: bool,
     clear_cache: bool,
     fail_on_change: bool,
 ) -> anyhow::Result<()> {
@@ -55,6 +56,7 @@ pub fn format_cmd(
         &cache_dir,
         config_file,
         &paths,
+        no_cache,
         clear_cache,
         fail_on_change,
     )?;

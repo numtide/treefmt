@@ -47,10 +47,11 @@ USAGE:
     treefmt [FLAGS] [OPTIONS] [paths]...
 
 FLAGS:
-        --clear-cache       Clear the evaluation cache. Use in case the cache is not precise enough
+        --clear-cache       Reset the evaluation cache. Use in case the cache is not precise enough
         --fail-on-change    Exit with error if any changes were made. Useful for CI
     -h, --help              Prints help information
         --init              Create a new treefmt.toml
+        --no-cache          Ignore the evaluation cache entirely. Useful for CI
     -q, --quiet             No output printed to stderr
         --stdin             Format the content passed in stdin
     -V, --version           Prints version information

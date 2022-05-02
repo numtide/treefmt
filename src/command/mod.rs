@@ -25,7 +25,11 @@ pub struct Cli {
     #[structopt(long = "stdin", conflicts_with("init"))]
     pub stdin: bool,
 
-    /// Clear the evaluation cache. Use in case the cache is not precise enough.
+    /// Ignore the evaluation cache entirely. Useful for CI.
+    #[structopt(long = "no-cache", conflicts_with("stdin"), conflicts_with("init"))]
+    pub no_cache: bool,
+
+    /// Reset the evaluation cache. Use in case the cache is not precise enough.
     #[structopt(long = "clear-cache", conflicts_with("stdin"), conflicts_with("init"))]
     pub clear_cache: bool,
 
@@ -122,6 +126,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
                 .as_ref()
                 .expect("presence asserted in ::cli_from_args"),
             &cli.paths,
+            cli.no_cache,
             cli.clear_cache,
             cli.fail_on_change,
         )?
