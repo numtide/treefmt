@@ -1,4 +1,13 @@
 
+0.4.1 / 2022-05-03
+==================
+
+Fixing the release process
+
+  * ci: remove FreeBSD release
+  * ci: fix the macOS release
+  * ci: remove unnecessary cache
+
 0.4.0 / 2022-05-02
 ==================
 
