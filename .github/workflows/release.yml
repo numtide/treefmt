@@ -72,9 +72,6 @@ jobs:
 
       - name: Build | Build
         uses: actions-rs/cargo@v1
-        # TODO: Remove this once it's the default
-        env:
-          SDKROOT: /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk
         with:
           command: build
           args: --release --locked --target ${{ matrix.target }}
