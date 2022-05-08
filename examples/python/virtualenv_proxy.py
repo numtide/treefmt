@@ -15,7 +15,6 @@ if sys.version_info[0] == 3:
         code = code.replace("\r\n", "\n") + "\n"
         exec(code, global_dict)
 
-
 else:
 
     def to_str(value):
