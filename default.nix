@@ -17,8 +17,23 @@ let
 
     src = nixpkgs.lib.cleanSource ./.;
 
-    # Those are being used in tests
-    nativeBuildInputs = with nixpkgs; [
+    buildInputs = with nixpkgs; lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security libiconv ];
+
+    doCheck = true;
+
+    cargoLock.lockFile = ./Cargo.lock;
+
+    meta.description = "one CLI to format the code tree";
+  };
+
+  # Add all the dependencies of treefmt, plus more build tools
+  devShell = treefmt.overrideAttrs (prev: {
+    shellHook = ''
+      # Put the treefmt binary on the PATH when it's built
+      export PATH=$PWD/target/debug:$PATH
+    '';
+
+    nativeBuildInputs = prev.nativeBuildInputs ++ (with nixpkgs; [
       # Build tools
       rustPackages.clippy
       rust-analyzer
@@ -39,29 +54,15 @@ let
       terraform
 
       mdbook
-    ];
-
-    shellHook = ''
-      # Put the treefmt binary on the PATH when it's built
-      export PATH=$PWD/target/debug:$PATH
-    '';
-
-    buildInputs = with nixpkgs; lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security libiconv ];
-
-    doCheck = true;
-
-    cargoLock.lockFile = ./Cargo.lock;
-
-    meta.description = "one CLI to format the code tree";
-  };
+    ]);
+  });
 in
 {
-  inherit treefmt;
+  inherit treefmt devShell;
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };
 
   # Flake attributes
   defaultPackage = treefmt;
-  devShell = treefmt;
 }
