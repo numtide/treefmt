@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#
+# Run treefmt on every commit and abort if some files have changed.
+#
+# To install, copy this file to .git/hooks/pre-commit and make sure it's
+# executable.
+#
+set -euo pipefail
+
+# Redirect stdout to stderr
+exec 1>&2
+
+# Get list of files that will be committed
+mapfile -t commit_files < <(git diff --name-only --cached)
+
+log() {
+    echo "treefmt pre-commit: $*"
+}
+
+# If the commit has no files, skip everything as there is nothing to format
+if [[ ${#commit_files} = 0 ]]; then
+    log "no files to format"
+    exit 0
+fi
+
+# Will be called at the end
+restore_stash() {
+    # Store exit status
+    local ret=$?
+    # Don't fail on error from now on
+    set +e
+    # Undo any formatting changes
+    git checkout -q .
+    # Put bash the staged files
+    git stash pop -q
+
+    if [[ $ret -gt 0 ]]; then
+        log "aborting commit, detected unformatted files"
+    fi
+    exit "$ret"
+}
+
+# Stash index and work dir, keeping only the to-be-committed changes in
+# the working directory.
+git stash push --quiet --keep-index --message "treefmt pre-commit"
+
+# Install the callback to restore the stash on script exit
+trap restore_stash EXIT
+
+# Run treefmt on the files in the index and record the result.
+#
+# The treefmt cache is not working reliably so we disable it.
+# TODO: use --no-cache instead in treefmt 0.4.0+
+treefmt --clear-cache --quiet -- "${commit_files[@]}"
+
+# Check if there is a diff
+git diff --name-only --exit-code
