@@ -64,6 +64,10 @@ pub struct Cli {
     #[structopt()]
     /// Paths to format. Defaults to formatting the whole tree.
     pub paths: Vec<PathBuf>,
+
+    #[structopt(long = "formatters", short = "f")]
+    /// Select formatters name to apply. Defaults to all formatters.
+    pub formatters: Option<Vec<String>>,
 }
 
 /// Use this instead of Cli::from_args(). We do a little bit of post-processing here.
@@ -107,7 +111,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
     } else if cli.stdin {
-        format_stdin_cmd(&cli.tree_root, &cli.work_dir, &cli.paths)?
+        format_stdin_cmd(&cli.tree_root, &cli.work_dir, &cli.paths, &cli.formatters)?
     } else {
         // Fail if configuration could not be found. This is checked
         // here to avoid aborting before init_cmd.
@@ -129,6 +133,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
             cli.no_cache,
             cli.clear_cache,
             cli.fail_on_change,
+            &cli.formatters,
         )?
     }
 

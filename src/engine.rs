@@ -29,6 +29,7 @@ pub fn run_treefmt(
     no_cache: bool,
     clear_cache: bool,
     fail_on_change: bool,
+    selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
     assert!(tree_root.is_absolute());
     assert!(work_dir.is_absolute());
@@ -87,9 +88,16 @@ pub fn run_treefmt(
         |mut sum, (name, mut fmt_config)| {
             fmt_config.excludes.extend_from_slice(&global_excludes);
             match Formatter::from_config(tree_root, &name, &fmt_config) {
-                Ok(fmt_matcher) => {
-                    sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                }
+                Ok(fmt_matcher) => match selected_formatters {
+                    Some(f) => {
+                        if f.contains(&name) {
+                            sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                        }
+                    }
+                    None => {
+                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                    }
+                },
                 Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
             };
             sum
@@ -334,6 +342,7 @@ pub fn run_treefmt_stdin(
     cache_dir: &Path,
     treefmt_toml: &Path,
     path: &Path,
+    selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
     assert!(tree_root.is_absolute());
     assert!(work_dir.is_absolute());
@@ -363,9 +372,16 @@ pub fn run_treefmt_stdin(
         |mut sum, (name, mut fmt_config)| {
             fmt_config.excludes.extend_from_slice(&global_excludes);
             match Formatter::from_config(tree_root, &name, &fmt_config) {
-                Ok(fmt_matcher) => {
-                    sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                }
+                Ok(fmt_matcher) => match selected_formatters {
+                    Some(f) => {
+                        if f.contains(&name) {
+                            sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                        }
+                    }
+                    None => {
+                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                    }
+                },
                 Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
             };
             sum

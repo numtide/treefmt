@@ -13,6 +13,7 @@ pub fn format_cmd(
     no_cache: bool,
     clear_cache: bool,
     fail_on_change: bool,
+    selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
@@ -59,6 +60,7 @@ pub fn format_cmd(
         no_cache,
         clear_cache,
         fail_on_change,
+        selected_formatters,
     )?;
 
     Ok(())
