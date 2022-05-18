@@ -60,6 +60,7 @@ FLAGS:
 OPTIONS:
         --config-file <config-file>    Run with the specified config file, which is not required to be in the tree to be
                                        formatted
+    -f, --formatters <formatters>...   Select formatters name to apply. Defaults to all formatters
         --tree-root <tree-root>        Set the path to the tree root directory. Defaults to the folder holding the
                                        treefmt.toml file
     -C <work-dir>                      Run as if treefmt was started in <work-dir> instead of the current working

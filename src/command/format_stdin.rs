@@ -11,6 +11,7 @@ pub fn format_stdin_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
     paths: &[PathBuf],
+    selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
@@ -67,7 +68,14 @@ pub fn format_stdin_cmd(
     );
 
     // Finally run the main formatter logic from the engine.
-    run_treefmt_stdin(&tree_root, work_dir, &cache_dir, &config_file, &path)?;
+    run_treefmt_stdin(
+        &tree_root,
+        work_dir,
+        &cache_dir,
+        &config_file,
+        &path,
+        selected_formatters,
+    )?;
 
     Ok(())
 }
