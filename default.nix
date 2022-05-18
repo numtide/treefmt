@@ -64,5 +64,5 @@ in
   docs = nixpkgs.callPackage ./docs { };
 
   # Flake attributes
-  defaultPackage = treefmt;
+  default = treefmt;
 }

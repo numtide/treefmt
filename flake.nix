@@ -8,15 +8,18 @@
   outputs = { self, nixpkgs, flake-utils }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        nixpkgs' = nixpkgs.legacyPackages.${system};
         pkgs = import self {
           inherit system;
           inputs = null;
-          nixpkgs = nixpkgs.legacyPackages.${system};
+          nixpkgs = nixpkgs';
         };
       in
       {
-        defaultPackage = pkgs.defaultPackage;
-        legacyPackages = pkgs;
+        defaultPackage = pkgs.default;
+
+        packages = pkgs;
+
         devShell = pkgs.devShell;
       }
     );
