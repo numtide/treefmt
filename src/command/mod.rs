@@ -53,7 +53,7 @@ pub struct Cli {
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
     pub work_dir: PathBuf,
 
-    #[structopt(long = "tree-root")]
+    #[structopt(long = "tree-root", env = "PRJ_ROOT")]
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
     pub tree_root: Option<PathBuf>,
 
