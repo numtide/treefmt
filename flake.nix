@@ -20,6 +20,11 @@
 
         packages = pkgs;
 
+        # In Nix 2.8 you can run `nix fmt` to format this whole repo. Note that you need to have loaded the
+        # `nix develop` shell before so the various formatters are available in the PATH.
+        # It also assumes that the PRJ_ROOT environment variable is set that points to the project root.
+        formatter = pkgs.treefmt.withConfig (nixpkgs.lib.importTOML ./treefmt.toml);
+
         devShell = pkgs.devShell;
       }
     );
