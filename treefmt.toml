@@ -70,7 +70,7 @@ shellcheck "$@"
 # Then format them
 shfmt -i 2 -s -w "$@"
     """,
-    "--",
+    "--", # bash swallows the second argument when using -c
 ]
 includes = ["*.sh"]
 
@@ -85,6 +85,6 @@ for f in "$@"; do
   terraform fmt "$f"
 done
     """,
-    "--",
+    "--", # bash swallows the second argument when using -c
 ]
 includes = ["*.tf"]
