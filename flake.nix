@@ -18,9 +18,22 @@
           };
         in
         {
-          inherit packages;
+          # This contains a mix of packages, modules, ...
+          legacyPackages = packages;
 
           devShells.default = packages.devShell;
+
+          # In Nix 2.8 you can run `nix fmt` to format this whole repo.
+          #
+          # Because we load the treefmt.toml and don't define links to the
+          # packages in Nix, the formatter has to run inside of `nix develop`
+          # to have the various tools on the PATH.
+          #
+          # It also assumes that the project root has a flake.nix (override this by setting `projectRootFile`).
+          formatter = packages.treefmt.withConfig {
+            settings = nixpkgs.lib.importTOML ./treefmt.toml;
+            projectRootFile = "flake.nix";
+          };
         };
     };
 }
