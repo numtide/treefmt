@@ -15,7 +15,15 @@ let
   treefmt = rustPackages.rustPlatform.buildRustPackage {
     inherit (cargoToml.package) name version;
 
-    src = nixpkgs.lib.cleanSource ./.;
+    src = builtins.path {
+      path = ./.;
+      filter = name: type:
+        name == toString ./Cargo.toml
+        || name == toString ./Cargo.lock
+        || lib.hasPrefix (toString ./src) name
+        || lib.hasPrefix (toString ./benches) name
+      ;
+    };
 
     buildInputs = with nixpkgs; lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security libiconv ];
 
