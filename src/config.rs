@@ -7,6 +7,8 @@ use std::{collections::BTreeMap, path::Path};
 
 /// Name of the config file
 pub const FILENAME: &str = "treefmt.toml";
+/// Alternative name of the config file
+pub const FILENAMEALT: &str = ".treefmt.toml";
 
 /// treefmt.toml structure
 #[derive(Debug, Deserialize)]
@@ -55,8 +57,11 @@ pub fn lookup(dir: &Path) -> Option<PathBuf> {
     let mut cwd = dir.to_path_buf();
     loop {
         let config_file = cwd.join(FILENAME);
+        let config_file_alt = cwd.join(FILENAMEALT);
         if config_file.exists() {
             return Some(config_file);
+        } else if config_file_alt.exists() {
+            return Some(config_file_alt);
         }
         cwd = match cwd.parent() {
             Some(x) => x.to_path_buf(),
