@@ -9,6 +9,8 @@
 , rustPackages ? nixpkgs.rustPackages
 }:
 let
+  lib = nixpkgs.lib;
+
   cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
 
   # What is used when invoking `nix run github:numtide/treefmt`
