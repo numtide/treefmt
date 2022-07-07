@@ -4,7 +4,6 @@ use crate::expand_path;
 use anyhow::anyhow;
 use directories::ProjectDirs;
 use log::debug;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn format_stdin_cmd(
@@ -55,8 +54,6 @@ pub fn format_stdin_cmd(
     let path = expand_path(paths.first().unwrap(), work_dir);
 
     let cache_dir = proj_dirs.cache_dir().join("eval-cache");
-    // Make sure the cache directory exists.
-    fs::create_dir_all(&cache_dir)?;
 
     debug!(
         "tree_root={} work_dir={} cache_dir={} config_file={} path={}",

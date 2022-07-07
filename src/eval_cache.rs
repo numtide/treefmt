@@ -9,7 +9,7 @@ use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
 use std::collections::BTreeMap;
-use std::fs::{read_to_string, File};
+use std::fs::{create_dir_all, read_to_string, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -78,6 +78,9 @@ impl CacheManifest {
     pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path) -> Result<()> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
         debug!("cache: writing to {}", manifest_path.display());
+        // Make sure the cache directory exists.
+        create_dir_all(manifest_path.parent().unwrap())?;
+        // Then write the file.
         let mut f = File::create(manifest_path)?;
         f.write_all(
             format!(
