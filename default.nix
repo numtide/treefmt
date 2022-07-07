@@ -75,4 +75,21 @@ in
 
   # Flake attributes
   default = treefmt;
+
+  # Test that no HOME is needed when --no-cache is passed
+  treefmt-no-cache-no-home = nixpkgs.runCommandLocal "format"
+    {
+      buildInputs = [ treefmt ];
+    }
+    ''
+      cat <<CONFIG > treefmt.toml
+      [formatter.nix]
+      command = "${nixpkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
+      includes = ["*.nix"]
+      CONFIG
+      # uncommenting this makes it work fine
+      # export HOME=$TMP
+      treefmt --no-cache --fail-on-change -C ./.
+      touch $out
+    '';
 }
