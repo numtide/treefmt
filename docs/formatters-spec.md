@@ -31,8 +31,7 @@ $ rustfmt --edition 2018 src/main.rs src/lib.rs
 
 ## Formatting details
 
-A formatted file MUST be valid. This is a strong contract; the syntax or
-semantic must never be broken by the formatter.
+A formatter MUST preserve validity. This is a strong contract; the syntax and semantics must never be broken by the formatter.
 
 A formatter SHOULD be idempotent. Meaning that if the formatter it run
 twice on a file, the file should not change on the second invocation.
