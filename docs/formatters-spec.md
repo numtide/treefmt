@@ -34,7 +34,7 @@ $ rustfmt --edition 2018 src/main.rs src/lib.rs
 A formatted file MUST be valid. This is a strong contract; the syntax or
 semantic must never be broken by the formatter.
 
-A formatted file SHOULD be idempotent. Meaning that if the formatter it run
+A formatter SHOULD be idempotent. Meaning that if the formatter it run
 twice on a file, the file should not change on the second invocation.
 
 The formatter MUST NOT do file traversal when a list of files is passed to it.
