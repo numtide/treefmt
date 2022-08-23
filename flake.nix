@@ -25,6 +25,7 @@
         # It also assumes that the project root has a flake.nix (override this by setting `projectRootFile`).
         formatter = pkgs.treefmt.withConfig {
           settings = nixpkgs.lib.importTOML ./treefmt.toml;
+          projectRootFile = "flake.nix";
         };
 
         devShell = pkgs.devShell;
