@@ -110,12 +110,21 @@ let
 
     meta.description = "one CLI to format the code tree";
 
-    passthru.withConfig = { ... }@settings:
+    passthru.withConfig = { config, projectRootFile ? "flake.nix" }:
       let
-        configFile = mkConfig settings;
+        configFile = mkConfig config;
       in
       nixpkgs.writeShellScriptBin "treefmt" ''
-        exec ${treefmt}/bin/treefmt --config-file ${configFile} "$@"
+        ANCESTORS=()
+        while [[ ! -f ${projectRootFile}  ]]; do
+          ANCESTORS+=("$PWD")
+          if [[ $PWD == / ]]; then
+            echo "ERROR: Unable to locate the projectRootFile (${projectRootFile}) in any of: ''${ANCESTORS[*]}" >&2
+            exit 1
+          fi
+          cd ..
+        done
+        exec ${treefmt}/bin/treefmt --config-file ${configFile} "$@" --tree-root "$PWD"
       '';
   };
 
@@ -124,8 +133,6 @@ let
     shellHook = ''
       # Put the treefmt binary on the PATH when it's built
       export PATH=$PWD/target/debug:$PATH
-      # Point to the project root
-      export PRJ_ROOT=$PWD
     '';
 
     nativeBuildInputs = prev.nativeBuildInputs ++ (with nixpkgs; [
