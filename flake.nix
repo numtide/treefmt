@@ -3,24 +3,24 @@
   # To update all inputs:
   # $ nix flake update --recreate-lock-file
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  inputs.flake-parts.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, flake-utils }@inputs:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        nixpkgs' = nixpkgs.legacyPackages.${system};
-        pkgs = import self {
-          inherit system;
-          inputs = null;
-          nixpkgs = nixpkgs';
+  outputs = { self, nixpkgs, flake-parts }@inputs:
+    flake-parts.lib.mkFlake { inherit self; } {
+      systems = nixpkgs.lib.systems.flakeExposed;
+      perSystem = { system, pkgs, ... }:
+        let
+          packages = import ./. {
+            inherit system;
+            inputs = null;
+            nixpkgs = pkgs;
+          };
+        in
+        {
+          inherit packages;
+
+          devShells.default = packages.devShell;
         };
-      in
-      {
-        defaultPackage = pkgs.default;
-
-        packages = pkgs;
-
-        devShell = pkgs.devShell;
-      }
-    );
+    };
 }
