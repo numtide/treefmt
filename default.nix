@@ -153,7 +153,7 @@ let
       let
         mod = evalModule config;
       in
-      mod.build.wrapper;
+      mod.config.build.wrapper;
   };
 
   # Add all the dependencies of treefmt, plus more build tools
