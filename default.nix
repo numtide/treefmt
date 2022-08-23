@@ -68,25 +68,64 @@ let
 
   configFormat = nixpkgs.formats.toml { };
 
-  # Use the Nix module system to validate the treefmt config file format.
-  evalConfig = settings:
-    lib.evalModules {
-      modules = [
-        ({ config, ... }: {
-          options.settings = configSchema;
-          options.configFile = lib.mkOption { type = lib.types.path; };
-          config.settings = settings;
-          config.configFile = configFormat.generate "treefmt.toml" config.settings;
-        })
-      ];
+  module = { config, ... }: {
+    options = {
+      settings = configSchema;
+      wrapper = {
+        package = lib.mkOption {
+          description = "Package to wrap";
+          type = lib.types.package;
+          default = treefmt;
+        };
+        projectRootFile = lib.mkOption {
+          description = ''
+            File to look for to determine the root of the project.
+          '';
+          example = "flake.nix";
+        };
+      };
+      # Outputs
+      build = {
+        configFile = lib.mkOption {
+          description = ''
+            Contains the generated config file derived from the settings.
+          '';
+          type = lib.types.path;
+        };
+        wrapper = lib.mkOption {
+          description = ''
+            The treefmt package, wrapped with the config file.
+          '';
+          type = lib.types.package;
+        };
+      };
     };
+    config.build = {
+      configFile = configFormat.generate "treefmt.toml" config.settings;
 
-  # Pass treefmt setting options as Nix data, and get back a treefmt.toml file.
-  mkConfig = settings:
-    let
-      mod = evalConfig settings;
-    in
-    mod.config.configFile;
+      wrapper = nixpkgs.writeShellScriptBin "treefmt" ''
+        find_up() (
+          ancestors=()
+          while [[ ! -f ${config.wrapper.projectRootFile} ]]; do
+            ancestors+=("$PWD")
+            if [[ $PWD == / ]]; then
+              echo "ERROR: Unable to locate the projectRootFile (${config.wrapper.projectRootFile}) in any of: ''${ancestors[*]@Q}" >&2
+              exit 1
+            fi
+            cd ..
+          done
+        )
+        tree_root=$(find_up)
+        exec ${config.wrapper.package}/bin/treefmt --config-file ${config.build.configFile} "$@" --tree-root "$tree_root"
+      '';
+    };
+  };
+
+  # Use the Nix module system to validate the treefmt config file format.
+  evalModule = config:
+    lib.evalModules {
+      modules = [ module config ];
+    };
 
   # What is used when invoking `nix run github:numtide/treefmt`
   treefmt = rustPackages.rustPlatform.buildRustPackage {
@@ -110,22 +149,11 @@ let
 
     meta.description = "one CLI to format the code tree";
 
-    passthru.withConfig = { config, projectRootFile ? "flake.nix" }:
+    passthru.withConfig = config:
       let
-        configFile = mkConfig config;
+        mod = evalModule config;
       in
-      nixpkgs.writeShellScriptBin "treefmt" ''
-        ANCESTORS=()
-        while [[ ! -f ${projectRootFile}  ]]; do
-          ANCESTORS+=("$PWD")
-          if [[ $PWD == / ]]; then
-            echo "ERROR: Unable to locate the projectRootFile (${projectRootFile}) in any of: ''${ANCESTORS[*]}" >&2
-            exit 1
-          fi
-          cd ..
-        done
-        exec ${treefmt}/bin/treefmt --config-file ${configFile} "$@" --tree-root "$PWD"
-      '';
+      mod.build.wrapper;
   };
 
   # Add all the dependencies of treefmt, plus more build tools
@@ -160,7 +188,7 @@ let
   });
 in
 {
-  inherit treefmt devShell evalConfig mkConfig;
+  inherit treefmt devShell evalModule module;
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };

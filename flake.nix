@@ -23,7 +23,9 @@
         # In Nix 2.8 you can run `nix fmt` to format this whole repo. Note that you need to have loaded the
         # `nix develop` shell before so the various formatters are available in the PATH.
         # It also assumes that the project root has a flake.nix (override this by setting `projectRootFile`).
-        formatter = pkgs.treefmt.withConfig { config = nixpkgs.lib.importTOML ./treefmt.toml; };
+        formatter = pkgs.treefmt.withConfig {
+          settings = nixpkgs.lib.importTOML ./treefmt.toml;
+        };
 
         devShell = pkgs.devShell;
       }
