@@ -13,6 +13,18 @@ let
 
   cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
 
+  # Use the Nix module system to validate the treefmt config file format.
+  evalModule = config:
+    lib.evalModules {
+      modules = [
+        {
+          _module.args = { inherit nixpkgs lib treefmt; };
+        }
+        ./module-options.nix
+        config
+      ];
+    };
+
   # What is used when invoking `nix run github:numtide/treefmt`
   treefmt = rustPackages.rustPlatform.buildRustPackage {
     inherit (cargoToml.package) name version;
@@ -34,6 +46,12 @@ let
     cargoLock.lockFile = ./Cargo.lock;
 
     meta.description = "one CLI to format the code tree";
+
+    passthru.withConfig = config:
+      let
+        mod = evalModule config;
+      in
+      mod.config.build.wrapper;
   };
 
   # Add all the dependencies of treefmt, plus more build tools
@@ -68,7 +86,13 @@ let
   });
 in
 {
-  inherit treefmt devShell;
+  inherit treefmt devShell evalModule;
+
+  # module that generates and wraps the treefmt config with Nix
+  module = ./module-options.nix;
+
+  # reduce a bit of repetition
+  inherit (treefmt.passthru) withConfig;
 
   # A collection of packages for the project
   docs = nixpkgs.callPackage ./docs { };
