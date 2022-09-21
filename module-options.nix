@@ -1,4 +1,4 @@
-{ lib, nixpkgs, treefmt, ... }:
+{ config, lib, nixpkgs, treefmt, ... }:
 let
   # A new kind of option type that calls lib.getExe on derivations
   exeType = lib.mkOptionType {
@@ -110,4 +110,4 @@ in
       exec ${config.package}/bin/treefmt --config-file ${config.build.configFile} "$@" --tree-root "$tree_root"
     '';
   };
-};
+}
