@@ -10,3 +10,6 @@ cargo run -- --fail-on-change
 
 # Build the nix package
 nix-build --no-out-link
+
+# Check nix fmt
+nix fmt
