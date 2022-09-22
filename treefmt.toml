@@ -75,16 +75,8 @@ shfmt -i 2 -s -w "$@"
 includes = ["*.sh"]
 
 [formatter.terraform]
-# Terraform fmt only takes one file at the time so we create a wrapper.
-# See https://github.com/numtide/treefmt/issues/97
-command = "/bin/sh"
-options = [
-    "-euc",
-    """
-for f in "$@"; do
-  terraform fmt "$f"
-done
-    """,
-    "--", # bash swallows the second argument when using -c
-]
+# Careful, only terraform 1.3.0 or later accept a list of files.
+# see https://github.com/numtide/treefmt/issues/97
+command = "terraform"
+options = ["fmt"]
 includes = ["*.tf"]
