@@ -62,7 +62,7 @@ impl CacheManifest {
         Ok(manifest)
     }
 
-    /// Always loads the manifest. If an error occured, log and return an empty manifest.
+    /// Always loads the manifest. If an error occurred, log and return an empty manifest.
     #[must_use]
     pub fn load(cache_dir: &Path, treefmt_toml: &Path) -> Self {
         match Self::try_load(cache_dir, treefmt_toml) {
