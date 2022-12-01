@@ -38,33 +38,33 @@ quite tricky.
 ## Usage
 
 `$ treefmt --help`
-
 ```
-treefmt 0.4.1
+treefmt 0.5.0
 ✨  format all your language!
 
 USAGE:
-    treefmt [FLAGS] [OPTIONS] [paths]...
+    treefmt [FLAGS] [OPTIONS] [--] [paths]...
 
 FLAGS:
         --allow-missing-formatter    Do not exit with error if a configured formatter is missing
-        --clear-cache                Clear the evaluation cache. Use in case the cache is not precise enough
+        --clear-cache                Reset the evaluation cache. Use in case the cache is not precise enough
         --fail-on-change             Exit with error if any changes were made. Useful for CI
     -h, --help                       Prints help information
         --init                       Create a new treefmt.toml
+        --no-cache                   Ignore the evaluation cache entirely. Useful for CI
     -q, --quiet                      No output printed to stderr
         --stdin                      Format the content passed in stdin
     -V, --version                    Prints version information
     -v, --verbose                    Log verbosity is based off the number of v used
 
 OPTIONS:
-        --config-file <config-file>    Run with the specified config file, which is not required to be in the tree to be
-                                       formatted
-    -f, --formatters <formatters>...   Select formatters name to apply. Defaults to all formatters
-        --tree-root <tree-root>        Set the path to the tree root directory. Defaults to the folder holding the
-                                       treefmt.toml file
-    -C <work-dir>                      Run as if treefmt was started in <work-dir> instead of the current working
-                                       directory [default: .]
+        --config-file <config-file>     Run with the specified config file, which is not required to be in the tree to
+                                        be formatted
+    -f, --formatters <formatters>...    Select formatters name to apply. Defaults to all formatters
+        --tree-root <tree-root>         Set the path to the tree root directory. Defaults to the folder holding the
+                                        treefmt.toml file [env: PRJ_ROOT=]
+    -C <work-dir>                       Run as if treefmt was started in <work-dir> instead of the current working
+                                        directory [default: .]
 
 ARGS:
     <paths>...    Paths to format. Defaults to formatting the whole tree
