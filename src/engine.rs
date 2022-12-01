@@ -29,6 +29,7 @@ pub fn run_treefmt(
     no_cache: bool,
     clear_cache: bool,
     fail_on_change: bool,
+    allow_missing_formatter: bool,
     selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
     assert!(tree_root.is_absolute());
@@ -82,10 +83,13 @@ pub fn run_treefmt(
 
     timed_debug("load config");
 
-    // Load all the formatter instances from the config. Ignore the ones that failed.
+    // Load all the formatter instances from the config.
+    let mut expected_count = 0;
+
     let formatters = project_config.formatter.into_iter().fold(
         BTreeMap::new(),
         |mut sum, (name, mut fmt_config)| {
+            expected_count += 1;
             fmt_config.excludes.extend_from_slice(&global_excludes);
             match Formatter::from_config(tree_root, &name, &fmt_config) {
                 Ok(fmt_matcher) => match selected_formatters {
@@ -98,13 +102,24 @@ pub fn run_treefmt(
                         sum.insert(fmt_matcher.name.clone(), fmt_matcher);
                     }
                 },
-                Err(err) => error!("Ignoring formatter #{} due to error: {}", name, err),
+                Err(err) => {
+                    if allow_missing_formatter {
+                        error!("Ignoring formatter #{} due to error: {}", name, err)
+                    } else {
+                        error!("Failed to load formatter #{} due to error: {}", name, err)
+                    }
+                }
             };
             sum
         },
     );
 
     timed_debug("load formatters");
+
+    // Check the number of configured formatters matches the number of formatters loaded
+    if !(allow_missing_formatter || formatters.len() == expected_count) {
+        return Err(anyhow!("One or more formatters are missing"));
+    }
 
     // Load the eval cache
     let mut cache = if no_cache || clear_cache {
