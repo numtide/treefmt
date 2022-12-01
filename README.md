@@ -47,14 +47,15 @@ USAGE:
     treefmt [FLAGS] [OPTIONS] [paths]...
 
 FLAGS:
-        --clear-cache       Clear the evaluation cache. Use in case the cache is not precise enough
-        --fail-on-change    Exit with error if any changes were made. Useful for CI
-    -h, --help              Prints help information
-        --init              Create a new treefmt.toml
-    -q, --quiet             No output printed to stderr
-        --stdin             Format the content passed in stdin
-    -V, --version           Prints version information
-    -v, --verbose           Log verbosity is based off the number of v used
+        --allow-missing-formatter    Do not exit with error if a configured formatter is missing
+        --clear-cache                Clear the evaluation cache. Use in case the cache is not precise enough
+        --fail-on-change             Exit with error if any changes were made. Useful for CI
+    -h, --help                       Prints help information
+        --init                       Create a new treefmt.toml
+    -q, --quiet                      No output printed to stderr
+        --stdin                      Format the content passed in stdin
+    -V, --version                    Prints version information
+    -v, --verbose                    Log verbosity is based off the number of v used
 
 OPTIONS:
         --tree-root <tree-root>    Set the path to the tree root directory. Defaults to the folder holding the

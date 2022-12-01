@@ -12,6 +12,7 @@ pub fn format_cmd(
     paths: &[PathBuf],
     clear_cache: bool,
     fail_on_change: bool,
+    allow_missing_formatter: bool,
 ) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
@@ -69,6 +70,7 @@ pub fn format_cmd(
         &paths,
         clear_cache,
         fail_on_change,
+        allow_missing_formatter,
     )?;
 
     Ok(())
