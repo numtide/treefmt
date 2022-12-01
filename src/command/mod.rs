@@ -41,6 +41,10 @@ pub struct Cli {
     )]
     pub fail_on_change: bool,
 
+    /// Do not exit with error if a configured formatter is missing
+    #[structopt(long = "allow-missing-formatter")]
+    pub allow_missing_formatter: bool,
+
     /// Log verbosity is based off the number of v used
     #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
     pub verbosity: u8,
@@ -133,6 +137,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
             cli.no_cache,
             cli.clear_cache,
             cli.fail_on_change,
+            cli.allow_missing_formatter,
             &cli.formatters,
         )?
     }
