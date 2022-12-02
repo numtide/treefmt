@@ -321,17 +321,13 @@ fn print_summary(
 ) {
     println!(
         r#"
-traversed {} files
-matched {} files to formatters
-left with {} files after cache
-of whom {} files were re-formatted
-all of this in {:.0?}
+{} files changed in {:.0?} (processed {}, matched {}, cache misses {}) 
         "#,
+        reformatted_files,
+        start_time.elapsed(),
         traversed_files,
         matched_files,
         filtered_files,
-        reformatted_files,
-        start_time.elapsed()
     );
 }
 
