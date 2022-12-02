@@ -336,7 +336,7 @@ fn print_summary(
 ) {
     println!(
         r#"
-{} files changed in {:.0?} (processed {}, matched {}, cache misses {}) 
+{} files changed in {:.0?} (found {}, matched {}, cache misses {}) 
         "#,
         reformatted_files,
         start_time.elapsed(),
