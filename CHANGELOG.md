@@ -1,4 +1,21 @@
 
+0.5.0 / 2022-12-01
+==================
+
+  * docs: fix typos (#183)
+  * docs: formatters-spec: clarify syntax and semantics rule
+  * docs: terraform 1.3.0 accepts a list of files
+  * docs: treefmt.toml: add warning for sh -c
+  * feat: add --formatters option (#168)
+  * feat: add pre-commit contrib script (#166)
+  * feat: add support for `.treefmt.toml` (#172)
+  * feat: hard fail on missing tools (#189)
+  * feat: lazily create the cache directory (#174)
+  * feat: treefmt.withConfig (#169, #181)
+  * fix: ignore .direnv (#175)
+  * nix: move ci dependencies to the devShell (#161)
+  * nix: switch to `flake-parts` (#176)
+
 0.4.1 / 2022-05-03
 ==================
 
