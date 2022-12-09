@@ -1,15 +1,26 @@
 { system ? builtins.currentSystem
 , inputs ? import ./flake.lock.nix { }
+, overlays ? [ (import inputs.rust-overlay) ]
 , nixpkgs ? import inputs.nixpkgs {
-    inherit system;
+    inherit system overlays;
     # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
     config = { };
-    overlays = [ ];
   }
-, rustPackages ? nixpkgs.rustPackages
+, rustVersion ? nixpkgs.rust-bin.stable."1.63.0".default
 }:
 let
   lib = nixpkgs.lib;
+
+  rustVersionExtended = rustVersion.override {
+    # include source for IDE's and other tools that resolve the source automatically via
+    # $(rustc --print sysroot)/lib/rustlib/src/rust
+    extensions = [ "rust-src" "rustfmt" ];
+  };
+
+  rustPlatform = nixpkgs.makeRustPlatform {
+    cargo = rustVersionExtended;
+    rustc = rustVersionExtended;
+  };
 
   cargoToml = with builtins; (fromTOML (readFile ./Cargo.toml));
 
@@ -26,7 +37,7 @@ let
     };
 
   # What is used when invoking `nix run github:numtide/treefmt`
-  treefmt = rustPackages.rustPlatform.buildRustPackage {
+  treefmt = rustPlatform.buildRustPackage {
     inherit (cargoToml.package) name version;
 
     src = builtins.path {
@@ -63,7 +74,6 @@ let
 
     nativeBuildInputs = prev.nativeBuildInputs ++ (with nixpkgs; [
       # Build tools
-      rustPackages.clippy
       rust-analyzer
 
       # Code formatters
@@ -76,7 +86,6 @@ let
       nodePackages.prettier
       python3.pkgs.black
       rufo
-      rustPackages.rustfmt
       shellcheck
       shfmt
       terraform

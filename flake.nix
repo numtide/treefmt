@@ -6,15 +6,16 @@
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-parts.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, flake-parts }@inputs:
+  inputs.rust-overlay.url = "github:oxalica/rust-overlay";
+  inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+
+  outputs = { self, nixpkgs, flake-parts, rust-overlay }@inputs:
     flake-parts.lib.mkFlake { inherit self; } {
       systems = nixpkgs.lib.systems.flakeExposed;
       perSystem = { system, pkgs, ... }:
         let
           packages = import ./. {
             inherit system;
-            inputs = null;
-            nixpkgs = pkgs;
           };
         in
         {
