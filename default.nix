@@ -6,7 +6,7 @@
     # Makes the config pure as well. See <nixpkgs>/top-level/impure.nix:
     config = { };
   }
-, rustVersion ? nixpkgs.rust-bin.stable."1.63.0".default
+, rustVersion ? nixpkgs.rust-bin.stable."1.65.0".default
 }:
 let
   lib = nixpkgs.lib;
