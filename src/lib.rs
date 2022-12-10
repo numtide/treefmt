@@ -1,7 +1,5 @@
 //! Your favorite all-in-one formatter tool!
 
-#![deny(missing_docs)]
-pub mod command;
 pub mod config;
 pub mod engine;
 pub mod eval_cache;
