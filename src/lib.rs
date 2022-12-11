@@ -3,7 +3,6 @@
 #![deny(missing_docs)]
 pub mod command;
 pub mod config;
-pub mod customlog;
 pub mod engine;
 pub mod eval_cache;
 pub mod formatter;
