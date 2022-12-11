@@ -1,15 +1,9 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-use log::error;
+use log::{error, LevelFilter};
 use treefmt::command::{cli_from_args, run_cli};
-use treefmt::customlog::CUSTOM_LOG;
 
 fn main() {
-    // Configure the logger
-    log::set_logger(&CUSTOM_LOG).expect("Could not set the logger");
-    // The default log level
-    log::set_max_level(log::LevelFilter::Info);
-
     if let Err(e) = run() {
         error!("{}", e);
         ::std::process::exit(1);
@@ -19,11 +13,17 @@ fn main() {
 fn run() -> anyhow::Result<()> {
     let cli = cli_from_args()?;
 
-    if cli.quiet {
-        log::set_max_level(log::LevelFilter::Off)
-    } else if cli.verbosity > 0 {
-        log::set_max_level(log::LevelFilter::Trace)
-    }
+    // Configure the logger
+    env_logger::builder()
+        .format_timestamp(None)
+        .format_target(false)
+        .filter_level(match cli.verbosity {
+            0 => LevelFilter::Off,
+            1 => LevelFilter::Info,
+            2 => LevelFilter::Debug,
+            _ => LevelFilter::Trace,
+        })
+        .init();
 
     run_cli(&cli)?;
 
