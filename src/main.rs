@@ -69,18 +69,17 @@ struct Cli {
 }
 
 fn main() -> ExitCode {
-    // TODO: Avoid using this unwrap by migrating this logic to clap
-    let args = ensure_args_defaults(Cli::parse()).unwrap();
+    let cli = ensure_args_defaults(Cli::parse()).unwrap();
 
     // Configure the logger
     env_logger::builder()
         .format_timestamp(None)
         .format_target(false)
-        .filter_level(args.verbose.log_level_filter())
+        .filter_level(cli.verbose.log_level_filter())
         .init();
 
     // Run the app!
-    match run_arg_command(args) {
+    match run_arg_command(cli) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             error!("{}", e);
