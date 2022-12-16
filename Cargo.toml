@@ -51,6 +51,7 @@ which = "4.0.2"
 
 [dev-dependencies]
 criterion = "0.3"
+mockall = "0.11.3"
 
 [[bench]]
 name = "bench"
