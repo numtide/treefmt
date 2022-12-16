@@ -74,7 +74,10 @@ let
 
     nativeBuildInputs = prev.nativeBuildInputs ++ (with nixpkgs; [
       # Build tools
+      grcov
       rust-analyzer
+      rustc.llvmPackages.llvm
+      just
 
       # Code formatters
       elmPackages.elm-format
