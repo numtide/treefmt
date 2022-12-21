@@ -48,15 +48,15 @@ struct Cli {
     verbose: Verbosity,
 
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
-    #[arg(short, default_value = ".")]
+    #[arg(short, default_value = ".", value_parser = parse_path)]
     work_dir: PathBuf,
 
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
-    #[arg(long, env = "PRJ_ROOT", default_value = ".")]
+    #[arg(long, env = "PRJ_ROOT", default_value = ".", value_parser = parse_path)]
     tree_root: Option<PathBuf>,
 
     /// Run with the specified config file, which is not required to be in the tree to be formatted.
-    #[arg(long)]
+    #[arg(long, value_parser = parse_path)]
     config_file: Option<PathBuf>,
 
     /// Paths to format. Defaults to formatting the whole tree.
@@ -69,7 +69,7 @@ struct Cli {
 }
 
 fn main() -> ExitCode {
-    let cli = ensure_args_defaults(Cli::parse()).unwrap();
+    let cli = Cli::parse();
 
     // Configure the logger
     env_logger::builder()
@@ -88,28 +88,32 @@ fn main() -> ExitCode {
     }
 }
 
-// TODO: Move this to clap rs parser logic
-fn ensure_args_defaults(mut args: Cli) -> anyhow::Result<Cli> {
+fn parse_path(s: &str) -> anyhow::Result<PathBuf> {
     // Obtain current dir and ensure is absolute
-    let cwd = env::current_dir()?;
+    let cwd = match env::current_dir() {
+        Ok(dir) => dir,
+        Err(err) => return Err(anyhow!("{}", err)),
+    };
     assert!(cwd.is_absolute());
 
-    // Make sure the work_dir is an absolute path. Don't use the stdlib canonicalize() function
+    // TODO: Include validation for incorrect paths or caracters
+    let path = Path::new(s);
+
+    // Make sure the path is an absolute path.
+    // Don't use the stdlib canonicalize() function
     // because symlinks should not be resolved.
-    args.work_dir = expand_path(&args.work_dir, &cwd);
+    Ok(expand_path(&path, &cwd))
+}
 
-    // Make sure the tree_root is an absolute path.
-    if let Some(tree_root) = args.tree_root {
-        args.tree_root = Some(expand_path(&tree_root, &cwd));
-    }
-
-    match args.config_file {
+fn run_arg_command(mut cli: Cli) -> anyhow::Result<()> {
+    // Check we can find config first before proceeding
+    match cli.config_file {
         None => {
             // Find the config file if not specified by the user.
-            args.config_file = config::lookup(&args.work_dir);
+            cli.config_file = config::lookup(&cli.work_dir);
         }
         Some(_) => {
-            if args.tree_root.is_none() {
+            if cli.tree_root.is_none() {
                 return Err(anyhow!(
                     "If --config-file is set, --tree-root must also be set"
                 ));
@@ -117,47 +121,33 @@ fn ensure_args_defaults(mut args: Cli) -> anyhow::Result<Cli> {
         }
     }
 
-    // Make sure the config_file points to an absolute path.
-    if let Some(config_file) = args.config_file {
-        args.config_file = Some(expand_path(&config_file, &cwd));
-    }
-
-    Ok(args)
-}
-
-fn run_arg_command(args: Cli) -> anyhow::Result<()> {
-    if args.init {
-        init_cmd(&args.work_dir)?
-    } else if args.stdin {
-        format_stdin_cmd(
-            &args.tree_root,
-            &args.work_dir,
-            &args.paths,
-            &args.formatters,
-        )?
+    if cli.init {
+        run_init(&cli.work_dir)?
+    } else if cli.stdin {
+        run_format_stdin(&cli.tree_root, &cli.work_dir, &cli.paths, &cli.formatters)?
     } else {
         // Fail if configuration could not be found. This is checked
         // here to avoid aborting before init_cmd.
-        if args.config_file.is_none() {
+        if cli.config_file.is_none() {
             return Err(anyhow!(
                 "{} could not be found in {} and up. Use the --init option to create one or specify --config-file if it is in a non-standard location.",
                 treefmt::config::FILENAME,
-                args.work_dir.display(),
+                cli.work_dir.display(),
             ));
         }
 
-        format_cmd(
-            &args.tree_root,
-            &args.work_dir,
-            args.config_file
+        run_format(
+            &cli.tree_root,
+            &cli.work_dir,
+            cli.config_file
                 .as_ref()
                 .expect("presence asserted in ::cli_from_args"),
-            &args.paths,
-            args.no_cache,
-            args.clear_cache,
-            args.fail_on_change,
-            args.allow_missing_formatter,
-            &args.formatters,
+            &cli.paths,
+            cli.no_cache,
+            cli.clear_cache,
+            cli.fail_on_change,
+            cli.allow_missing_formatter,
+            &cli.formatters,
         )?
     }
 
@@ -165,7 +155,7 @@ fn run_arg_command(args: Cli) -> anyhow::Result<()> {
 }
 
 /// Creates a new treefmt.toml file as a template
-fn init_cmd(work_dir: &Path) -> anyhow::Result<()> {
+fn run_init(work_dir: &Path) -> anyhow::Result<()> {
     let file_path = work_dir.join(config::FILENAME);
     // TODO: detect if file exists
     fs::write(&file_path, include_bytes!("init_treefmt.toml")).with_context(|| {
@@ -181,7 +171,7 @@ fn init_cmd(work_dir: &Path) -> anyhow::Result<()> {
 }
 
 /// Performs the formatting of the tree
-fn format_cmd(
+fn run_format(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
     config_file: &Path,
@@ -243,7 +233,7 @@ fn format_cmd(
 }
 
 /// Performs the formatting of the stdin
-fn format_stdin_cmd(
+fn run_format_stdin(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
     paths: &[PathBuf],
