@@ -70,11 +70,18 @@ let
     shellHook = ''
       # Put the treefmt binary on the PATH when it's built
       export PATH=$PWD/target/debug:$PATH
+
+      # Export location of llvm tools for use in code coverage
+      # see https://discourse.nixos.org/t/llvm-profdata-grcov-and-rust-code-coverage/19849/2 for background
+      export LLVM_PATH=$(dirname "$(type -p llvm-profdata)")
     '';
 
     nativeBuildInputs = prev.nativeBuildInputs ++ (with nixpkgs; [
       # Build tools
+      grcov
       rust-analyzer
+      rustc.llvmPackages.llvm
+      just
 
       # Code formatters
       elmPackages.elm-format
