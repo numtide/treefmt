@@ -18,7 +18,7 @@ fn run() -> anyhow::Result<()> {
         .format_timestamp(None)
         .format_target(false)
         .filter_level(match cli.verbosity {
-            0 => LevelFilter::Off,
+            0 => LevelFilter::Warn,
             1 => LevelFilter::Info,
             2 => LevelFilter::Debug,
             _ => LevelFilter::Trace,

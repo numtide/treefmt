@@ -1,13 +1,15 @@
 //! Utilities for the formatters themselves.
-use crate::config::FmtConfig;
-use crate::{expand_exe, expand_if_path, expand_path};
+use std::{fmt, path::Path, path::PathBuf, process::Command};
+
 use anyhow::{anyhow, Result};
 use console::style;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
-use log::{debug, info};
+use log::{debug, warn};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{fmt, path::Path, path::PathBuf, process::Command};
+
+use crate::config::FmtConfig;
+use crate::{expand_exe, expand_if_path, expand_path};
 
 /// newtype for the formatter name
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -102,7 +104,7 @@ impl Formatter {
         match cmd.output() {
             Ok(out) => {
                 if !out.status.success() {
-                    info!(
+                    warn!(
                         "Error using formatter {}:\n{stdout}:\n{}\n{stderr}:\n{}",
                         self.name,
                         String::from_utf8_lossy(&out.stdout),
