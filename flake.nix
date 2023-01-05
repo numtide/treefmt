@@ -22,6 +22,9 @@
           # This contains a mix of packages, modules, ...
           legacyPackages = packages;
 
+          # Allow `nix run github:numtide/treefmt`.
+          packages.default = packages.treefmt;
+
           devShells.default = packages.devShell;
         };
     };
