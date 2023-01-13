@@ -2,7 +2,7 @@
 name = "treefmt"
 version = "0.5.0"
 edition = "2018"
-description = "one CLI to format the code tree"
+description = "one CLI to format your repo"
 license = "MIT"
 authors = [
   "Andika Demas Riyandi <andika.riyan@gmail.com>",

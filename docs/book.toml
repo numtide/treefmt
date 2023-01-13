@@ -6,4 +6,4 @@ authors = [
 language = "en"
 multilingual = false
 src = "."
-title = "treefmt - one CLI to format the code tree"
+title = "treefmt — one CLI to format your repo"

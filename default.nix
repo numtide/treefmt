@@ -48,7 +48,7 @@ let
 
     cargoLock.lockFile = ./Cargo.lock;
 
-    meta.description = "one CLI to format the code tree";
+    meta.description = "one CLI to format your repo";
 
     passthru.withConfig = config:
       throw "treefmt.withConfig has been moved to https://github.com/numtide/treefmt-nix";
