@@ -21,7 +21,7 @@ Formatting requires less effort if a universal formatter for multiple languages 
 
 ## About treefmt
 
-`treefmt` runs all your formatters with one command. It’s is easy to configure and fast to execute.
+`treefmt` runs all your formatters with one command. It’s easy to configure and fast to execute.
 
 [![asciicast](https://asciinema.org/a/cwtaWUTdBa8qCKJVp40bTwxf0.svg)](https://asciinema.org/a/cwtaWUTdBa8qCKJVp40bTwxf0)
 
@@ -31,7 +31,7 @@ Its main features are:
 - Running all the formatters in parallel: A standard script loops over your folders and runs each formatter consequentially. In contrast, `treefmt` runs formatters in parallel. This way, the formatting job takes less time.
 - Caching the changed files: When formatters are run in a script, they process all the files they encounter, no matter whether the code has changed. This unnecessary work can be eliminated if only the changed files are formatted. `treefmt` caches the changed files and marks them for re-formatting.
 
-Just type `treefmt` in any folder to reformat the whole code tree. All in all, you get a fast and simple formatting solution. Find the project wiki [here](https://github.com/numtide/treefmt/wiki).
+Just type `treefmt` in any folder to reformat the whole code tree. All in all, you get a fast and simple formatting solution.
 
 ## Installation
 
@@ -53,11 +53,10 @@ $ treefmt
 
 To explore the tool’s flags and options, type:
 
-```
+```console
 $ treefmt --help
 ```
 
-You can also integrate `treefmt` into your CI.
 
 ## Configuration
 
@@ -83,7 +82,11 @@ options = ["--edition", "2018"]
 includes = ["*.rs"]
 ```
 
-Before specifying the formatter in the config, make sure it’s installed. See the [wiki](https://github.com/numtide/treefmt/wiki) for more examples.
+Before specifying the formatter in the config, make sure it’s installed.
+
+To find and share existing formatter recipes, take a look at the [wiki](https://github.com/numtide/treefmt/wiki).
+
+If you are a Nix user, you might also be interested in [treefmt-nix](https://github.com/numtide/treefmt-nix) to use Nix to configure and bring in formatters.
 
 ## Compatibility
 
@@ -96,6 +99,8 @@ Before specifying the formatter in the config, make sure it’s installed. See t
 Find the full list of supported formatters [here](https://numtide.github.io/treefmt/formatters.html).
 
 ## Upcoming features
+
+This project is still pretty new. Down the line we also want to add support for:
 
 - IDE integration
 - Pre-commit hooks
