@@ -57,7 +57,6 @@ To explore the tool’s flags and options, type:
 $ treefmt --help
 ```
 
-
 ## Configuration
 
 Fomatters are specified in the config file `treefmt.toml`, which is usually located in the project root folder. The generic way to specify a formatter is like this:
