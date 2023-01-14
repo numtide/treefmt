@@ -106,7 +106,7 @@ pub fn run_treefmt(
                     if allow_missing_formatter {
                         error!("Ignoring formatter #{} due to error: {}", name, err)
                     } else {
-                        error!("Failed to load formatter #{} due to error: {}", name, err)
+                        error!("Failed to load formatter #{}: {}", name, err)
                     }
                 }
             };

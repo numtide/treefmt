@@ -1,7 +1,7 @@
 //! Utilities for the formatters themselves.
 use std::{fmt, path::Path, path::PathBuf, process::Command};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use console::style;
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use log::{debug, warn};
@@ -161,8 +161,10 @@ impl Formatter {
         let name = FormatterName(name.to_string());
         // Expand the work_dir to an absolute path, using the project root as a reference.
         let work_dir = expand_path(&cfg.work_dir, tree_root);
+
         // Resolve the path to the binary
-        let command = expand_exe(&cfg.command, tree_root)?;
+        let command = expand_exe(&cfg.command, tree_root)
+            .with_context(|| format!("could not find '{}' on PATH", &cfg.command))?;
         debug!("Found {} at {}", cfg.command, command.display());
         assert!(command.is_absolute());
 
