@@ -1,6 +1,6 @@
 # Formatter specification
 
-In order to keep the design of `treefmt` simple, we support only formatters which adhere to a certain standard. This document outlines this standard. If the formatter you would like to use doesn't comply with the rules, you should create a wrapper script that transforms the usage to match the specification.
+In order to keep the design of `treefmt` simple, we support only formatters which adhere to a certain standard. This document outlines this standard. If the formatter you would like to use doesn't comply with the rules, it's often possible to create a wrapper script that transforms the usage to match the specification.
 
 ## Command-line interface
 
