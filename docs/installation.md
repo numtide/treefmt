@@ -1,89 +1,59 @@
 # Installation
 
-You can install `treefmt` with two option below. The best option is to download the release binary as you will get the stable version of `treefmt`.
+There are two options to install `treefmt`: by downloading the latest binary, or by compiling and building the tool from source.
 
-## Download release binary
+## Installing with a binary file
 
-Download the stable version of `treefmt` from [release binary](https://github.com/numtide/treefmt/releases).
+You can find the list of the latest binaries [here](https://github.com/numtide/treefmt/releases).
 
 ## Building from source
 
+There are several ways to build `treefmt` from source. Your choice will depend on whether you're a [nix](https://github.com/NixOS/nix) user.
+
 ### Non-Nix User
 
-Install `rust` using [`rustup`] by following the instruction.
-
-To try the project, run:
+To try the project without building it, run:
 
 ```
 $ cargo run -- --help
 ```
 
-If you want to build the project, run:
+The command will output the manual. You can run the tool in this manner with any other flag or option to format your project.
+
+To build a binary, you need to have rust installed. You can install it with [rustup](https://rustup.rs/). Now, if you want to build the project, switch to the project root folder and run:
 
 ```
 $ cargo build
 ```
 
-and find the `treefmt` binary in the `target` folder.
-
-[`rustup`]: https://rustup.rs/
+After the successful execution of the cargo build command, you will find the `treefmt` binary in the target folder.
 
 ### Nix User
 
-#### Non-flake user
+[Nix](https://github.com/NixOS/nix) is a package manager foundational for NixOS. You can use it in NixOS and in any other OS equally.
 
-This repository can be used using plain `nix-build` or `nix-shell`. To build
-the package, just run:
+**Non-flake user**
+
+Here you also have two options: you can install `treefmt` with plain nix-build , or with nix-shell.
+
+To build the package with nix-build, just run:
 
 ```
 $ nix-build -A treefmt
 ```
 
-#### Nix-flake user
+**Nix-flake user**
 
-If you want to use this repo with `flakes` feature, please enable it using the following method:
-
-**Linux and Windows Subsystem Linux 2 (WSL2)**
-
-Install Nix as instructed above. Next, install `nixUnstable` by running the following code:
-
-```
-nix-env -iA nixpkgs.nixFlakes
-```
-
-Lastly, open your `~/.config/nix/nix.conf` or `/etc/nix/nix.conf` file and add:
-
-```
-experimental-features = nix-command flakes
-```
-
-**NixOS**
-
-Add the following code into your `configuration.nix`:
-
-```
-{ pkgs, ... }: {
-  nix = {
-    package = pkgs.nixFlakes;
-      extraOptions = ''
-        experimental-features = nix-command flakes
-      '';
-  };
-}
-```
-
-And finally, run the following command:
-
-```
-$ nix build
-```
-
-The `treefmt` binary will be available in the `result` folder.
-
-Alternatively, you can run:
+If you want to use this repository with flakes, please enable the flakes feature first. To run the project with flakes without building it, you can execute the following command in the root folder:
 
 ```
 $ nix run . -- --help
 ```
 
-From the root of this project.
+To build the project, run the following command in the root folder:
+
+```
+$ nix build
+```
+
+The `treefmt` binary will be available in the result folder.

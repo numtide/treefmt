@@ -1,10 +1,11 @@
-# Table of Content
+# Table of Contents
 
-- [Introduction](./introduction.md)
+- [About the project](./introduction.md)
 - [Quickstart](./quickstart.md)
-- [Installation](./installation.md)
+  - [Installation](./installation.md)
+  - [Configuration](./treefmt-configuration.md)
+- [Usage](./usage.md)
 - [Formatters](./index-formatters.md)
   - [Formatters Specification](./formatters-spec.md)
-  - [List Known Formatters](./formatters.md)
-- [Treefmt Configuration](./treefmt-configuration.md)
+  - [Known Formatters](./formatters.md)
 - [Contributing](./contributing.md)

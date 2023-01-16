@@ -1,45 +1,36 @@
-# Formatter spec
+# Formatter specification
 
-In order to keep the design of treefmt simple, we want all of the formatters
-to adhere to a unified specification. This document outlines that spec.
+In order to keep the design of `treefmt` simple, we support only formatters which adhere to a certain standard. This document outlines this standard. If the formatter you would like to use doesn't comply with the rules, you should create a wrapper script that transforms the usage to match the specification.
 
 ## Command-line interface
 
-A formatter MUST adhere to the following interface:
+In order to be integrated to `treefmt`'s workflow, the formatter's CLI must adhere to the following specification:
 
 ```
 <command> [options] [...<files>]
 ```
 
-Where
+Where:
 
-- `<command>` is the name of the formatter.
-- `[options]` is any number of flags and options that the formatter wants to
-  provide.
-- `[...<files>]` is one or more files that the formatter should process.
+- `<command>` is the name of the formatting tool.
+- `[options]` is any number of flags and options that the formatter accepts.
+- `[...<files>]` is one or more files given to the formatter for processing.
 
-Whenever the program is invoked with the list of files, it MUST only process all the files that are passed and format them. Files that are not passed should never be formatted.
+Example:
 
-If, and only if, a file format has changed, the formatter MUST write the new
-content in place of the original file.
-
-### Example
-
-```console
+```
 $ rustfmt --edition 2018 src/main.rs src/lib.rs
 ```
 
-## Formatting details
+Whenever a formatter is invoked with a list of files, it should processes only the specified files. Files that are not passed should never be formatted.
 
-A formatter MUST preserve validity. This is a strong contract; the syntax and semantics must never be broken by the formatter.
+If, and only if, a file has changed, the formatter will write the new content in place of the original one.
 
-A formatter SHOULD be idempotent. Meaning that if the formatter it run
-twice on a file, the file should not change on the second invocation.
+## Other requirements
 
-The formatter MUST NOT do file traversal when a list of files is passed to it.
-This is the responsibility of `treefmt`.
+You must ensure that the formatter you're planning to use:
 
-## Design notes
+- **Preserves code validity:** This is a strong contract; the syntax and semantics must never be broken by the formatter.
+- **Is idempotent:** if it is run twice on a file, the file should not change on the second invocation.
 
-We assume that the code is stored in source control, which is why it's fine to
-write the new content in place.
+`treefmt` guarantees that the formatter won't traverse the file system if a list of files is passed to it.
