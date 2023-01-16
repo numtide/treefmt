@@ -18,10 +18,10 @@ Before sending a pull request, make sure that you've read all the guidelines. If
 
 If you need to create an issue, make sure to clearly describe it, including:
 
-  -   The steps to reproduce it if it's a bug
-  -   The version of treefmt used
-  -   The database driver and version
-  -   The database version
+- The steps to reproduce it if it's a bug
+- The version of treefmt used
+- The database driver and version
+- The database version
 
 The cache database is stored in a toml file the ~/.cache/treefmt directory.
 
@@ -30,25 +30,23 @@ The cache database is stored in a toml file the ~/.cache/treefmt directory.
 If you want to introduce changes to the project, please follow these steps:
 
 - Fork the repository on GitHub
--   Create a branch on your fork. Don't commit directly to master
--   Add the necessary tests for your changes
--   Run treefmt in the source directory before you commit your changes
--   Push your changes to the branch in your repository fork
--   Submit a pull request to the original repository
+- Create a branch on your fork. Don't commit directly to master
+- Add the necessary tests for your changes
+- Run treefmt in the source directory before you commit your changes
+- Push your changes to the branch in your repository fork
+- Submit a pull request to the original repository
 
 Make sure you based your commits on logical and atomic units!
 
 ## Examples of git history
 
-Git history that we want to have: 
-
+Git history that we want to have:
 
 Git history that we are trying to avoid:
+
 <details>
 
 <summary>Git history that we want to have</summary>
-
-
 
 ```
 
@@ -82,17 +80,11 @@ Git history that we are trying to avoid:
 
 ```
 
-
-
 </details>
-
-
 
 <details>
 
 <summary>Git history that we are <b>trying</b> to avoid:</summary>
-
-
 
 ```
 
@@ -141,7 +133,6 @@ Git history that we are trying to avoid:
 * |   badeddd Merge pull request #101 from zimbatm/extreme-cachin
 
 ```
-
 
 </details>
 

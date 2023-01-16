@@ -1,4 +1,3 @@
-
 # Formatters
 
 In order to catch up with all the formatters available for different programming languages, we created two files as our guideline:

@@ -34,7 +34,7 @@ This section describes the integration between a single formatter and treefmt. "
 - `options`: A list of extra arguments to add to the command. These are typically project-specific arguments.
 - `includes`: A list of glob patterns to match file names, including extensions and paths, used to select specific files for formatting. Typically, only file extensions are specified to pick all files written in a specific language. For instance,[`"*.sh"`] selects shell script files. But sometimes, you may need to specify a full file name, like [`"Makefile"`], or a pattern picking files in a specific folder, like [`"/home/user/project/*"`].
 
-- `excludes`: A list of glob  patterns to exclude from formatting. If any of these patterns match, the file will be excluded from formatting by a particular formatter.
+- `excludes`: A list of glob patterns to exclude from formatting. If any of these patterns match, the file will be excluded from formatting by a particular formatter.
 
 ### `[global]`
 

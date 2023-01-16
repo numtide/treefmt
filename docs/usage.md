@@ -77,8 +77,10 @@ treefmt [FLAGS] [OPTIONS] [--] [paths]...
 `<paths>...`
 
 > Paths to format. Defaults to formatting the whole tree
+
 ## CI integration
-Typically, you would use treefmt in the CI with the `--fail-on-change` and `--no-cache flags`. Find the explanations above. 
+
+Typically, you would use treefmt in the CI with the `--fail-on-change` and `--no-cache flags`. Find the explanations above.
 
 You can you set a `treefmt` job in the GitHub pipeline for Ubuntu with nix-shell like this:
 

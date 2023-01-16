@@ -1,4 +1,3 @@
-
 # Quickstart
 
 To run `treefmt` in your project, please follow these steps:
