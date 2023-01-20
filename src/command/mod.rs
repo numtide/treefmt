@@ -11,83 +11,93 @@ use self::init::init_cmd;
 use crate::config;
 use crate::expand_path;
 use anyhow::anyhow;
-use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::Parser;
+use clap_verbosity_flag::Verbosity;
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 /// ✨  format all your language!
-#[derive(Debug, StructOpt)]
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
 pub struct Cli {
     /// Create a new treefmt.toml
-    #[structopt(long = "init")]
+    #[arg(short, long, default_value_t = false)]
     pub init: bool,
 
-    /// Format the content passed in stdin
-    #[structopt(long = "stdin", conflicts_with("init"))]
+    /// Format the content passed in stdin.
+    #[arg(long, default_value_t = false, conflicts_with("init"))]
     pub stdin: bool,
 
     /// Ignore the evaluation cache entirely. Useful for CI.
-    #[structopt(long = "no-cache", conflicts_with("stdin"), conflicts_with("init"))]
+    #[arg(long, conflicts_with("stdin"), conflicts_with("init"))]
     pub no_cache: bool,
 
     /// Reset the evaluation cache. Use in case the cache is not precise enough.
-    #[structopt(long = "clear-cache", conflicts_with("stdin"), conflicts_with("init"))]
+    #[arg(short, long, default_value_t = false)]
     pub clear_cache: bool,
 
     /// Exit with error if any changes were made. Useful for CI.
-    #[structopt(
-        long = "fail-on-change",
+    #[arg(
+        long,
+        default_value_t = false,
         conflicts_with("stdin"),
         conflicts_with("init")
     )]
     pub fail_on_change: bool,
 
-    /// Do not exit with error if a configured formatter is missing
-    #[structopt(long = "allow-missing-formatter")]
+    /// Do not exit with error if a configured formatter is missing.
+    #[arg(long, default_value_t = false)]
     pub allow_missing_formatter: bool,
 
     /// Log verbosity is based off the number of v used
-    #[structopt(long = "verbose", short = "v", parse(from_occurrences))]
-    pub verbosity: u8,
+    #[clap(flatten)]
+    pub verbose: Verbosity,
 
-    #[structopt(long = "quiet", short = "q")]
-    /// No output printed to stderr
-    pub quiet: bool,
-
-    #[structopt(short = "C", default_value = ".")]
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
+    #[arg(short = 'C', default_value = ".", value_parser = parse_path)]
     pub work_dir: PathBuf,
 
-    #[structopt(long = "tree-root", env = "PRJ_ROOT")]
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
+    #[arg(long, env = "PRJ_ROOT", default_value = ".", value_parser = parse_path)]
     pub tree_root: Option<PathBuf>,
 
-    #[structopt(long = "config-file")]
     /// Run with the specified config file, which is not required to be in the tree to be formatted.
+    #[arg(long, value_parser = parse_path)]
     pub config_file: Option<PathBuf>,
 
-    #[structopt()]
     /// Paths to format. Defaults to formatting the whole tree.
+    #[arg()]
     pub paths: Vec<PathBuf>,
 
-    #[structopt(long = "formatters", short = "f")]
     /// Select formatters name to apply. Defaults to all formatters.
+    #[arg(short, long)]
     pub formatters: Option<Vec<String>>,
 }
 
-/// Use this instead of Cli::from_args(). We do a little bit of post-processing here.
-pub fn cli_from_args() -> anyhow::Result<Cli> {
-    let mut cli = Cli::from_args();
-    let cwd = std::env::current_dir()?;
+fn parse_path(s: &str) -> anyhow::Result<PathBuf> {
+    // Obtain current dir and ensure is absolute
+    let cwd = match env::current_dir() {
+        Ok(dir) => dir,
+        Err(err) => return Err(anyhow!("{}", err)),
+    };
     assert!(cwd.is_absolute());
-    // Make sure the work_dir is an absolute path. Don't use the stdlib canonicalize() function
+
+    // TODO: Include validation for incorrect paths or caracters
+    let path = Path::new(s);
+
+    // Make sure the path is an absolute path.
+    // Don't use the stdlib canonicalize() function
     // because symlinks should not be resolved.
-    cli.work_dir = expand_path(&cli.work_dir, &cwd);
+    Ok(expand_path(path, &cwd))
+}
 
-    // Make sure the tree_root is an absolute path.
-    if let Some(tree_root) = cli.tree_root {
-        cli.tree_root = Some(expand_path(&tree_root, &cwd));
-    }
+/// Use this instead of Cli::parse(). We do a little bit of post-processing here.
+pub fn cli_from_args() -> anyhow::Result<Cli> {
+    let mut cli = Cli::parse();
 
+    // Check we can find config first before proceeding
     match cli.config_file {
         None => {
             // Find the config file if not specified by the user.
@@ -100,11 +110,6 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
                 ));
             }
         }
-    }
-
-    // Make sure the config_file points to an absolute path.
-    if let Some(config_file) = cli.config_file {
-        cli.config_file = Some(expand_path(&config_file, &cwd));
     }
 
     Ok(cli)

@@ -1,6 +1,6 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
-use log::{error, LevelFilter};
+use log::error;
 use treefmt::command::{cli_from_args, run_cli};
 
 fn main() {
@@ -17,11 +17,7 @@ fn run() -> anyhow::Result<()> {
     env_logger::builder()
         .format_timestamp(None)
         .format_target(false)
-        .filter_level(match cli.verbosity {
-            0 => LevelFilter::Info,
-            1 => LevelFilter::Debug,
-            _ => LevelFilter::Trace,
-        })
+        .filter_level(cli.verbose.log_level_filter())
         .init();
 
     run_cli(&cli)?;
