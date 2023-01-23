@@ -1,7 +1,5 @@
 //! Your favorite all-in-one formatter tool!
 
-#![deny(missing_docs)]
-pub mod command;
 pub mod config;
 pub mod engine;
 pub mod eval_cache;
@@ -11,9 +9,11 @@ use anyhow::Result;
 use filetime::FileTime;
 use path_clean::PathClean;
 use serde::{Deserialize, Serialize};
-use std::env;
-use std::fs::Metadata;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    fs::Metadata,
+    path::{Path, PathBuf},
+};
 use which::which_in;
 
 /// FileMeta represents file meta that change on file modification

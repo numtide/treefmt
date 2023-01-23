@@ -1,9 +1,8 @@
-use crate::config;
 use anyhow::Context;
 use console::style;
 use log::info;
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
+use treefmt::config;
 
 pub fn init_cmd(work_dir: &Path) -> anyhow::Result<()> {
     let file_path = work_dir.join(config::FILENAME);

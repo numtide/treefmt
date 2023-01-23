@@ -1,7 +1,9 @@
 #![allow(clippy::redundant_closure, clippy::redundant_pattern_matching)]
 
+mod cli;
+
+use crate::cli::{cli_from_args, run_cli};
 use log::error;
-use treefmt::command::{cli_from_args, run_cli};
 
 fn main() {
     if let Err(e) = run() {

@@ -8,8 +8,6 @@ mod init;
 use self::format::format_cmd;
 use self::format_stdin::format_stdin_cmd;
 use self::init::init_cmd;
-use crate::config;
-use crate::expand_path;
 use anyhow::anyhow;
 use clap::Parser;
 use clap_verbosity_flag::Verbosity;
@@ -17,6 +15,7 @@ use std::{
     env,
     path::{Path, PathBuf},
 };
+use treefmt::{config, expand_path};
 
 /// ✨  format all your language!
 #[derive(Parser, Debug)]

@@ -1,10 +1,8 @@
-use crate::config;
-use crate::engine::run_treefmt_stdin;
-use crate::expand_path;
 use anyhow::anyhow;
 use directories::ProjectDirs;
 use log::debug;
 use std::path::{Path, PathBuf};
+use treefmt::{config, engine::run_treefmt_stdin, expand_path};
 
 pub fn format_stdin_cmd(
     tree_root: &Option<PathBuf>,

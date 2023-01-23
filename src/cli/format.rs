@@ -1,8 +1,8 @@
-use crate::engine::run_treefmt;
 use anyhow::anyhow;
 use directories::ProjectDirs;
 use log::debug;
 use std::path::{Path, PathBuf};
+use treefmt::engine::run_treefmt;
 
 pub fn format_cmd(
     tree_root: &Option<PathBuf>,
