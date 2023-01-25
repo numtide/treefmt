@@ -4,7 +4,7 @@
   # $ nix flake update --recreate-lock-file
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
-  inputs.flake-parts.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
