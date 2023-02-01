@@ -8,4 +8,5 @@
 - [Formatters](./index-formatters.md)
   - [Formatters Specification](./formatters-spec.md)
   - [Known Formatters](./formatters.md)
+- [FAQ](./faq.md)
 - [Contributing](./contributing.md)

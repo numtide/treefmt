@@ -1,37 +1,90 @@
 # Known formatters
 
 Here is a list of all the formatters we tested. Feel free to send a PR to add other ones!
+## Contents
 
-## Python
+Single-language formatters:
+- [Cabal](#cabal)
+    - [cabal-fmt](#cabal-fmt)
+- [Elm](#elm)
+    - [elm-format](#elm-format)
+- [Golang](#golang)
+    - [gofmt](#gofmt)
+    - [gofumpt](#gofumpt)
+- [Haskell](#haskell)
+    - [hlint](#hlint)
+    - [ormolu](#ormolu)
+    - [stylish-haskell](#stylish-haskell)
+- [Lua](#lua)
+    - [StyLua](#stylua)
+- [Nix](#nix)
+    - [alejandra](#alejandra)
+    - [nixpkgs-fmt](#nixpkgs-fmt)
+- [OCaml](#ocaml)
+    - [ocamlformat](#ocamlformat)
+- [PureScript](#purescript)
+    - [purs-tidy](#purs-tidy)
+- [Python](#python)
+    - [black](#black)
+- [Ruby](#ruby)
+    - [rufo](#rufo)
+- [Rust](#rust)
+    - [rustfmt](#rustfmt)
+- [Scala](#scala)
+    - [scalafmt](#scalafmt)
+- [Shell](#shell)
+    - [shellcheck](#shellcheck)
+    - [shfmt](#shfmt)
+- [Terraform](#terraform)
+    - [terraform fmt](#terraform-fmt)
 
-### [Black](https://github.com/psf/black)
+Multilanguage formatters:
+- [clang-format](#clang-format)
+- [Prettier](#prettier)
+
+## Cabal
+
+### [cabal-fmt](https://github.com/phadej/cabal-fmt)
 
 ```
-command = "black"
-includes = ["*.py"]
+command = "cabal-fmt"
+options = ["--inplace"]
+includes = ["*.cabal"]
 ```
-
 ## Elm
 
-### [Elm-format](https://numtide.github.io/treefmt/formatters.html#elm)
+### [elm-format](https://numtide.github.io/treefmt/formatters.html#elm)
 
 ```
 command = "elm-format"
 options = ["--yes"]
 includes = ["*.elm"]
 ```
-
 ## Golang
 
-### [Gofmt](https://pkg.go.dev/cmd/gofmt)
+### [gofmt](https://pkg.go.dev/cmd/gofmt)
 
 ```
 command = "gofmt"
 options = ["-w"]
 includes = ["*.go"]
+
+```
+### [gofumpt](https://github.com/mvdan/gofumpt)
+
+```
+command = "gofumpt"
+includes = ["*.go"]
+
 ```
 
 ## Haskell
+
+### [hlint](https://github.com/ndmitchell/hlint)
+```
+command = "hlint"
+includes = [ "*.hs" ]
+```
 
 ### [Ormolu](https://github.com/tweag/ormolu)
 
@@ -57,7 +110,22 @@ options = [ "--inplace" ]
 includes = [ "*.hs" ]
 ```
 
+## Lua
+
+### [StyLua](https://github.com/JohnnyMorganz/StyLua)
+
+```
+command = "stylua"
+includes = ["*.lua"]
+```
+
 ## Nix
+
+### [Alejandra](https://github.com/kamadorueda/alejandra)
+```
+command = "alejandra"
+includes = ["*.nix"]
+```
 
 ### [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt)
 
@@ -66,16 +134,31 @@ command = "nixpkgs-fmt"
 includes = ["*.nix"]
 ```
 
-## Rust
+## OCaml 
 
-cargo fmt is not supported as it doesn't follow the spec. It doesn't allow to pass arbitrary files to be formatter, an ability which `treefmt` relies on. Use rustfmt instead (which is what cargo fmt uses under the hood).
-
-### [rustfmt](https://github.com/rust-lang/rustfmt)
+### [ocamlformat](https://opam.ocaml.org/packages/ocamlformat/)
 
 ```
-command = "rustfmt"
-options = ["--edition", "2018"]
-includes = ["*.rs"]
+command = "ocamlformat"
+includes = ["*.ocaml"]
+```
+
+## PureScript 
+
+### [purs-tidy](https://www.npmjs.com/package/purs-tidy)
+
+```
+command = "purs-tidy"
+includes = ["*.purs"]
+```
+
+## Python
+
+### [black](https://github.com/psf/black)
+
+```
+command = "black"
+includes = ["*.py"]
 ```
 
 ## Ruby
@@ -90,7 +173,34 @@ options = ["-x"]
 includes = ["*.rb"]
 ```
 
+## Rust
+
+cargo fmt is not supported as it doesn't follow the spec. It doesn't allow to pass arbitrary files to be formatter, an ability which `treefmt` relies on. Use rustfmt instead (which is what cargo fmt uses under the hood).
+
+### [rustfmt](https://github.com/rust-lang/rustfmt)
+
+```
+command = "rustfmt"
+options = ["--edition", "2018"]
+includes = ["*.rs"]
+```
+
+## Scala
+
+### [scalafmt](https://github.com/scalameta/scalafmt)
+
+```
+command = "scalafmt"
+includes = ["*.scala"]
+```
+
 ## Shell
+
+### [shellcheck](https://github.com/koalaman/shellcheck)
+```
+command = "shellcheck"
+includes = ["*.sh"]
+```
 
 ### [shfmt](https://github.com/mvdan/sh)
 

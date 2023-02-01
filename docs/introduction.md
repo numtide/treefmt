@@ -48,16 +48,6 @@ all of this in 124ms
 
 The tool can be invoked manually or integrated into your CI. There's currently no integration with IDEs, but the feature is coming soon.
 
-## How it works
-
-`Treefmt` traverses all your project's folders, maps files to specific code formatters, and formats the code accordingly.
-
-Other tools also also traverse the filesystem, but not necessarily starting from the root of the project.
-
-Contrary to other formatters, `treefmt` doesn't preview the changes before writing them to a file. If you want to view the changes, you can always check the diff in your version control (we assume that your project is checked into a version control system). You can also rely on version control if errors were introduced into your code as a result of disruptions in the formatter's work.
-
-If `treefmt` was interrupted and not all the changed files ended up being formatted, we recommend to clear the cache with the --clear-cache flag.
-
 ## Upcoming features
 
 - **IDE integration:** Most of developers are used to formatting a file upon save in the IDE. So far, you can't use `treefmt` for this purpose, but we're working on it 😀
