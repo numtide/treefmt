@@ -34,7 +34,7 @@ After the successful execution of the cargo build command, you will find the `tr
 
 [Nix](https://github.com/NixOS/nix) is a package manager foundational for NixOS. You can use it in NixOS and in any other OS equally.
 
-If you're using both `treefmt` and `nix`, you can go for [`treefmt-nix`](https://github.com/numtide/treefmt-nix), a special tool that that makes installation and configuration of `treefmt` with `nix` easier.
+If you're using both `treefmt` and `nix`, you can go for [`treefmt-nix`](https://github.com/numtide/treefmt-nix), a special tool that makes installation and configuration of `treefmt` with `nix` easier.
 
 **Non-flake user**
 
