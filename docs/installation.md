@@ -2,6 +2,8 @@
 
 There are two options to install `treefmt`: by downloading the latest binary, or by compiling and building the tool from source.
 
+
+
 ## Installing with a binary file
 
 You can find the list of the latest binaries [here](https://github.com/numtide/treefmt/releases).
@@ -31,6 +33,8 @@ After the successful execution of the cargo build command, you will find the `tr
 ### Nix User
 
 [Nix](https://github.com/NixOS/nix) is a package manager foundational for NixOS. You can use it in NixOS and in any other OS equally.
+
+If you're using both `treefmt` and `nix`, you can go for [`treefmt-nix`](https://github.com/numtide/treefmt-nix), a special tool that makes installation and configuration of `treefmt` with `nix` easier.
 
 **Non-flake user**
 

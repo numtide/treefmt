@@ -35,7 +35,7 @@ Just type `treefmt` in any folder to reformat the whole code tree. All in all, y
 
 ## Installation
 
-You can install the tool by downloading the binary. Find the binaries for different architectures [here](https://github.com/numtide/treefmt/releases). Otherwise, you can install the package from the source code — either with [cargo](https://github.com/rust-lang/cargo), or with help of [nix](https://github.com/NixOS/nix). We describe the installation process in detail in the [wiki](https://github.com/numtide/treefmt/wiki).
+You can install the tool by downloading the binary. Find the binaries for different architectures [here](https://github.com/numtide/treefmt/releases). Otherwise, you can install the package from the source code — either with [cargo](https://github.com/rust-lang/cargo), or with help of [nix](https://github.com/NixOS/nix). We describe the installation process in detail in the [docs](https://github.com/numtide/treefmt/wiki).
 
 ## Usage
 
@@ -56,6 +56,7 @@ To explore the tool’s flags and options, type:
 ```console
 $ treefmt --help
 ```
+Additionally, there's a special tool called [`treefmt-nix`](https://github.com/numtide/treefmt-nix) for using both `treefmt` and [`nix`](https://github.com/NixOS/nix).
 
 ## Configuration
 
@@ -83,7 +84,7 @@ includes = ["*.rs"]
 
 Before specifying the formatter in the config, make sure it’s installed.
 
-To find and share existing formatter recipes, take a look at the [wiki](https://github.com/numtide/treefmt/wiki).
+To find and share existing formatter recipes, take a look at the [docs](https://github.com/numtide/treefmt/wiki).
 
 If you are a Nix user, you might also be interested in [treefmt-nix](https://github.com/numtide/treefmt-nix) to use Nix to configure and bring in formatters.
 
