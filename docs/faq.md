@@ -2,7 +2,7 @@
 
 ## How does treefmt function?
 
-`Treefmt` traverses all your project's folders, maps files to specific code formatters, and formats the code accordingly. Other tools also also traverse the filesystem, but not necessarily starting from the root of the project.
+`Treefmt` traverses all your project's folders, maps files to specific code formatters, and formats the code accordingly. Other tools also traverse the filesystem, but not necessarily starting from the root of the project.
 
 Contrary to other formatters, `treefmt` doesn't preview the changes before writing them to a file. If you want to view the changes, you can always check the diff in your version control (we assume that your project is checked into a version control system). You can also rely on version control if errors were introduced into your code as a result of disruptions in the formatter's work.
 
