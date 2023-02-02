@@ -8,10 +8,12 @@ Contrary to other formatters, `treefmt` doesn't preview the changes before writi
 
 ## How is the cache organized?
 
-At this moment, the cache is represented by a flat TOML file where file paths are mapped to `mtimes`. The file is located in: 
+At this moment, the cache is represented by a flat TOML file where file paths are mapped to `mtimes`. The file is located in:
+
 ```
 ~/.cache/treefmt/<hash-of-the-treefmt.toml-path>.toml
 ```
+
 However, we are planning to move the hash file to the destination project's root directory.
 
-At the end of each tool run, the cache file gets overwritten with the last formatting time entries. In this way, we can can compare the last change time of the file to the last formatting time, and figure out which files need re-formatting. 
+At the end of each tool run, the cache file gets overwritten with the last formatting time entries. In this way, we can can compare the last change time of the file to the last formatting time, and figure out which files need re-formatting.

@@ -56,6 +56,7 @@ To explore the tool’s flags and options, type:
 ```console
 $ treefmt --help
 ```
+
 Additionally, there's a special tool called [`treefmt-nix`](https://github.com/numtide/treefmt-nix) for using both `treefmt` and [`nix`](https://github.com/NixOS/nix).
 
 ## Configuration

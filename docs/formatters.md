@@ -1,44 +1,47 @@
 # Known formatters
 
 Here is a list of all the formatters we tested. Feel free to send a PR to add other ones!
+
 ## Contents
 
 Single-language formatters:
+
 - [Cabal](#cabal)
-    - [cabal-fmt](#cabal-fmt)
+  - [cabal-fmt](#cabal-fmt)
 - [Elm](#elm)
-    - [elm-format](#elm-format)
+  - [elm-format](#elm-format)
 - [Golang](#golang)
-    - [gofmt](#gofmt)
-    - [gofumpt](#gofumpt)
+  - [gofmt](#gofmt)
+  - [gofumpt](#gofumpt)
 - [Haskell](#haskell)
-    - [hlint](#hlint)
-    - [ormolu](#ormolu)
-    - [stylish-haskell](#stylish-haskell)
+  - [hlint](#hlint)
+  - [ormolu](#ormolu)
+  - [stylish-haskell](#stylish-haskell)
 - [Lua](#lua)
-    - [StyLua](#stylua)
+  - [StyLua](#stylua)
 - [Nix](#nix)
-    - [alejandra](#alejandra)
-    - [nixpkgs-fmt](#nixpkgs-fmt)
+  - [alejandra](#alejandra)
+  - [nixpkgs-fmt](#nixpkgs-fmt)
 - [OCaml](#ocaml)
-    - [ocamlformat](#ocamlformat)
+  - [ocamlformat](#ocamlformat)
 - [PureScript](#purescript)
-    - [purs-tidy](#purs-tidy)
+  - [purs-tidy](#purs-tidy)
 - [Python](#python)
-    - [black](#black)
+  - [black](#black)
 - [Ruby](#ruby)
-    - [rufo](#rufo)
+  - [rufo](#rufo)
 - [Rust](#rust)
-    - [rustfmt](#rustfmt)
+  - [rustfmt](#rustfmt)
 - [Scala](#scala)
-    - [scalafmt](#scalafmt)
+  - [scalafmt](#scalafmt)
 - [Shell](#shell)
-    - [shellcheck](#shellcheck)
-    - [shfmt](#shfmt)
+  - [shellcheck](#shellcheck)
+  - [shfmt](#shfmt)
 - [Terraform](#terraform)
-    - [terraform fmt](#terraform-fmt)
+  - [terraform fmt](#terraform-fmt)
 
 Multilanguage formatters:
+
 - [clang-format](#clang-format)
 - [Prettier](#prettier)
 
@@ -51,6 +54,7 @@ command = "cabal-fmt"
 options = ["--inplace"]
 includes = ["*.cabal"]
 ```
+
 ## Elm
 
 ### [elm-format](https://numtide.github.io/treefmt/formatters.html#elm)
@@ -60,6 +64,7 @@ command = "elm-format"
 options = ["--yes"]
 includes = ["*.elm"]
 ```
+
 ## Golang
 
 ### [gofmt](https://pkg.go.dev/cmd/gofmt)
@@ -70,6 +75,7 @@ options = ["-w"]
 includes = ["*.go"]
 
 ```
+
 ### [gofumpt](https://github.com/mvdan/gofumpt)
 
 ```
@@ -81,6 +87,7 @@ includes = ["*.go"]
 ## Haskell
 
 ### [hlint](https://github.com/ndmitchell/hlint)
+
 ```
 command = "hlint"
 includes = [ "*.hs" ]
@@ -122,6 +129,7 @@ includes = ["*.lua"]
 ## Nix
 
 ### [Alejandra](https://github.com/kamadorueda/alejandra)
+
 ```
 command = "alejandra"
 includes = ["*.nix"]
@@ -134,7 +142,7 @@ command = "nixpkgs-fmt"
 includes = ["*.nix"]
 ```
 
-## OCaml 
+## OCaml
 
 ### [ocamlformat](https://opam.ocaml.org/packages/ocamlformat/)
 
@@ -143,7 +151,7 @@ command = "ocamlformat"
 includes = ["*.ocaml"]
 ```
 
-## PureScript 
+## PureScript
 
 ### [purs-tidy](https://www.npmjs.com/package/purs-tidy)
 
@@ -197,6 +205,7 @@ includes = ["*.scala"]
 ## Shell
 
 ### [shellcheck](https://github.com/koalaman/shellcheck)
+
 ```
 command = "shellcheck"
 includes = ["*.sh"]
