@@ -90,7 +90,7 @@ If you are a Nix user, you might also be interested in [treefmt-nix](https://git
 
 ## Compatibility
 
-`Treefmt` works with any formatter that adheres to the [following specification](https://github.com/renoire/treefmt/blob/master/docs/formatters-spec.md). For instance, you can go for:
+`Treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/formatters-spec.md). For instance, you can go for:
 
 - [clang-format](https://clang.llvm.org/docs/ClangFormat.html) for Java
 - gofmt for Golang

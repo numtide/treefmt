@@ -2,7 +2,7 @@ on: # rebuild any PRs and main branch changes
   pull_request:
   push:
     branches:
-      - master
+      - main
 
 name: Rust
 

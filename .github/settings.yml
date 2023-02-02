@@ -11,7 +11,7 @@ repository:
   homepage: "https://numtide.github.io/treefmt/"
 
   # A comma-separated list of topics to set on the repository
-  topics: [cli, formatter, unifies]
+  topics: "cli, formatter, unifies"
 
   # Either `true` to make the repository private, or `false` to make it public.
   private: false
@@ -30,7 +30,7 @@ repository:
   has_downloads: false
 
   # Updates the default branch for this repository.
-  default_branch: master
+  default_branch: main
 
   # Either `true` to allow squash-merging pull requests, or `false` to prevent
   # squash-merging.
@@ -104,7 +104,7 @@ teams:
     permission: maintain
 
 branches:
-  - name: master
+  - name: main
     # https://docs.github.com/en/rest/reference/repos#update-branch-protection
     # Branch Protection settings. Set to null to disable
     protection:

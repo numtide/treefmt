@@ -89,7 +89,7 @@ name: treefmt
 on:
   pull_request:
   push:
-    branches: master
+    branches: main
 jobs:
   formatter:
     runs-on: ubuntu-latest

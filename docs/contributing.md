@@ -30,7 +30,7 @@ The cache database is stored in a toml file the ~/.cache/treefmt directory.
 If you want to introduce changes to the project, please follow these steps:
 
 - Fork the repository on GitHub
-- Create a branch on your fork. Don't commit directly to master
+- Create a branch on your fork. Don't commit directly to main
 - Add the necessary tests for your changes
 - Run treefmt in the source directory before you commit your changes
 - Push your changes to the branch in your repository fork
@@ -50,7 +50,7 @@ Git history that we are trying to avoid:
 
 ```
 
-*   e3ed88b (HEAD -> contribution-guide, upstream/master, origin/master, origin/HEAD, master) Merge pull request #470 from zimbatm/fix_lru_cache
+*   e3ed88b (HEAD -> contribution-guide, upstream/main, origin/main, origin/HEAD, main) Merge pull request #470 from zimbatm/fix_lru_cache
 
 |\
 
