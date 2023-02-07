@@ -1,6 +1,14 @@
 cut_body_after = "" # don't include text from the PR body in the merge commit message
 status = [
   "Evaluate flake.nix",
-  "devShell default",
-  "package default",
+  "build (macos-latest)",
+  "build (ubuntu-20.04)",
+  "build_and_test (macos-latest)",
+  "build_and_test (ubuntu-20.04)",
+  "build_and_test (windows-2019)",
+  "clippy",
+  "clippy_check",
+  "devShell default [x86_64-linux]",
+  "docs (ubuntu-20.04)",
+  "package default [x86_64-linux]"
 ]
