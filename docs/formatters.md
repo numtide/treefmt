@@ -144,11 +144,12 @@ includes = ["*.nix"]
 
 ## OCaml
 
-### [ocamlformat](https://opam.ocaml.org/packages/ocamlformat/)
+### [ocamlformat](https://github.com/ocaml-ppx/ocamlformat)
 
 ```
 command = "ocamlformat"
-includes = ["*.ocaml"]
+options = ["-i"]
+includes = ["*.ml", "*.mli"]
 ```
 
 ## PureScript
