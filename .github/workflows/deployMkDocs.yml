@@ -1,0 +1,22 @@
+# Build and deploy MkDocs to gh-pages for main branch
+name: build
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+          
+      - name: Install dependencies
+        run: pip install mkdocs-material
+      
+      - name: build and deploy to GitHub Pages
+        run: mkdocs gh-deploy --force --clean --verbose
