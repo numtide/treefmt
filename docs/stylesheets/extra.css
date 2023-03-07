@@ -80,7 +80,7 @@
 }
 
 .md-nav {
-    font-size: .9rem;
+    font-size: .8rem;
     line-height: 1.3;
 }
 
@@ -90,6 +90,10 @@
 
 .md-sidebar__inner {
   padding-right: 0 !important;
+}
+
+.md-nav__link--passed {
+  color: #FBAA31;
 }
 
 /* --------------------------- font stuff --------------------------- */
@@ -106,6 +110,10 @@
     font-weight: 500;
     line-height: 1.3;
     margin: 0 0 1.25em
+}
+
+.md-typeset h3 {
+  color: #F58220;
 }
 
 /* highlights / links */
