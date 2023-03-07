@@ -1,7 +1,7 @@
 ### Site metadata ###
 
-site_name: Treefmt Quickstart
-site_description: MkDocs docs site on GH Pages
+site_name: treefmt
+site_description: one CLI to format your repo
 site_url: https://numtide.github.io/treefmt/
 
 repo_url: https://github.com/numtide/treefmt
