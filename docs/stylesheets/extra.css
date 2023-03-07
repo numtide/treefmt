@@ -24,9 +24,10 @@
   --md-primary-fg-color: #546d78;
   --md-typeset-color: #E9EBFC !important;
   --md-default-fg-color: #E9EBFC;
-  --md-typeset-a-color: #546d78 !important;
-  --md-default-fg-color--light: #FBAA31;
+  --md-typeset-a-color: #FBAA31 !important;
+  --md-default-fg-color--light: #D41F26;
   --md-text-font: Eurostile-Roman; 
+  --
 }
 
 [data-md-color-scheme="shanesDarkTheme"] {
@@ -106,7 +107,7 @@
 }
 
 .md-typeset h2 {
-    color: #F58220;
+    color: #FBAA31;
     font-weight: 500;
     line-height: 1.3;
     margin: 0 0 1.25em
