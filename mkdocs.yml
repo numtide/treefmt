@@ -1,0 +1,69 @@
+### Site metadata ###
+
+site_name: treefmt
+site_description: one CLI to format your repo
+site_url: https://numtide.github.io/treefmt/
+
+repo_url: https://github.com/numtide/treefmt
+edit_uri: edit/main/docs
+
+### Build settings ###
+    
+theme:
+  name: 'material'
+##  custom_dir: overrides
+    
+  palette:
+    - scheme: default
+      primary: teal
+      accent: orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue grey
+      accent: orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+#     text: Montserrat
+    code: Roboto Mono
+  favicon: assets/favicon.png
+  logo: assets/logo.png
+
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - content.action.edit
+    - content.action.view
+
+nav:
+  - About the project: introduction.md
+  - QuickStart:
+      - About: quickstart.md
+      - Installation: installation.md
+      - Configuration: treefmt-configuration.md
+  - Usage: usage.md
+  - Formatters: 
+      - About: index-formatters.md
+      - Formatter Specification: formatters-spec.md
+      - Known Formatters: formatters.md
+  - FAQ: faq.md
+  - Contributing: contributing.md
+
+extra_css:
+    - stylesheets/extra.css
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/numtide
+      name: NumTide on Github
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/numtide
+      name: NumTide on Twitter
+  generator: false # hide the line "Made with Material for MkDocs"
+      
+copyright: Copyright &copy; NumTide
