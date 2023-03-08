@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use ignore::WalkBuilder;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use std::fs::File;
 use std::io::{self, Write};
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
@@ -56,7 +57,7 @@ pub fn run_treefmt(
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
         let abs_path = expand_path(path, work_dir);
-        if abs_path.starts_with(&tree_root) {
+        if abs_path.starts_with(tree_root) {
             sum.push(abs_path);
         } else {
             warn!(
@@ -336,7 +337,7 @@ fn print_summary(
 ) {
     println!(
         r#"
-{} files changed in {:.0?} (found {}, matched {}, cache misses {}) 
+{} files changed in {:.0?} (found {}, matched {}, cache misses {})
         "#,
         reformatted_files,
         start_time.elapsed(),
@@ -362,7 +363,7 @@ pub fn run_treefmt_stdin(
     assert!(path.is_absolute());
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
-    if !path.starts_with(&tree_root) {
+    if !path.starts_with(tree_root) {
         return Err(anyhow!(
             "Ignoring path {}, it is not in the project root",
             path.display()
@@ -400,7 +401,7 @@ pub fn run_treefmt_stdin(
     );
 
     // Collect all formatters that match the path
-    let formatters: Vec<&Formatter> = formatters.values().filter(|f| f.is_match(&path)).collect();
+    let formatters: Vec<&Formatter> = formatters.values().filter(|f| f.is_match(path)).collect();
 
     if formatters.is_empty() {
         warn!("no formatter found for path {:?}", path);
@@ -437,7 +438,7 @@ pub fn run_treefmt_stdin(
             .fmt(&[tmpfile.path().to_path_buf()])?;
 
         // Seek back to start
-        let mut tmpfile = tmpfile.reopen()?;
+        let mut tmpfile = File::open(tmpfile.path())?;
 
         // Copy the file to stdout
         io::copy(&mut tmpfile, &mut io::stdout().lock())?;
