@@ -80,9 +80,9 @@ pub fn from_path(file_path: &Path) -> Result<Root> {
         .and_then(|content| from_string(&content))
 }
 
-/// Parses the provide string into a treefmt config object
+/// Parses the provided string into a treefmt config object
 pub fn from_string(file_contents: &str) -> Result<Root> {
-    toml::from_str::<Root>(&file_contents).map_err(Error::msg)
+    toml::from_str::<Root>(file_contents).map_err(Error::msg)
 }
 
 #[cfg(test)]
