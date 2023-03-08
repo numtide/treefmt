@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use ignore::WalkBuilder;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use std::fs::File;
 use std::io::{self, Write};
 use std::iter::Iterator;
 use std::path::{Path, PathBuf};
@@ -437,7 +438,7 @@ pub fn run_treefmt_stdin(
             .fmt(&[tmpfile.path().to_path_buf()])?;
 
         // Seek back to start
-        let mut tmpfile = tmpfile.reopen()?;
+        let mut tmpfile = File::open(tmpfile.path())?;
 
         // Copy the file to stdout
         io::copy(&mut tmpfile, &mut io::stdout().lock())?;
