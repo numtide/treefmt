@@ -1,0 +1,37 @@
+# Build and deploy MkDocs to gh-pages for main branch
+name: gh-pages
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - trying
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  gh-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+      - uses: cachix/cachix-action@v12
+        with:
+          name: numtide
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Build the docs
+        id: build
+        run: |
+          nix build .#docs
+          echo "result=$(readlink ./result)" >> $GITHUB_OUTPUT
+      
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: "${{ steps.build.outputs.result }}/"
