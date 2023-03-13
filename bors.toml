@@ -9,5 +9,6 @@ status = [
   "clippy",
   "clippy_check",
   "devShell default [x86_64-linux]",
+  "gh-pages",
   "package default [x86_64-linux]"
 ]

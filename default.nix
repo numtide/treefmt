@@ -86,7 +86,9 @@ let
       shfmt
       terraform
 
-      mdbook
+      # Docs
+      mkdocs
+      python310Packages.mkdocs-material
     ]);
   });
 in

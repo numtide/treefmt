@@ -1,4 +1,4 @@
-on: # rebuild any PRs and main branch changes
+on: # rebuild any PRs and default branch changes
   pull_request:
   push:
     branches:
