@@ -9,13 +9,17 @@
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
   inputs.rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, flake-parts, rust-overlay }@inputs:
+  inputs.mkdocs-numtide.url = "github:numtide/mkdocs-numtide";
+  inputs.mkdocs-numtide.inputs.nixpkgs.follows = "nixpkgs";
+
+  outputs = { self, nixpkgs, flake-parts, mkdocs-numtide, ... }@inputs:
     flake-parts.lib.mkFlake { inherit self; } {
       systems = nixpkgs.lib.systems.flakeExposed;
       perSystem = { system, pkgs, ... }:
         let
           packages = import ./. {
             inherit system;
+            mkdocs-numtide = mkdocs-numtide.packages.${system}.default;
           };
         in
         {
@@ -24,6 +28,11 @@
 
           # Allow `nix run github:numtide/treefmt`.
           packages.default = packages.treefmt;
+
+          packages.docs = mkdocs-numtide.lib.${system}.mkDocs {
+            name = "treefmt-docs";
+            src = ./.;
+          };
 
           devShells.default = packages.devShell;
         };
