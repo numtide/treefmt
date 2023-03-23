@@ -6,16 +6,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://numtide.github.io/treefmt/LICENSE/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://numtide.github.io/treefmt/SUMMARY/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://numtide.github.io/treefmt/contributing/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
@@ -42,11 +32,6 @@
     </url>
     <url>
          <loc>https://numtide.github.io/treefmt/installation/</loc>
-         <lastmod>1980-01-01</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://numtide.github.io/treefmt/introduction/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>
     </url>
