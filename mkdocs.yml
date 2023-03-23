@@ -3,16 +3,41 @@
 site_name: treefmt
 site_description: one CLI to format your repo
 site_url: https://numtide.github.io/treefmt/
-
+repo_name: 'numtide/treefmt'
 repo_url: https://github.com/numtide/treefmt
 edit_uri: edit/main/docs
+copyright: Copyright &copy; Numtide
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/numtide
+      name: Numtide on Github
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/numtide
+      name: Numtide on Twitter
+  generator: false # hide the line "Made with Material for MkDocs"
 
 ### Build settings ###
-    
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.escapeall
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - pymdownx.tasklist
+
 theme:
   name: 'material'
-##  custom_dir: overrides
-    
   palette:
     - scheme: default
       primary: teal
@@ -41,7 +66,7 @@ theme:
     - content.action.view
 
 nav:
-  - About the project: introduction.md
+  - Home: index.md
   - QuickStart:
       - About: quickstart.md
       - Installation: installation.md
@@ -53,17 +78,3 @@ nav:
       - Known Formatters: formatters.md
   - FAQ: faq.md
   - Contributing: contributing.md
-
-extra_css:
-    - stylesheets/extra.css
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/numtide
-      name: NumTide on Github
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/numtide
-      name: NumTide on Twitter
-  generator: false # hide the line "Made with Material for MkDocs"
-      
-copyright: Copyright &copy; NumTide

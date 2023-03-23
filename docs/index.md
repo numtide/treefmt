@@ -1,6 +1,6 @@
 # About the project
 
-`Treefmt` is a formatting tool that saves you time: it provides developers with a universal way to trigger all formatters needed for the project in one place.
+`treefmt` is a formatting tool that saves you time: it provides developers with a universal way to trigger all formatters needed for the project in one place.
 
 ## Background
 
@@ -14,11 +14,11 @@ Alternatively, you can trigger formatters manually, one-by-one or in a script. A
 
 All the solutions take up a significant amount of time which a developer could spend doing the actual work. They also require you to remember which formatters and options are used by each project you are working on.
 
-`Treefmt` solves these issues.
+`treefmt` solves these issues.
 
 ## Why treefmt?
 
-`Treefmt`'s configuration is project-specific, so you don't need to re-configure formatters each time you switch between projects, like you have to when working with formatters in the IDE.
+`treefmt`'s configuration is project-specific, so you don't need to re-configure formatters each time you switch between projects, like you have to when working with formatters in the IDE.
 
 Contrary to calling formatters from the command line, there's no need to remember all the specific formatters required for each project. Once you set up the config, you can run the tool in any of your project's folders without any additional flags or options.
 
@@ -51,7 +51,7 @@ The tool can be invoked manually or integrated into your CI. There's currently n
 ## Upcoming features
 
 - **IDE integration:** Most of developers are used to formatting a file upon save in the IDE. So far, you can't use `treefmt` for this purpose, but we're working on it 😀
-- **Pre-commit hook:** It's good to have your code checked for adherence to the project's standards before commit. `Treefmt` pre-commit hook won't let you commit if you have formatting issues.
+- **Pre-commit hook:** It's good to have your code checked for adherence to the project's standards before commit. `treefmt` pre-commit hook won't let you commit if you have formatting issues.
 - **Support of multiple formatters for one language:** In the current version, we advise you to avoid using multiple formatters for one and the same file type. This is because formatters are run in parallel and therefore may encounter issues while processing files. We are going to fix this issue soon, since there are cases when you may need more than one formatter per language.
 
 As a next step, learn how to [install] and [use] `treefmt`.
