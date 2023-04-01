@@ -7,6 +7,7 @@
     config = { };
   }
 , rustVersion ? nixpkgs.rust-bin.stable."1.65.0".default
+, mkdocs-numtide ? import inputs.mkdocs-numtide { pkgs = nixpkgs; }
 }:
 let
   lib = nixpkgs.lib;
@@ -87,8 +88,7 @@ let
       terraform
 
       # Docs
-      mkdocs
-      python310Packages.mkdocs-material
+      mkdocs-numtide
     ]);
   });
 in
@@ -97,9 +97,6 @@ in
 
   # reduce a bit of repetition
   inherit (treefmt.passthru) withConfig;
-
-  # A collection of packages for the project
-  docs = nixpkgs.callPackage ./docs { };
 
   # Flake attributes
   default = treefmt;

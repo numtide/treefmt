@@ -35,6 +35,26 @@
         "type": "github"
       }
     },
+    "mkdocs-numtide": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1680358379,
+        "narHash": "sha256-f4v6oIcqoQfUKfOsWbFkgKeGZkKTAo0nRwvL0IQGGnQ=",
+        "owner": "numtide",
+        "repo": "mkdocs-numtide",
+        "rev": "af6c4a5f7c0a59da3b557795f57dcae5707523ac",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "mkdocs-numtide",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1671160997,
@@ -54,6 +74,7 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
+        "mkdocs-numtide": "mkdocs-numtide",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay"
       }

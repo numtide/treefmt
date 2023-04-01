@@ -1,3 +1,5 @@
+INHERIT: !ENV MKDOCS_NUMTIDE_THEME
+
 ### Site metadata ###
 
 site_name: treefmt
@@ -6,64 +8,8 @@ site_url: https://numtide.github.io/treefmt/
 repo_name: 'numtide/treefmt'
 repo_url: https://github.com/numtide/treefmt
 edit_uri: edit/main/docs
-copyright: Copyright &copy; Numtide
 
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/numtide
-      name: Numtide on Github
-    - icon: fontawesome/brands/twitter
-      link: https://twitter.com/numtide
-      name: Numtide on Twitter
-  generator: false # hide the line "Made with Material for MkDocs"
-
-### Build settings ###
-
-extra_css:
-  - stylesheets/extra.css
-
-markdown_extensions:
-  - tables
-  - admonition
-  - pymdownx.escapeall
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true 
-  - pymdownx.tasklist
-
-theme:
-  name: 'material'
-  palette:
-    - scheme: default
-      primary: teal
-      accent: orange
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: blue grey
-      accent: orange
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  font:
-    text: Roboto
-#     text: Montserrat
-    code: Roboto Mono
-  favicon: assets/favicon.png
-  logo: assets/logo.png
-
-  features:
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.top
-    - content.action.edit
-    - content.action.view
+### Navigation ###
 
 nav:
   - Home: index.md
