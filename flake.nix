@@ -2,6 +2,9 @@
   description = "treefmt";
   # To update all inputs:
   # $ nix flake update --recreate-lock-file
+
+  inputs.systems.url = "github:nix-systems/default";
+
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
   inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -12,9 +15,9 @@
   inputs.mkdocs-numtide.url = "github:numtide/mkdocs-numtide";
   inputs.mkdocs-numtide.inputs.nixpkgs.follows = "nixpkgs";
 
-  outputs = { self, nixpkgs, flake-parts, mkdocs-numtide, ... }@inputs:
+  outputs = { self, nixpkgs, flake-parts, mkdocs-numtide, systems, ... }@inputs:
     flake-parts.lib.mkFlake { inherit self; } {
-      systems = nixpkgs.lib.systems.flakeExposed;
+      systems = import systems;
       perSystem = { system, pkgs, ... }:
         let
           packages = import ./. {
