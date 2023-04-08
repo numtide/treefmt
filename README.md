@@ -97,7 +97,7 @@ If you are a Nix user, you might also be interested in [treefmt-nix](https://git
 - gofmt for Golang
 - Prettier for JavaScript/HTML/CSS
 
-Find the full list of supported formatters [here](https://numtide.github.io/treefmt/formatters.html).
+Find the full list of supported formatters [here](https://numtide.github.io/treefmt/formatters).
 
 ## Upcoming features
 
