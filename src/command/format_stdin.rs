@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 pub fn format_stdin_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
+    config_file: &Path,
     paths: &[PathBuf],
     selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
@@ -18,18 +19,6 @@ pub fn format_stdin_cmd(
             return Err(anyhow!(
             "Could not find the project directories. On Unix, check if the HOME env is missing."
         ))
-        }
-    };
-
-    // Search for the treefmt.toml from there.
-    let config_file = match config::lookup(work_dir) {
-        Some(path) => path,
-        None => {
-            return Err(anyhow!(
-                "{} could not be found in {} and up. Use the --init option to create one.",
-                config::FILENAME,
-                work_dir.display()
-            ));
         }
     };
 
