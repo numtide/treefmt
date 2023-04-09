@@ -25,7 +25,7 @@ pub fn format_stdin_cmd(
     // Default the tree root to the folder that contains the config file
     let tree_root = tree_root.clone().unwrap_or_else(|| {
         // unwrap: since the config_file is a file, there MUST be a parent folder.
-        config_file.clone().parent().unwrap().to_path_buf()
+        config_file.parent().unwrap().to_path_buf()
     });
 
     // Check that only one path was provided
