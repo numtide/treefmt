@@ -76,7 +76,8 @@
         "flake-parts": "flake-parts",
         "mkdocs-numtide": "mkdocs-numtide",
         "nixpkgs": "nixpkgs",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "systems": "systems"
       }
     },
     "rust-overlay": {
@@ -97,6 +98,21 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1680980633,
+        "narHash": "sha256-mz27VfAExPMYuoWsb1cf++DIyUWWBEbAvXD0BJ+AT/E=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "4e9a51a15ceb27e5141819142a7d2ee827943fc8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
         "type": "github"
       }
     }
