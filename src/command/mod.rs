@@ -119,32 +119,41 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
 pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     if cli.init {
         init_cmd(&cli.work_dir)?
-    } else if cli.stdin {
-        format_stdin_cmd(&cli.tree_root, &cli.work_dir, &cli.paths, &cli.formatters)?
     } else {
-        // Fail if configuration could not be found. This is checked
-        // here to avoid aborting before init_cmd.
-        if cli.config_file.is_none() {
-            return Err(anyhow!(
-                "{} could not be found in {} and up. Use the --init option to create one or specify --config-file if it is in a non-standard location.",
-                config::FILENAME,
-                cli.work_dir.display(),
-            ));
+        match &cli.config_file {
+            None => {
+                // Fail if configuration could not be found. This is checked
+                // here to avoid aborting before init_cmd.
+                return Err(anyhow!(
+                    "{} could not be found in {} and up. Use the --init option to create one or specify --config-file if it is in a non-standard location.",
+                    config::FILENAME,
+                    cli.work_dir.display(),
+                ));
+            }
+            Some(config_file) => {
+                if cli.stdin {
+                    format_stdin_cmd(
+                        &cli.tree_root,
+                        &cli.work_dir,
+                        config_file,
+                        &cli.paths,
+                        &cli.formatters,
+                    )?
+                } else {
+                    format_cmd(
+                        &cli.tree_root,
+                        &cli.work_dir,
+                        config_file,
+                        &cli.paths,
+                        cli.no_cache,
+                        cli.clear_cache,
+                        cli.fail_on_change,
+                        cli.allow_missing_formatter,
+                        &cli.formatters,
+                    )?
+                }
+            }
         }
-
-        format_cmd(
-            &cli.tree_root,
-            &cli.work_dir,
-            cli.config_file
-                .as_ref()
-                .expect("presence asserted in ::cli_from_args"),
-            &cli.paths,
-            cli.no_cache,
-            cli.clear_cache,
-            cli.fail_on_change,
-            cli.allow_missing_formatter,
-            &cli.formatters,
-        )?
     }
 
     Ok(())

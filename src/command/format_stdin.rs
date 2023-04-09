@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 pub fn format_stdin_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
+    config_file: &Path,
     paths: &[PathBuf],
     selected_formatters: &Option<Vec<String>>,
 ) -> anyhow::Result<()> {
@@ -21,22 +22,10 @@ pub fn format_stdin_cmd(
         }
     };
 
-    // Search for the treefmt.toml from there.
-    let config_file = match config::lookup(work_dir) {
-        Some(path) => path,
-        None => {
-            return Err(anyhow!(
-                "{} could not be found in {} and up. Use the --init option to create one.",
-                config::FILENAME,
-                work_dir.display()
-            ));
-        }
-    };
-
     // Default the tree root to the folder that contains the config file
     let tree_root = tree_root.clone().unwrap_or_else(|| {
         // unwrap: since the config_file is a file, there MUST be a parent folder.
-        config_file.clone().parent().unwrap().to_path_buf()
+        config_file.parent().unwrap().to_path_buf()
     });
 
     // Check that only one path was provided
