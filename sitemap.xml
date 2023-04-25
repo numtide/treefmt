@@ -36,6 +36,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://numtide.github.io/treefmt/integrations/</loc>
+         <lastmod>1980-01-01</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://numtide.github.io/treefmt/quickstart/</loc>
          <lastmod>1980-01-01</lastmod>
          <changefreq>daily</changefreq>

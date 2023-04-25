@@ -10,14 +10,14 @@
       
       
       
-        <link rel="canonical" href="https://numtide.github.io/treefmt/contributing/">
+        <link rel="canonical" href="https://numtide.github.io/treefmt/integrations/">
       
       <link rel="icon" href="../assets/logo.png">
       <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.4.3">
     
     
       
-        <title>Contributing - treefmt</title>
+        <title>Integrations - treefmt</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contribution-guidelines" class="md-skip">
+        <a href="#integrations" class="md-skip">
           Skip to content
         </a>
       
@@ -102,7 +102,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing
+              Integrations
             
           </span>
         </div>
@@ -236,10 +236,12 @@
         
   
   
+    
+  
 
 
   <li class="md-tabs__item">
-    <a href="../integrations/" class="md-tabs__link">
+    <a href="./" class="md-tabs__link md-tabs__link--active">
       Integrations
     </a>
   </li>
@@ -276,12 +278,10 @@
         
   
   
-    
-  
 
 
   <li class="md-tabs__item">
-    <a href="./" class="md-tabs__link md-tabs__link--active">
+    <a href="../contributing/" class="md-tabs__link">
       Contributing
     </a>
   </li>
@@ -442,11 +442,52 @@
 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../integrations/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Integrations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Integrations
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-vim-null-ls-plugin" class="md-nav__link">
+    the vim null-ls plugin
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -548,80 +589,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Contributing
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
         Contributing
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#licensing" class="md-nav__link">
-    Licensing
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#before-you-contribute" class="md-nav__link">
-    Before you contribute
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-an-issue" class="md-nav__link">
-    Creating an issue
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#making-changes" class="md-nav__link">
-    Making changes
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples-of-git-history" class="md-nav__link">
-    Examples of git history
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -653,36 +625,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#licensing" class="md-nav__link">
-    Licensing
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#before-you-contribute" class="md-nav__link">
-    Before you contribute
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-an-issue" class="md-nav__link">
-    Creating an issue
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#making-changes" class="md-nav__link">
-    Making changes
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples-of-git-history" class="md-nav__link">
-    Examples of git history
+  <a href="#the-vim-null-ls-plugin" class="md-nav__link">
+    the vim null-ls plugin
   </a>
   
 </li>
@@ -700,131 +644,19 @@
               
                 
 
-  <a href="https://github.com/numtide/treefmt/edit/main/docs/contributing.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/numtide/treefmt/edit/main/docs/integrations.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-<h1 id="contribution-guidelines">Contribution guidelines</h1>
-<p>This file contains instructions that will help you make a contribution.</p>
-<h2 id="licensing">Licensing</h2>
-<p>The treefmt binaries and this user guide are licensed under the <a href="https://numtide.github.io/treefmt/LICENSE.html">MIT license</a>.</p>
-<h2 id="before-you-contribute">Before you contribute</h2>
-<p>Here you can take a look at the <a href="https://github.com/numtide/treefmt/issues">existing issues</a>. Feel free to contribute, but make sure you have a <a href="https://github.com/join">GitHub account</a> first :) .</p>
-<p>If you're new to open source, please read GitHub's guide on <a href="https://opensource.guide/how-to-contribute/">How to Contribute to Open Source</a>. It's a quick read, and it's a great way to introduce yourself to how things work behind the scenes in open-source projects.</p>
-<p>Before sending a pull request, make sure that you've read all the guidelines. If you don't understand something, please <a href="https://github.com/numtide/treefmt/issues/new">state your question clearly in an issue</a> or ask the community on the <a href="https://matrix.to/#/#treefmt:numtide.com">treefmt matrix server</a>.</p>
-<h2 id="creating-an-issue">Creating an issue</h2>
-<p>If you need to create an issue, make sure to clearly describe it, including:</p>
-<ul>
-<li>The steps to reproduce it if it's a bug</li>
-<li>The version of treefmt used</li>
-<li>The database driver and version</li>
-<li>The database version</li>
-</ul>
-<p>The cache database is stored in a toml file the ~/.cache/treefmt directory.</p>
-<h2 id="making-changes">Making changes</h2>
-<p>If you want to introduce changes to the project, please follow these steps:</p>
-<ul>
-<li>Fork the repository on GitHub</li>
-<li>Create a branch on your fork. Don't commit directly to main</li>
-<li>Add the necessary tests for your changes</li>
-<li>Run treefmt in the source directory before you commit your changes</li>
-<li>Push your changes to the branch in your repository fork</li>
-<li>Submit a pull request to the original repository</li>
-</ul>
-<p>Make sure you based your commits on logical and atomic units!</p>
-<h2 id="examples-of-git-history">Examples of git history</h2>
-<p>Git history that we want to have:</p>
-<p>Git history that we are trying to avoid:</p>
-<details>
-
-<summary>Git history that we want to have</summary>
-
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>*   e3ed88b (HEAD -&gt; contribution-guide, upstream/main, origin/main, origin/HEAD, main) Merge pull request #470 from zimbatm/fix_lru_cache
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>|\
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>| * 1ab7d9f Use rayon for multithreading command
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>|/
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>*   e9c5bb4 Merge pull request #468 from zimbatm/multithread
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>|\
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>| * de2d6cf Add lint property for Formatter struct
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>| * cd2ed17 Fix impl on Formatter get_command() function
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>|/
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>*   028c344 Merge pull request #465 from rayon/0.15.0-release
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>|\
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>| * 7b619d6 0.15.0 release
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>|/
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>*   acdf7df Merge pull request #463 from zimbatm/support-multi-part-namespaces
-</code></pre></div>
-
-</details>
-
-<details>
-
-<summary>Git history that we are <b>trying</b> to avoid:</summary>
-
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>*   4c8aca8 Merge pull request #120 from zimbatm/add-rayon
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>|\
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>| * fc2b449 use rayon for engine now
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>| * 2304683 add rayon config
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>| * 5285bd3 bump base image to F30
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>* |   4d0fbe2 Merge pull request #114 from rizary/create_method_create_release
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>|\ \
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>| * | 36a9396 test changed
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>| * | 22f681d method create release for github created
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>* | |   2ef4ea1 Merge pull request #119 from rizary/config.rs
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>|\ \ \
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>| |/ /
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>|/| |
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>| * | 5f1b8f0 unused functions removed
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>* | |   a93c361 Merge pull request #117 from zimbatm/add-getreleases-to-abstract
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>|\ \ \
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>| |/ /
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>
-<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>|/| |
-<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
-<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>| * | 0a97236 add get_releses for Cargo
-<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>
-<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>| * | 55e4c57 add get_releases/get_release into engine.rs
-<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>
-<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>|/ /
-<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>
-<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>* |   badeddd Merge pull request #101 from zimbatm/extreme-cachin
-</code></pre></div>
-
-</details>
-
-<p>Additionally, it's always good to work on improving documentation and adding examples.</p>
-<p>Thank you for considering contributing to <code>treefmt</code>.</p>
+<h1 id="integrations">Integrations</h1>
+<blockquote>
+<p>add your project here.</p>
+</blockquote>
+<p>Here is a list of projects that integrate with treefmt.</p>
+<h2 id="the-vim-null-ls-plugin">the vim null-ls plugin</h2>
+<p>See <a href="https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1512">https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1512</a> for usage.</p>
 
 
 
@@ -845,7 +677,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../faq/" class="md-footer__link md-footer__link--prev" aria-label="Previous: FAQ" rel="prev">
+        <a href="../usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -854,11 +686,26 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              FAQ
+              Usage
             </div>
           </div>
         </a>
       
+      
+        
+        <a href="../index-formatters/" class="md-footer__link md-footer__link--next" aria-label="Next: About" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              About
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
       
     </nav>
   
