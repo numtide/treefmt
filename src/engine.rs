@@ -21,6 +21,7 @@ pub enum DisplayType {
 }
 
 /// Run the treefmt
+#[allow(clippy::too_many_arguments)]
 pub fn run_treefmt(
     tree_root: &Path,
     work_dir: &Path,

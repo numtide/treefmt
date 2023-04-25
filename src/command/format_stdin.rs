@@ -1,4 +1,3 @@
-use crate::config;
 use crate::engine::run_treefmt_stdin;
 use crate::expand_path;
 use anyhow::anyhow;
@@ -58,7 +57,7 @@ pub fn format_stdin_cmd(
         &tree_root,
         work_dir,
         &cache_dir,
-        &config_file,
+        config_file,
         &path,
         selected_formatters,
     )?;
