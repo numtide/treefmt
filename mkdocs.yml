@@ -18,6 +18,7 @@ nav:
       - Installation: installation.md
       - Configuration: treefmt-configuration.md
   - Usage: usage.md
+  - Integrations: integrations.md
   - Formatters: 
       - About: index-formatters.md
       - Formatter Specification: formatters-spec.md
