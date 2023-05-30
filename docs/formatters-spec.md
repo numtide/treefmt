@@ -2,7 +2,15 @@
 
 In order to keep the design of `treefmt` simple, we support only formatters which adhere to a certain standard. This document outlines this standard. If the formatter you would like to use doesn't comply with the rules, it's often possible to create a wrapper script that transforms the usage to match the specification.
 
-## Command-line interface
+In this design, we rely on `treefmt` to do the tree traversal, and only invoke
+the code formatter on the selected files.
+
+## Rules
+
+In order for the formatter to comply to this spec, it MUST follow the
+following rules:
+
+### 1. Files passed as arguments
 
 In order to be integrated to `treefmt`'s workflow, the formatter's CLI must adhere to the following specification:
 
@@ -22,15 +30,22 @@ Example:
 $ rustfmt --edition 2018 src/main.rs src/lib.rs
 ```
 
-Whenever a formatter is invoked with a list of files, it should processes only the specified files. Files that are not passed should never be formatted.
+It SHOULD processes only the specified files. Files that are not passed SHOULD never be formatted.
 
-If, and only if, a file has changed, the formatter will write the new content in place of the original one.
+### 2. Write to changed files
 
-## Other requirements
+Whenever there is a change to the code formatting, the code formatter MUST
+write to the changes back to the original location.
 
-You must ensure that the formatter you're planning to use:
+If there is no changes to the original file, the formatter MUST NOT write to
+the original location.
 
-- **Preserves code validity:** This is a strong contract; the syntax and semantics must never be broken by the formatter.
-- **Is idempotent:** if it is run twice on a file, the file should not change on the second invocation.
+### 3. Idempotent
 
-`treefmt` guarantees that the formatter won't traverse the file system if a list of files is passed to it.
+The code formatter SHOULD be indempotent. Meaning that it produces stable
+outputs.
+
+### 4. Reliable
+
+We expect the formatter to be reliable and not break the semantic of the
+formatted files.
