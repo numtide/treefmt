@@ -535,16 +535,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#command-line-interface" class="md-nav__link">
-    Command-line interface
+  <a href="#rules" class="md-nav__link">
+    Rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-files-passed-as-arguments" class="md-nav__link">
+    1. Files passed as arguments
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#other-requirements" class="md-nav__link">
-    Other requirements
+        
+          <li class="md-nav__item">
+  <a href="#2-write-to-changed-files" class="md-nav__link">
+    2. Write to changed files
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-idempotent" class="md-nav__link">
+    3. Idempotent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-reliable" class="md-nav__link">
+    4. Reliable
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -634,16 +661,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#command-line-interface" class="md-nav__link">
-    Command-line interface
+  <a href="#rules" class="md-nav__link">
+    Rules
+  </a>
+  
+    <nav class="md-nav" aria-label="Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-files-passed-as-arguments" class="md-nav__link">
+    1. Files passed as arguments
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#other-requirements" class="md-nav__link">
-    Other requirements
+        
+          <li class="md-nav__item">
+  <a href="#2-write-to-changed-files" class="md-nav__link">
+    2. Write to changed files
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-idempotent" class="md-nav__link">
+    3. Idempotent
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-reliable" class="md-nav__link">
+    4. Reliable
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -668,7 +722,12 @@
 
 <h1 id="formatter-specification">Formatter specification</h1>
 <p>In order to keep the design of <code>treefmt</code> simple, we support only formatters which adhere to a certain standard. This document outlines this standard. If the formatter you would like to use doesn't comply with the rules, it's often possible to create a wrapper script that transforms the usage to match the specification.</p>
-<h2 id="command-line-interface">Command-line interface</h2>
+<p>In this design, we rely on <code>treefmt</code> to do the tree traversal, and only invoke
+the code formatter on the selected files.</p>
+<h2 id="rules">Rules</h2>
+<p>In order for the formatter to comply to this spec, it MUST follow the
+following rules:</p>
+<h3 id="1-files-passed-as-arguments">1. Files passed as arguments</h3>
 <p>In order to be integrated to <code>treefmt</code>'s workflow, the formatter's CLI must adhere to the following specification:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;command&gt; [options] [...&lt;files&gt;]
 </code></pre></div>
@@ -681,15 +740,18 @@
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ rustfmt --edition 2018 src/main.rs src/lib.rs
 </code></pre></div>
-<p>Whenever a formatter is invoked with a list of files, it should processes only the specified files. Files that are not passed should never be formatted.</p>
-<p>If, and only if, a file has changed, the formatter will write the new content in place of the original one.</p>
-<h2 id="other-requirements">Other requirements</h2>
-<p>You must ensure that the formatter you're planning to use:</p>
-<ul>
-<li><strong>Preserves code validity:</strong> This is a strong contract; the syntax and semantics must never be broken by the formatter.</li>
-<li><strong>Is idempotent:</strong> if it is run twice on a file, the file should not change on the second invocation.</li>
-</ul>
-<p><code>treefmt</code> guarantees that the formatter won't traverse the file system if a list of files is passed to it.</p>
+<p>It SHOULD processes only the specified files. Files that are not passed SHOULD never be formatted.</p>
+<h3 id="2-write-to-changed-files">2. Write to changed files</h3>
+<p>Whenever there is a change to the code formatting, the code formatter MUST
+write to the changes back to the original location.</p>
+<p>If there is no changes to the original file, the formatter MUST NOT write to
+the original location.</p>
+<h3 id="3-idempotent">3. Idempotent</h3>
+<p>The code formatter SHOULD be indempotent. Meaning that it produces stable
+outputs.</p>
+<h3 id="4-reliable">4. Reliable</h3>
+<p>We expect the formatter to be reliable and not break the semantic of the
+formatted files.</p>
 
 
 
