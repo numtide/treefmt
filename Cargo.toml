@@ -39,6 +39,7 @@ clap = { version = "4.1.1", features = [
   "wrap_help",
 ] }
 clap-verbosity-flag = "2.0.0"
+clap_complete = "4.3.2"
 console = "0.13"
 directories = "3.0.1"
 env_logger = "0.10.0"

@@ -11,16 +11,15 @@ use self::init::init_cmd;
 use crate::config;
 use crate::expand_path;
 use anyhow::anyhow;
-use clap::Parser;
-use clap_verbosity_flag::Verbosity;
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
+use clap::{Parser, ValueHint};
+use clap_complete::{generate, Generator, Shell};
+use std::env;
+use std::io;
+use std::path::{Path, PathBuf};
 
 /// ✨  format all your language!
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[derive(Parser, Debug, PartialEq)]
+#[command(author, version, about, long_about = None, name = "treefmt")]
 pub struct Cli {
     /// Create a new treefmt.toml
     #[arg(short, long, default_value_t = false)]
@@ -52,28 +51,32 @@ pub struct Cli {
     pub allow_missing_formatter: bool,
 
     /// Log verbosity is based off the number of v used
-    #[clap(flatten)]
-    pub verbose: Verbosity,
+    #[clap(short, long, default_value_t = false)]
+    pub verbose: bool,
 
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
-    #[arg(short = 'C', default_value = ".", value_parser = parse_path)]
+    #[arg(short = 'C', default_value = ".", value_parser = parse_path, value_hint = ValueHint::DirPath)]
     pub work_dir: PathBuf,
 
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
-    #[arg(long, env = "PRJ_ROOT", default_value = ".", value_parser = parse_path)]
+    #[arg(long, env = "PRJ_ROOT", default_value = ".", value_parser = parse_path, value_hint = ValueHint::DirPath)]
     pub tree_root: Option<PathBuf>,
 
     /// Run with the specified config file, which is not required to be in the tree to be formatted.
-    #[arg(long, value_parser = parse_path)]
+    #[arg(long, value_parser = parse_path, value_hint = ValueHint::FilePath)]
     pub config_file: Option<PathBuf>,
 
     /// Paths to format. Defaults to formatting the whole tree.
-    #[arg()]
+    #[arg(value_hint = ValueHint::AnyPath)]
     pub paths: Vec<PathBuf>,
 
     /// Select formatters name to apply. Defaults to all formatters.
     #[arg(short, long)]
     pub formatters: Option<Vec<String>>,
+
+    /// If provided, outputs the completion file for given shell
+    #[arg(long = "generate", value_enum)]
+    pub generator: Option<Shell>,
 }
 
 fn parse_path(s: &str) -> anyhow::Result<PathBuf> {
@@ -115,9 +118,16 @@ pub fn cli_from_args() -> anyhow::Result<Cli> {
     Ok(cli)
 }
 
+fn print_completions<G: Generator>(gen: G, cli: &mut Cli) {
+    generate(gen, cli, "treefmt", &mut io::stdout());
+}
+
 /// Run a command with the given logger
-pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
-    if cli.init {
+pub fn run_cli(cli: &mut Cli) -> anyhow::Result<()> {
+    if let Some(generator) = &cli.generator {
+        eprintln!("Generating completion file for {generator:?}...");
+        print_completions(generator, &mut cli);
+    } else if cli.init {
         init_cmd(&cli.work_dir)?
     } else {
         match &cli.config_file {
