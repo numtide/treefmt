@@ -66,11 +66,11 @@ treefmt [FLAGS] [OPTIONS] [--] [paths]...
 
 `--tree-root <tree-root>`
 
-> Set the path to the tree root directory where treefmt will look for the files to format. Defaults to the folder holding the `treefmt.toml` file. It’s mostly useful in combination with —config-file to specify the project root which won’t coincide with the directory holding `treefmt.toml`.
+> Set the path to the tree root directory where treefmt will look for the files to format. Defaults to the folder holding the `treefmt.toml` file. It’s mostly useful in combination with `--config-file` to specify the project root which won’t coincide with the directory holding `treefmt.toml`.
 
 `-C <work-dir>`
 
-> Run as if `treefmt` was started in <work-dir> instead of the current working directory (default: .). Equivalent to cd `<work dir>; treefmt`.
+> Run as if `treefmt` was started in `<work-dir>` instead of the current working directory (default: `.`). Equivalent to `cd <work dir>; treefmt`.
 
 ## Arguments
 
