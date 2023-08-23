@@ -120,6 +120,13 @@ This project is still pretty new. Down the line we also want to add support for:
 
 All contributions are welcome! We try to keep the project simple and focused. Please refer to [Contributing](./docs/contributing.md) guidelines for more information.
 
+## Commercial support
+
+Looking for help or customization?
+
+Get in touch with Numtide to get a quote. We make it easy for companies to
+work with Open Source projects: <https://numtide.com/contact>
+
 ## License
 
 Unless explicitly stated otherwise, any contribution intentionally submitted for inclusion will be licensed under the [MIT license](LICENSE.md) without any additional terms or conditions.
