@@ -84,7 +84,7 @@ fn parse_path(s: &str) -> anyhow::Result<PathBuf> {
     };
     assert!(cwd.is_absolute());
 
-    // TODO: Include validation for incorrect paths or caracters
+    // TODO: Include validation for incorrect paths or characters
     let path = Path::new(s);
 
     // Make sure the path is an absolute path.
