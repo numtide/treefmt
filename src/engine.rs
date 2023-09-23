@@ -1,9 +1,10 @@
 //! The main formatting engine logic is in this module.
 
+use crate::config::Root;
 use crate::{config, eval_cache::CacheManifest, formatter::FormatterName};
 use crate::{expand_path, formatter::Formatter, get_meta, get_path_meta, FileMeta};
 use anyhow::anyhow;
-use ignore::WalkBuilder;
+use ignore::{Walk, WalkBuilder};
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use std::fs::File;
@@ -78,50 +79,15 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(treefmt_toml)?;
 
-    let global_excludes = project_config
-        .global
-        .map(|g| g.excludes)
-        .unwrap_or_default();
-
     timed_debug("load config");
 
-    // Load all the formatter instances from the config.
-    let mut expected_count = 0;
-
-    let formatters = project_config.formatter.into_iter().fold(
-        BTreeMap::new(),
-        |mut sum, (name, mut fmt_config)| {
-            expected_count += 1;
-            fmt_config.excludes.extend_from_slice(&global_excludes);
-            match Formatter::from_config(tree_root, &name, &fmt_config) {
-                Ok(fmt_matcher) => match selected_formatters {
-                    Some(f) => {
-                        if f.contains(&name) {
-                            sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                        }
-                    }
-                    None => {
-                        sum.insert(fmt_matcher.name.clone(), fmt_matcher);
-                    }
-                },
-                Err(err) => {
-                    if allow_missing_formatter {
-                        error!("Ignoring formatter #{} due to error: {}", name, err)
-                    } else {
-                        error!("Failed to load formatter #{}: {}", name, err)
-                    }
-                }
-            };
-            sum
-        },
-    );
-
+    let formatters = load_formatters(
+        project_config,
+        tree_root,
+        allow_missing_formatter,
+        selected_formatters,
+    )?;
     timed_debug("load formatters");
-
-    // Check the number of configured formatters matches the number of formatters loaded
-    if !(allow_missing_formatter || formatters.len() == expected_count) {
-        return Err(anyhow!("One or more formatters are missing"));
-    }
 
     // Load the eval cache
     let mut cache = if no_cache || clear_cache {
@@ -137,63 +103,14 @@ pub fn run_treefmt(
         cache.update_formatters(formatters.clone());
     }
 
-    // Configure the tree walker
-    let walker = {
-        // For some reason the WalkBuilder must start with one path, but can add more paths later.
-        // unwrap: we checked before that there is at least one path in the vector
-        let mut builder = WalkBuilder::new(paths.first().unwrap());
-        // Add the other paths
-        for path in paths[1..].iter() {
-            builder.add(path);
-        }
-        // TODO: builder has a lot of interesting options.
-        // TODO: use build_parallel with a Visitor.
-        //       See https://docs.rs/ignore/0.4.17/ignore/struct.WalkParallel.html#method.visit
-        builder.build()
-    };
+    let walker = build_walker(paths);
 
-    // Start a collection of formatter names to path to mtime
-    let mut matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> = BTreeMap::new();
-
-    // Now traverse the filesystem and classify each file. We also want the file mtime to see if it changed
-    // afterwards.
-    for walk_entry in walker {
-        match walk_entry {
-            Ok(dir_entry) => {
-                if let Some(file_type) = dir_entry.file_type() {
-                    // Ignore folders and symlinks. We don't want to format files outside the
-                    // directory, and if the symlink destination is in the repo, it'll be matched
-                    // when iterating over it.
-                    if !file_type.is_dir() && !file_type.is_symlink() {
-                        // Keep track of how many files were traversed
-                        traversed_files += 1;
-
-                        let path = dir_entry.path().to_path_buf();
-                        // FIXME: complain if multiple matchers match the same path.
-                        for (_, fmt) in formatters.clone() {
-                            if fmt.clone().is_match(&path) {
-                                // Keep track of how many files were associated with a formatter
-                                matched_files += 1;
-
-                                // unwrap: since the file exists, we assume that the metadata is also available
-                                let mtime = get_meta(&dir_entry.metadata().unwrap());
-
-                                matches
-                                    .entry(fmt.name)
-                                    .or_insert_with(BTreeMap::new)
-                                    .insert(path.clone(), mtime);
-                            }
-                        }
-                    }
-                } else {
-                    warn!("Couldn't get file type for {:?}", dir_entry.path())
-                }
-            }
-            Err(err) => {
-                warn!("traversal error: {}", err);
-            }
-        }
-    }
+    let matches = collect_matches_from_walker(
+        walker,
+        &formatters,
+        &mut traversed_files,
+        &mut matched_files,
+    );
     timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
@@ -327,6 +244,117 @@ pub fn run_treefmt(
     }
 
     ret
+}
+
+/// Load all the formatter instances from the config.
+fn load_formatters(
+    root: Root,
+    tree_root: &Path,
+    allow_missing_formatter: bool,
+    selected_formatters: &Option<Vec<String>>,
+) -> anyhow::Result<BTreeMap<FormatterName, Formatter>> {
+    let mut expected_count = 0;
+    let formatter = root.formatter;
+    let global_excludes = root.global.map(|g| g.excludes).unwrap_or_default();
+    let formatters =
+        formatter
+            .into_iter()
+            .fold(BTreeMap::new(), |mut sum, (name, mut fmt_config)| {
+                expected_count += 1;
+                fmt_config.excludes.extend_from_slice(&global_excludes);
+                match Formatter::from_config(tree_root, &name, &fmt_config) {
+                    Ok(fmt_matcher) => match selected_formatters {
+                        Some(f) => {
+                            if f.contains(&name) {
+                                sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                            }
+                        }
+                        None => {
+                            sum.insert(fmt_matcher.name.clone(), fmt_matcher);
+                        }
+                    },
+                    Err(err) => {
+                        if allow_missing_formatter {
+                            error!("Ignoring formatter #{} due to error: {}", name, err)
+                        } else {
+                            error!("Failed to load formatter #{}: {}", name, err)
+                        }
+                    }
+                };
+                sum
+            });
+
+    // Check the number of configured formatters matches the number of formatters loaded
+    if !(allow_missing_formatter || formatters.len() == expected_count) {
+        return Err(anyhow!("One or more formatters are missing"));
+    }
+    Ok(formatters)
+}
+
+/// Walk over the entries and collect it's matches.
+/// The matches are a collection of formatter names to path to mtime.
+/// We want the file mtime to see if it changed afterwards.
+fn collect_matches_from_walker(
+    walker: Walk,
+    formatters: &BTreeMap<FormatterName, Formatter>,
+    traversed_files: &mut usize,
+    matched_files: &mut usize,
+) -> BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> {
+    let mut matches = BTreeMap::new();
+
+    for walk_entry in walker {
+        match walk_entry {
+            Ok(dir_entry) => {
+                if let Some(file_type) = dir_entry.file_type() {
+                    // Ignore folders and symlinks. We don't want to format files outside the
+                    // directory, and if the symlink destination is in the repo, it'll be matched
+                    // when iterating over it.
+                    if !file_type.is_dir() && !file_type.is_symlink() {
+                        // Keep track of how many files were traversed
+                        *traversed_files += 1;
+
+                        let path = dir_entry.path().to_path_buf();
+                        // FIXME: complain if multiple matchers match the same path.
+                        for (_, fmt) in formatters.clone() {
+                            if fmt.clone().is_match(&path) {
+                                // Keep track of how many files were associated with a formatter
+                                *matched_files += 1;
+
+                                // unwrap: since the file exists, we assume that the metadata is also available
+                                let mtime = get_meta(&dir_entry.metadata().unwrap());
+
+                                matches
+                                    .entry(fmt.name)
+                                    .or_insert_with(BTreeMap::new)
+                                    .insert(path.clone(), mtime);
+                            }
+                        }
+                    }
+                } else {
+                    warn!("Couldn't get file type for {:?}", dir_entry.path())
+                }
+            }
+            Err(err) => {
+                warn!("traversal error: {}", err);
+            }
+        }
+    }
+    matches
+}
+
+/// Configure and build the tree walker
+fn build_walker(paths: Vec<PathBuf>) -> Walk {
+    // For some reason the WalkBuilder must start with one path, but can add more paths later.
+    // unwrap: we checked before that there is at least one path in the vector
+    let mut builder = WalkBuilder::new(paths.first().unwrap());
+    // Add the other paths
+    for path in paths[1..].iter() {
+        builder.add(path);
+    }
+    // TODO: builder has a lot of interesting options.
+    // TODO: use build_parallel with a Visitor.
+    //       See https://docs.rs/ignore/0.4.17/ignore/struct.WalkParallel.html#method.visit
+    builder.build()
 }
 
 fn print_summary(
