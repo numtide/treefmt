@@ -40,21 +40,7 @@ pub fn run_treefmt(
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
 
-    let start_time = Instant::now();
-    let mut phase_time = Instant::now();
-    let mut timed_debug = |description: &str| {
-        let now = Instant::now();
-        debug!(
-            "{}: {:.2?} (Δ {:.2?})",
-            description,
-            start_time.elapsed(),
-            now.saturating_duration_since(phase_time)
-        );
-        phase_time = now;
-    };
-
-    let mut traversed_files: usize = 0;
-    let mut matched_files: usize = 0;
+    let mut stats = Statistics::init();
 
     // Make sure all the given paths are absolute. Ignore the ones that point outside of the project root.
     let paths = paths.iter().fold(vec![], |mut sum, path| {
@@ -79,15 +65,15 @@ pub fn run_treefmt(
     // Load the treefmt.toml file
     let project_config = config::from_path(treefmt_toml)?;
 
-    timed_debug("load config");
+    stats.timed_debug("load config");
 
     let formatters = load_formatters(
         project_config,
         tree_root,
         allow_missing_formatter,
         selected_formatters,
+        &mut stats,
     )?;
-    timed_debug("load formatters");
 
     // Load the eval cache
     let mut cache = if no_cache || clear_cache {
@@ -96,7 +82,7 @@ pub fn run_treefmt(
     } else {
         CacheManifest::load(cache_dir, treefmt_toml)
     };
-    timed_debug("load cache");
+    stats.timed_debug("load cache");
 
     if !no_cache {
         // Insert the new formatter configs
@@ -105,13 +91,8 @@ pub fn run_treefmt(
 
     let walker = build_walker(paths);
 
-    let matches = collect_matches_from_walker(
-        walker,
-        &formatters,
-        &mut traversed_files,
-        &mut matched_files,
-    );
-    timed_debug("tree walk");
+    let matches = collect_matches_from_walker(walker, &formatters, &mut stats);
+    stats.timed_debug("tree walk");
 
     // Filter out all of the paths that were already in the cache
     let matches = if !no_cache {
@@ -120,10 +101,11 @@ pub fn run_treefmt(
         matches
     };
 
-    timed_debug("filter_matches");
+    stats.timed_debug("filter_matches");
 
     // Keep track of the paths that are actually going to be formatted
     let filtered_files: usize = matches.values().map(|x| x.len()).sum();
+    stats.set_filtered_files(filtered_files);
 
     // Now run all the formatters and collect the formatted paths.
     let new_matches: BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> = matches
@@ -167,14 +149,14 @@ pub fn run_treefmt(
             }
         })
         .collect::<anyhow::Result<BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>>>>()?;
-    timed_debug("format");
+    stats.timed_debug("format");
 
     if !no_cache {
         // Record the new matches in the cache
         cache.add_results(new_matches.clone());
         // And write to disk
         cache.write(cache_dir, treefmt_toml);
-        timed_debug("write cache");
+        stats.timed_debug("write cache");
     }
 
     // Diff the old matches with the new matches
@@ -202,35 +184,23 @@ pub fn run_treefmt(
 
     // Get how many files were reformatted.
     let reformatted_files: usize = changed_matches.values().map(|x| x.len()).sum();
+    stats.set_reformatted_files(reformatted_files);
     // TODO: this will be configurable by the user in the future.
-    let mut display_type = DisplayType::Summary;
     let mut ret: anyhow::Result<()> = Ok(());
 
     // Fail if --fail-on-change was passed.
     if reformatted_files > 0 && fail_on_change {
         // Switch the display type to long
-        display_type = DisplayType::Long;
+        stats.display = DisplayType::Long;
         ret = Err(anyhow!("fail-on-change"))
     }
 
-    match display_type {
+    match stats.display {
         DisplayType::Summary => {
-            print_summary(
-                traversed_files,
-                matched_files,
-                filtered_files,
-                reformatted_files,
-                start_time,
-            );
+            stats.print_summary();
         }
         DisplayType::Long => {
-            print_summary(
-                traversed_files,
-                matched_files,
-                filtered_files,
-                reformatted_files,
-                start_time,
-            );
+            stats.print_summary();
             println!("\nformatted files:");
             for (name, paths) in changed_matches {
                 if !paths.is_empty() {
@@ -252,6 +222,7 @@ fn load_formatters(
     tree_root: &Path,
     allow_missing_formatter: bool,
     selected_formatters: &Option<Vec<String>>,
+    stats: &mut Statistics,
 ) -> anyhow::Result<BTreeMap<FormatterName, Formatter>> {
     let mut expected_count = 0;
     let formatter = root.formatter;
@@ -284,6 +255,7 @@ fn load_formatters(
                 sum
             });
 
+    stats.timed_debug("load formatters");
     // Check the number of configured formatters matches the number of formatters loaded
     if !(allow_missing_formatter || formatters.len() == expected_count) {
         return Err(anyhow!("One or more formatters are missing"));
@@ -297,8 +269,7 @@ fn load_formatters(
 fn collect_matches_from_walker(
     walker: Walk,
     formatters: &BTreeMap<FormatterName, Formatter>,
-    traversed_files: &mut usize,
-    matched_files: &mut usize,
+    stats: &mut Statistics,
 ) -> BTreeMap<FormatterName, BTreeMap<PathBuf, FileMeta>> {
     let mut matches = BTreeMap::new();
 
@@ -310,15 +281,13 @@ fn collect_matches_from_walker(
                     // directory, and if the symlink destination is in the repo, it'll be matched
                     // when iterating over it.
                     if !file_type.is_dir() && !file_type.is_symlink() {
-                        // Keep track of how many files were traversed
-                        *traversed_files += 1;
+                        stats.traversed_file();
 
                         let path = dir_entry.path().to_path_buf();
                         // FIXME: complain if multiple matchers match the same path.
                         for (_, fmt) in formatters.clone() {
                             if fmt.clone().is_match(&path) {
-                                // Keep track of how many files were associated with a formatter
-                                *matched_files += 1;
+                                stats.matched_file();
 
                                 // unwrap: since the file exists, we assume that the metadata is also available
                                 let mtime = get_meta(&dir_entry.metadata().unwrap());
@@ -355,25 +324,6 @@ fn build_walker(paths: Vec<PathBuf>) -> Walk {
     // TODO: use build_parallel with a Visitor.
     //       See https://docs.rs/ignore/0.4.17/ignore/struct.WalkParallel.html#method.visit
     builder.build()
-}
-
-fn print_summary(
-    traversed_files: usize,
-    matched_files: usize,
-    filtered_files: usize,
-    reformatted_files: usize,
-    start_time: std::time::Instant,
-) {
-    println!(
-        r#"
-{} files changed in {:.0?} (found {}, matched {}, cache misses {})
-        "#,
-        reformatted_files,
-        start_time.elapsed(),
-        traversed_files,
-        matched_files,
-        filtered_files,
-    );
 }
 
 /// Run the treefmt in a stdin buffer, and print it out back to stdout
@@ -481,4 +431,70 @@ pub fn run_treefmt_stdin(
     tmpfile.close()?;
 
     ret
+}
+
+struct Statistics {
+    display: DisplayType,
+    start_time: Instant,
+    phase_time: Instant,
+    traversed_files: usize,
+    matched_files: usize,
+    filtered_files: usize,
+    reformatted_files: usize,
+}
+
+impl Statistics {
+    /// Initialize the timer
+    fn init() -> Self {
+        let start_time = Instant::now();
+        let phase_time = Instant::now();
+        Self {
+            display: DisplayType::Summary,
+            start_time,
+            phase_time,
+            traversed_files: 0,
+            matched_files: 0,
+            filtered_files: 0,
+            reformatted_files: 0,
+        }
+    }
+    /// Keep track of how many files were traversed
+    fn traversed_file(&mut self) {
+        self.traversed_files += 1;
+    }
+    /// Keep track of how many files were associated with a formatter
+    fn matched_file(&mut self) {
+        self.matched_files += 1;
+    }
+    fn timed_debug(&mut self, description: &str) {
+        let now = Instant::now();
+        // TODO: remove new stats
+        debug!(
+            "New stats: {}: {:.2?} (Δ {:.2?})",
+            description,
+            self.start_time.elapsed(),
+            now.saturating_duration_since(self.phase_time)
+        );
+        self.phase_time = now;
+    }
+
+    fn set_filtered_files(&mut self, filtered_files: usize) {
+        self.filtered_files = filtered_files;
+    }
+
+    fn set_reformatted_files(&mut self, reformatted_files: usize) {
+        self.reformatted_files = reformatted_files;
+    }
+    fn print_summary(&self) {
+        println!(
+            r#"
+            {} files changed in {:.0?} (found {}, matched {}, cache misses {})
+            "#,
+            self.reformatted_files,
+            self.start_time.elapsed(),
+            self.traversed_files,
+            self.matched_files,
+            self.filtered_files,
+        );
+    }
 }
