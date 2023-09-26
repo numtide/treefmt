@@ -13,6 +13,7 @@ use crate::expand_path;
 use anyhow::anyhow;
 use clap::Parser;
 use clap_verbosity_flag::Verbosity;
+use log::warn;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -76,9 +77,21 @@ pub struct Cli {
     pub formatters: Option<Vec<String>>,
 }
 
+fn current_dir() -> anyhow::Result<PathBuf> {
+    // First we try and read $PWD as it will (hopefully) honour symlinks
+    env::var("PWD")
+        .map(PathBuf::from)
+        // If we can't read the $PWD var then we fall back to use getcwd
+        .or_else(|_| {
+            warn!("PWD environment variable not set, if current directory is a symlink it will be dereferenced");
+            env::current_dir()
+        })
+        .map_err(anyhow::Error::new)
+}
+
 fn parse_path(s: &str) -> anyhow::Result<PathBuf> {
     // Obtain current dir and ensure is absolute
-    let cwd = match env::current_dir() {
+    let cwd = match current_dir() {
         Ok(dir) => dir,
         Err(err) => return Err(anyhow!("{}", err)),
     };
@@ -157,4 +170,40 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn current_dir_prefers_pwd_env_var() {
+        use crate::command::current_dir;
+        use std::env;
+        use std::path::PathBuf;
+
+        let expected_pwd = "/tmp";
+        let prev_pwd = env::var("PWD").unwrap();
+        env::set_var("PWD", expected_pwd);
+
+        let result = current_dir().unwrap();
+
+        env::set_var("PWD", prev_pwd);
+
+        assert_eq!(result, PathBuf::from(expected_pwd));
+    }
+
+    #[test]
+    fn current_dir_uses_dereferenced_path_when_pwd_env_var_not_set() {
+        use crate::command::current_dir;
+        use std::env;
+
+        let expected_pwd = env::current_dir().unwrap();
+        let prev_pwd = env::var("PWD").unwrap();
+        env::remove_var("PWD");
+
+        let result = current_dir().unwrap();
+
+        env::set_var("PWD", prev_pwd);
+
+        assert_eq!(result, expected_pwd);
+    }
 }
