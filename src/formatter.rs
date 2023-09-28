@@ -15,6 +15,16 @@ use crate::{expand_exe, expand_if_path, expand_path};
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FormatterName(String);
 
+#[cfg(test)]
+impl FormatterName {
+    pub(crate) fn new<S>(name: S) -> Self
+    where
+        S: Into<String>,
+    {
+        Self(name.into())
+    }
+}
+
 impl Serialize for FormatterName {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
