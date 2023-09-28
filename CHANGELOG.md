@@ -1,4 +1,26 @@
 
+0.6.0 / 2023-09-28
+==================
+
+  * docs: better formatter-spec structure, lots of fixes everywhere
+  * docs: use mkdocs-numtide (#227)
+  * feat: clap integration (#214)
+  * feat: improve the formatter load error (#211)
+  * feat: more concise stats (#190)
+  * feat: replace custom log with env_logger (#199)
+  * feat: update rust to 1.65.0 (#193)
+  * fix: Don't ignore --config-file when using --stdin (#231)
+  * fix: change default log level to info (#212)
+  * fix: default log level should be 'Warn' not 'Off' (#207)
+  * fix: log formatter error as warn instead of info (#207)
+  * fix: minor typos (#248)
+  * fix: stop symlinked tree root being deref'd (#252)
+  * fix: treefmt --stdin when changes are moved into tempfile (#225)
+  * flake: expose the list of supported systems (#228)
+  * flake: make treefmt the default package
+  * flake: move treefmt.withConfig to a separate repo (#204)
+  * repo: switch default branch to main
+
 0.5.0 / 2022-12-01
 ==================
 
