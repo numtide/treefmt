@@ -694,12 +694,12 @@
 
 <h1 id="configuration">Configuration</h1>
 <p><code>treefmt</code> can only be run in the presence of <code>treefmt.toml</code> where files are mapped to specific code formatters.</p>
-<p>Usually the config file sits in the project root folder. If you're running <code>treefmt</code> in one of the project's folders, then <code>treefmt</code> will look for the config in the parent folders up until the project's root. However, you can place the config anywhere in your project's file tree and specify the path in the the ---config-file flag.</p>
+<p>Usually the config file sits in the project root folder. If you're running <code>treefmt</code> in one of the project's folders, then <code>treefmt</code> will look for the config in the parent folders up until the project's root. However, you can place the config anywhere in your project's file tree and specify the path in the ---config-file flag.</p>
 <p>The typical section of <code>treefmt.toml</code> looks like this:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[formatter.&lt;name&gt;]
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>command = &quot;&lt;formatter-command&gt;&quot;
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>options = [&quot;&lt;formatter-option-1&gt;&quot;...]
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>includes = [&quot;&lt;regular-expression&gt;&quot;]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>includes = [&quot;&lt;glob-pattern&gt;&quot;...]
 </code></pre></div>
 <p>...where name is just an identifier.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[formatter.elm]
