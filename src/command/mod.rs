@@ -61,7 +61,7 @@ pub struct Cli {
     pub work_dir: PathBuf,
 
     /// Set the path to the tree root directory. Defaults to the folder holding the treefmt.toml file.
-    #[arg(long, env = "PRJ_ROOT", default_value = ".", value_parser = parse_path)]
+    #[arg(long, env = "TREEFMT_ROOT", default_value = ".", value_parser = parse_path)]
     pub tree_root: Option<PathBuf>,
 
     /// Run with the specified config file, which is not required to be in the tree to be formatted.
