@@ -1127,7 +1127,7 @@ dependencies = [
 
 [[package]]
 name = "treefmt"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "clap 4.3.11",
