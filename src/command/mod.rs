@@ -175,6 +175,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[ignore = "std::env::set_var: should not be run in parallel."]
     fn current_dir_prefers_pwd_env_var() {
         use crate::command::current_dir;
         use std::env;
@@ -192,6 +193,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "std::env::set_var: should not be run in parallel."]
     fn current_dir_uses_dereferenced_path_when_pwd_env_var_not_set() {
         use crate::command::current_dir;
         use std::env;
