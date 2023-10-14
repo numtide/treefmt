@@ -74,7 +74,7 @@ impl CacheManifest {
         }
     }
 
-    /// Seralizes back the manifest into place.
+    /// Serializes back the manifest into place.
     pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path) -> Result<()> {
         let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
         debug!("cache: writing to {}", manifest_path.display());
@@ -92,7 +92,7 @@ impl CacheManifest {
         Ok(())
     }
 
-    /// Seralizes back the manifest into place.
+    /// Serializes back the manifest into place.
     pub fn write(self, cache_dir: &Path, treefmt_toml: &Path) {
         if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
             warn!("cache: failed to write to disk: {}", err);

@@ -12,6 +12,10 @@
 let
   lib = nixpkgs.lib;
 
+  # Override license so that we can build zerotierone without
+  # having to re-import nixpkgs.
+  terraform' = nixpkgs.terraform.overrideAttrs (old: { meta = { }; });
+
   rustVersionExtended = rustVersion.override {
     # include source for IDE's and other tools that resolve the source automatically via
     # $(rustc --print sysroot)/lib/rustlib/src/rust
@@ -85,7 +89,7 @@ let
       rufo
       shellcheck
       shfmt
-      terraform
+      terraform'
 
       # Docs
       mkdocs-numtide
