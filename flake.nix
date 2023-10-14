@@ -18,7 +18,7 @@
   outputs = { self, nixpkgs, flake-parts, mkdocs-numtide, systems, ... }@inputs:
     flake-parts.lib.mkFlake { inherit self; } {
       systems = import systems;
-      perSystem = { system, pkgs, ... }:
+      perSystem = { system, self', lib, pkgs, ... }:
         let
           packages = import ./. {
             inherit system;
@@ -36,6 +36,13 @@
             name = "treefmt-docs";
             src = ./.;
           };
+
+          checks =
+            let
+              packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self'.packages;
+              devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self'.devShells;
+            in
+            packages // devShells;
 
           devShells.default = packages.devShell;
         };
