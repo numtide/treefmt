@@ -1,4 +1,13 @@
 
+0.6.1 / 2023-10-14
+==================
+
+  * fix: restore default loglevel to INFO
+  * docs: fix inconsistent `includes` documentation (#249)
+  * chore: add tests for the engine
+  * refactor: add Statistics struct
+  * refactor: extract certain methods
+
 0.6.0 / 2023-09-28
 ==================
 
