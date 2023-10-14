@@ -12,7 +12,7 @@ use crate::config;
 use crate::expand_path;
 use anyhow::anyhow;
 use clap::Parser;
-use clap_verbosity_flag::Verbosity;
+use clap_verbosity_flag::{InfoLevel, Verbosity};
 use log::warn;
 use std::{
     env,
@@ -54,7 +54,7 @@ pub struct Cli {
 
     /// Log verbosity is based off the number of v used
     #[clap(flatten)]
-    pub verbose: Verbosity,
+    pub verbose: Verbosity<InfoLevel>,
 
     /// Run as if treefmt was started in <work-dir> instead of the current working directory.
     #[arg(short = 'C', default_value = ".", value_parser = parse_path)]
