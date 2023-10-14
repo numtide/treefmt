@@ -1,0 +1,26 @@
+queue_rules:
+  - name: default
+    merge_conditions:
+      - check-success=Evaluate flake.nix
+      - check-success=build (macos-latest)
+      - check-success=build (ubuntu-latest)
+      - check-success=build_and_test (macos-latest)
+      - check-success=build_and_test (ubuntu-latest)
+      - check-success=build_and_test (windows-2019)
+      - check-success=clippy_check
+      - check-success=devShell default [x86_64-linux]
+      - check-success=gh-pages
+      - check-success=package default [x86_64-linux]
+      - check-success=package docs [x86_64-linux]
+defaults:
+  actions:
+    queue:
+      allow_merging_configuration_change: true
+      method: rebase
+pull_request_rules:
+  - name: merge using the merge queue
+    conditions:
+      - base=main
+      - label~=merge-queue|dependencies
+    actions:
+      queue: {}
