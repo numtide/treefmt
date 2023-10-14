@@ -16,28 +16,37 @@
   inputs.mkdocs-numtide.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, flake-parts, mkdocs-numtide, systems, ... }@inputs:
-    flake-parts.lib.mkFlake { inherit self; } {
-      systems = import systems;
-      perSystem = { system, pkgs, ... }:
-        let
-          packages = import ./. {
-            inherit system;
-            mkdocs-numtide = mkdocs-numtide.packages.${system}.default;
+    (flake-parts.lib.evalFlakeModule
+      { inherit inputs; }
+      {
+        systems = import systems;
+        perSystem = { system, self', lib, pkgs, ... }:
+          let
+            packages = import ./. {
+              inherit system;
+              mkdocs-numtide = mkdocs-numtide.packages.${system}.default;
+            };
+          in
+          {
+            # This contains a mix of packages, modules, ...
+            legacyPackages = packages;
+
+            # Allow `nix run github:numtide/treefmt`.
+            packages.default = packages.treefmt;
+
+            packages.docs = mkdocs-numtide.lib.${system}.mkDocs {
+              name = "treefmt-docs";
+              src = ./.;
+            };
+
+            checks =
+              let
+                packages = lib.mapAttrs' (n: lib.nameValuePair "package-${n}") self'.packages;
+                devShells = lib.mapAttrs' (n: lib.nameValuePair "devShell-${n}") self'.devShells;
+              in
+              packages // devShells;
+
+            devShells.default = packages.devShell;
           };
-        in
-        {
-          # This contains a mix of packages, modules, ...
-          legacyPackages = packages;
-
-          # Allow `nix run github:numtide/treefmt`.
-          packages.default = packages.treefmt;
-
-          packages.docs = mkdocs-numtide.lib.${system}.mkDocs {
-            name = "treefmt-docs";
-            src = ./.;
-          };
-
-          devShells.default = packages.devShell;
-        };
-    };
+      }).config.flake;
 }

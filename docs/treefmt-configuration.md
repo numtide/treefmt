@@ -2,7 +2,7 @@
 
 `treefmt` can only be run in the presence of `treefmt.toml` where files are mapped to specific code formatters.
 
-Usually the config file sits in the project root folder. If you're running `treefmt` in one of the project's folders, then `treefmt` will look for the config in the parent folders up until the project's root. However, you can place the config anywhere in your project's file tree and specify the path in the the ---config-file flag.
+Usually the config file sits in the project root folder. If you're running `treefmt` in one of the project's folders, then `treefmt` will look for the config in the parent folders up until the project's root. However, you can place the config anywhere in your project's file tree and specify the path in the ---config-file flag.
 
 The typical section of `treefmt.toml` looks like this:
 
@@ -10,7 +10,7 @@ The typical section of `treefmt.toml` looks like this:
 [formatter.<name>]
 command = "<formatter-command>"
 options = ["<formatter-option-1>"...]
-includes = ["<regular-expression>"]
+includes = ["<glob-pattern>"...]
 ```
 
 ...where name is just an identifier.
