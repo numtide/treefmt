@@ -64,6 +64,14 @@ treefmt [FLAGS] [OPTIONS] [--] [paths]...
 
 > Only apply selected formatters. Defaults to all formatters.
 
+`-H, --hidden`
+
+> Also traverse hidden files (files that start with a .). This behaviour can be overridden with the `--no-hidden` flag.
+
+`--no-hidden`
+
+> Override the `--hidden` flag. Don't traverse hidden files.
+
 `--tree-root <tree-root>`
 
 > Set the path to the tree root directory where treefmt will look for the files to format. Defaults to the folder holding the `treefmt.toml` file. It’s mostly useful in combination with `--config-file` to specify the project root which won’t coincide with the directory holding `treefmt.toml`.

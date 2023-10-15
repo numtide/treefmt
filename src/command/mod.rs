@@ -23,7 +23,7 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// Create a new treefmt.toml
+    /// Create a new treefmt.toml.
     #[arg(short, long, default_value_t = false)]
     pub init: bool,
 
@@ -39,6 +39,15 @@ pub struct Cli {
     #[arg(short, long, default_value_t = false)]
     pub clear_cache: bool,
 
+    #[arg(long = "hidden", short = 'H')]
+    /// Include hidden files while traversing the tree.
+    /// Override with the --no-hidden flag.
+    pub hidden: bool,
+    /// Overrides the --hidden flag.
+    /// Don't include hidden files while traversing the tree.
+    #[arg(long, overrides_with = "hidden", hide = true)]
+    no_hidden: bool,
+
     /// Exit with error if any changes were made. Useful for CI.
     #[arg(
         long,
@@ -52,7 +61,7 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub allow_missing_formatter: bool,
 
-    /// Log verbosity is based off the number of v used
+    /// Log verbosity is based off the number of v used.
     #[clap(flatten)]
     pub verbose: Verbosity<InfoLevel>,
 
@@ -158,6 +167,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
                         &cli.work_dir,
                         config_file,
                         &cli.paths,
+                        cli.hidden,
                         cli.no_cache,
                         cli.clear_cache,
                         cli.fail_on_change,
