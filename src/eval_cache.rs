@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use std::fs::{create_dir_all, read_to_string, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use watchman_client::pdu::ClockSpec;
 
 /// Metadata about the formatter
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
@@ -37,6 +38,8 @@ pub struct FormatterInfo {
 #[derive(Debug, Default, Deserialize, Serialize)]
 /// RootManifest
 pub struct CacheManifest {
+    /// Timestamp of last full-tree formatting.
+    pub clock: Option<ClockSpec>,
     /// Map of all the formatter infos
     pub formatters: BTreeMap<FormatterName, FormatterInfo>,
     /// Map of all the formatted paths
@@ -46,6 +49,7 @@ pub struct CacheManifest {
 impl Clone for CacheManifest {
     fn clone(&self) -> Self {
         Self {
+            clock: self.clock.clone(),
             formatters: self.formatters.clone(),
             matches: self.matches.clone(),
         }

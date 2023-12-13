@@ -1,10 +1,13 @@
 use crate::engine::run_treefmt;
 use anyhow::anyhow;
 use directories::ProjectDirs;
-use log::debug;
+use log::{debug, warn};
 use std::path::{Path, PathBuf};
+use tokio;
+use watchman_client::prelude::Connector;
 
-pub fn format_cmd(
+#[tokio::main]
+pub async fn format_cmd(
     tree_root: &Option<PathBuf>,
     work_dir: &Path,
     config_file: &Path,
@@ -49,6 +52,25 @@ pub fn format_cmd(
         paths
     );
 
+    let client = match Connector::new().connect().await {
+        Err(e) => {
+            warn!(
+                "watchman is not available (err = {:?}), falling back on stat(2)",
+                e
+            );
+            None
+        }
+        Ok(c) => {
+            // This is important. Subprocess wastes ~20ms.
+            if !std::env::var("WATCHMAN_SOCK").is_ok() {
+                warn!(
+                    "Environment variable `WATCHMAN_SOCK' is not set, falling back on subprocess"
+                );
+            };
+            Some(c)
+        }
+    };
+
     // Finally run the main formatter logic from the engine.
     run_treefmt(
         &tree_root,
@@ -62,7 +84,9 @@ pub fn format_cmd(
         fail_on_change,
         allow_missing_formatter,
         selected_formatters,
-    )?;
+        &client.as_ref(),
+    )
+    .await?;
 
     Ok(())
 }
