@@ -39,6 +39,8 @@ Single-language formatters:
   - [shfmt](#shfmt)
 - [Terraform](#terraform)
   - [terraform fmt](#terraform-fmt)
+- [Typst](#typst)
+  - [typstfmt](#typstfmt)
 
 Multilanguage formatters:
 
@@ -235,6 +237,15 @@ Make sure to use terraform 1.3.0 or later versions, as earlier versions format o
 command = "terraform"
 options = ["fmt"]
 includes = ["*.tf"]
+```
+
+## Typst
+
+### [typstfmt](https://github.com/astrale-sharp/typstfmt)
+
+```
+command = "typstfmt"
+includes = ["*.typ", "*.typst"]
 ```
 
 ## Multi-language formatters
