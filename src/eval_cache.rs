@@ -58,8 +58,8 @@ impl Clone for CacheManifest {
 
 impl CacheManifest {
     /// Loads the manifest and returns an error if it failed
-    pub fn try_load(cache_dir: &Path, treefmt_toml: &Path) -> Result<Self> {
-        let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
+    pub fn try_load(cache_dir: &Path, treefmt_toml: &Path, flavor: &str) -> Result<Self> {
+        let manifest_path = get_manifest_path(cache_dir, treefmt_toml, flavor);
         debug!("cache: loading from {}", manifest_path.display());
         let content = read_to_string(&manifest_path)?;
         let manifest = toml::from_str(&content)?;
@@ -68,8 +68,8 @@ impl CacheManifest {
 
     /// Always loads the manifest. If an error occurred, log and return an empty manifest.
     #[must_use]
-    pub fn load(cache_dir: &Path, treefmt_toml: &Path) -> Self {
-        match Self::try_load(cache_dir, treefmt_toml) {
+    pub fn load(cache_dir: &Path, treefmt_toml: &Path, flavor: &str) -> Self {
+        match Self::try_load(cache_dir, treefmt_toml, flavor) {
             Ok(manifest) => manifest,
             Err(err) => {
                 warn!("cache: failed to load the manifest due to: {}", err);
@@ -79,8 +79,8 @@ impl CacheManifest {
     }
 
     /// Serializes back the manifest into place.
-    pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path) -> Result<()> {
-        let manifest_path = get_manifest_path(cache_dir, treefmt_toml);
+    pub fn try_write(self, cache_dir: &Path, treefmt_toml: &Path, flavor: &str) -> Result<()> {
+        let manifest_path = get_manifest_path(cache_dir, treefmt_toml, flavor);
         debug!("cache: writing to {}", manifest_path.display());
         // Make sure the cache directory exists.
         create_dir_all(manifest_path.parent().unwrap())?;
@@ -97,8 +97,8 @@ impl CacheManifest {
     }
 
     /// Serializes back the manifest into place.
-    pub fn write(self, cache_dir: &Path, treefmt_toml: &Path) {
-        if let Err(err) = self.try_write(cache_dir, treefmt_toml) {
+    pub fn write(self, cache_dir: &Path, treefmt_toml: &Path, flavor: &str) {
+        if let Err(err) = self.try_write(cache_dir, treefmt_toml, flavor) {
             warn!("cache: failed to write to disk: {}", err);
         };
     }
@@ -198,7 +198,7 @@ fn load_formatter_info(fmt: Formatter) -> Result<FormatterInfo> {
 }
 
 /// Derive the manifest filename from the treefmt_toml path.
-fn get_manifest_path(cache_dir: &Path, treefmt_toml: &Path) -> PathBuf {
+fn get_manifest_path(cache_dir: &Path, treefmt_toml: &Path, flavor: &str) -> PathBuf {
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
     // FIXME: it's a shame that we can't access the underlying OsStr bytes
@@ -206,6 +206,6 @@ fn get_manifest_path(cache_dir: &Path, treefmt_toml: &Path) -> PathBuf {
     // Hash the config path
     let treefmt_hash = Sha1::digest(path_bytes.as_bytes());
     // Hexencode
-    let filename = format!("{:x}.toml", treefmt_hash);
+    let filename = format!("{:x}.{}.toml", treefmt_hash, flavor);
     cache_dir.join(filename)
 }

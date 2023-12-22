@@ -50,6 +50,11 @@ pub async fn run_treefmt(
     assert!(work_dir.is_absolute());
     assert!(cache_dir.is_absolute());
     assert!(treefmt_toml.is_absolute());
+    let flavor = if watchman.is_some() {
+        "watchman"
+    } else {
+        "stat"
+    };
 
     let mut stats = Statistics::init();
 
@@ -91,7 +96,7 @@ pub async fn run_treefmt(
         // Start with an empty cache
         CacheManifest::default()
     } else {
-        CacheManifest::load(cache_dir, treefmt_toml)
+        CacheManifest::load(cache_dir, treefmt_toml, flavor)
     };
     stats.timed_debug("load cache");
 
@@ -298,7 +303,7 @@ pub async fn run_treefmt(
             cache.add_results(new_matches.clone());
         };
         // And write to disk
-        cache.write(cache_dir, treefmt_toml);
+        cache.write(cache_dir, treefmt_toml, flavor);
         stats.timed_debug("write cache");
     }
 
