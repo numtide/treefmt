@@ -3,7 +3,6 @@ package format
 import (
 	"context"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -44,10 +43,7 @@ func (f *Formatter) Init(name string) error {
 	// todo refactor common code below
 	if len(f.Includes) > 0 {
 		for _, pattern := range f.Includes {
-			if !strings.Contains(pattern, "/") {
-				pattern = "**/" + pattern
-			}
-			g, err := glob.Compile(pattern)
+			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
 				return errors.Annotatef(err, "failed to compile include pattern '%v' for formatter '%v'", pattern, f.Name)
 			}
@@ -57,10 +53,7 @@ func (f *Formatter) Init(name string) error {
 
 	if len(f.Excludes) > 0 {
 		for _, pattern := range f.Excludes {
-			if !strings.Contains(pattern, "/") {
-				pattern = "**/" + pattern
-			}
-			g, err := glob.Compile(pattern)
+			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
 				return errors.Annotatef(err, "failed to compile exclude pattern '%v' for formatter '%v'", pattern, f.Name)
 			}
@@ -72,10 +65,11 @@ func (f *Formatter) Init(name string) error {
 }
 
 func (f *Formatter) Wants(path string) bool {
-	if PathMatches(path, f.excludes) {
-		return false
+	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)
+	if match {
+		f.log.Debugf("match: %v", path)
 	}
-	return PathMatches(path, f.includes)
+	return match
 }
 
 func (f *Formatter) Put(path string) {
