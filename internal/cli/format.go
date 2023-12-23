@@ -19,7 +19,7 @@ type Format struct{}
 func (f *Format) Run() error {
 	start := time.Now()
 
-	Cli.Log.ConfigureLogger()
+	Cli.ConfigureLogger()
 
 	l := log.WithPrefix("format")
 
