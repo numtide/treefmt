@@ -55,7 +55,7 @@ func TestConfig(t *testing.T) {
 	// nix
 	nix, ok := cfg.Formatters["nix"]
 	as.True(ok, "nix formatter not found")
-	as.Equal("nixpkgs-fmt", nix.Command)
+	as.Equal("alejandra", nix.Command)
 	as.Nil(nix.Options)
 	as.Equal([]string{"*.nix"}, nix.Includes)
 	as.Equal([]string{"examples/nix/sources.nix"}, nix.Excludes)
@@ -72,7 +72,7 @@ func TestConfig(t *testing.T) {
 	prettier, ok := cfg.Formatters["prettier"]
 	as.True(ok, "prettier formatter not found")
 	as.Equal("prettier", prettier.Command)
-	as.Equal([]string{"--write"}, prettier.Options)
+	as.Equal([]string{"--write", "--tab-width", "4"}, prettier.Options)
 	as.Equal([]string{
 		"*.css",
 		"*.html",
@@ -88,12 +88,12 @@ func TestConfig(t *testing.T) {
 	as.Equal([]string{"CHANGELOG.md"}, prettier.Excludes)
 
 	// rust
-	// rust, ok := cfg.Formatters["rust"]
-	// as.True(ok, "rust formatter not found")
-	// as.Equal("rustfmt", rust.Command)
-	// as.Equal([]string{"--edition", "2018"}, rust.Options)
-	// as.Equal([]string{"*.rs"}, rust.Includes)
-	// as.Nil(rust.Excludes)
+	rust, ok := cfg.Formatters["rust"]
+	as.True(ok, "rust formatter not found")
+	as.Equal("rustfmt", rust.Command)
+	as.Equal([]string{"--edition", "2018"}, rust.Options)
+	as.Equal([]string{"*.rs"}, rust.Includes)
+	as.Nil(rust.Excludes)
 
 	// shell
 	shell, ok := cfg.Formatters["shell"]

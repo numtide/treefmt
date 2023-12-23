@@ -15,7 +15,21 @@
         statix.enable = true;
       };
 
-      settings.formatter.prettier.options = ["--tab-width" "4"];
+      settings.formatter.prettier = {
+        options = ["--tab-width" "4"];
+        includes = [
+          "*.css"
+          "*.html"
+          "*.js"
+          "*.json"
+          "*.jsx"
+          "*.md"
+          "*.mdx"
+          "*.scss"
+          "*.ts"
+          "*.yaml"
+        ];
+      };
     };
 
     devshells.default = {

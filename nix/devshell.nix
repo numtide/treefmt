@@ -28,12 +28,11 @@
         golangci-lint
 
         # formatters for testing
-
+        alejandra
         elmPackages.elm-format
         haskellPackages.cabal-fmt
         haskellPackages.ormolu
         mdsh
-        nixpkgs-fmt
         nodePackages.prettier
         python3.pkgs.black
         rufo
