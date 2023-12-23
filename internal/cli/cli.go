@@ -5,10 +5,11 @@ import "github.com/charmbracelet/log"
 var Cli = Options{}
 
 type Options struct {
-	Verbosity  int    `name:"verbose" short:"v" type:"counter" default:"0" env:"LOG_LEVEL" help:"Set the verbosity of logs e.g. -vv"`
-	ConfigFile string `type:"existingfile" default:"./treefmt.toml"`
-	TreeRoot   string `type:"existingdir" default:"."`
-	ClearCache bool   `short:"c" help:"Reset the evaluation cache. Use in case the cache is not precise enough"`
+	AllowMissingFormatter bool   `default:"false" help:"Do not exit with error if a configured formatter is missing"`
+	ClearCache            bool   `short:"c" help:"Reset the evaluation cache. Use in case the cache is not precise enough"`
+	ConfigFile            string `type:"existingfile" default:"./treefmt.toml"`
+	TreeRoot              string `type:"existingdir" default:"."`
+	Verbosity             int    `name:"verbose" short:"v" type:"counter" default:"0" env:"LOG_LEVEL" help:"Set the verbosity of logs e.g. -vv"`
 
 	Format Format `cmd:"" default:"."`
 }

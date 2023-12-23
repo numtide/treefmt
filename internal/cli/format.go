@@ -44,7 +44,12 @@ func (f *Format) Run() error {
 
 	// init formatters
 	for name, formatter := range cfg.Formatters {
-		if err = formatter.Init(name); err != nil {
+		err = formatter.Init(name)
+		if err == format.ErrFormatterNotFound && Cli.AllowMissingFormatter {
+			l.Debugf("formatter not found: %v", name)
+			// remove this formatter
+			delete(cfg.Formatters, name)
+		} else if err != nil {
 			return errors.Annotatef(err, "failed to initialise formatter: %v", name)
 		}
 	}
@@ -154,6 +159,8 @@ func (f *Format) Run() error {
 		defer close(pathsCh)
 		return cache.ChangeSet(ctx, Cli.TreeRoot, pathsCh)
 	})
+
+	// shutdown.Listen(syscall.SIGINT, syscall.SIGTERM)
 
 	return eg.Wait()
 }

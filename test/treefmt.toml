@@ -80,3 +80,6 @@ includes = ["*.sh"]
 command = "terraform"
 options = ["fmt"]
 includes = ["*.tf"]
+
+[formatter.foo-fmt]
+command = "foo-fmt"

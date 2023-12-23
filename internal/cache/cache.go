@@ -61,6 +61,9 @@ func Open(treeRoot string, clean bool) (err error) {
 }
 
 func Close() error {
+	if db == nil {
+		return nil
+	}
 	return db.Close()
 }
 

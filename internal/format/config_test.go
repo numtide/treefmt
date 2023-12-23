@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfig(t *testing.T) {
+func TestReadConfigFile(t *testing.T) {
 	as := require.New(t)
 
 	cfg, err := ReadConfigFile("../../test/treefmt.toml")
@@ -119,4 +119,9 @@ shfmt -i 2 -s -w "$@"
 	as.Equal([]string{"fmt"}, terraform.Options)
 	as.Equal([]string{"*.tf"}, terraform.Includes)
 	as.Nil(terraform.Excludes)
+
+	// missing
+	foo, ok := cfg.Formatters["foo-fmt"]
+	as.True(ok, "foo formatter not found")
+	as.Equal("foo-fmt", foo.Command)
 }

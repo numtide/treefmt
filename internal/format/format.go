@@ -10,6 +10,10 @@ import (
 	"github.com/juju/errors"
 )
 
+const (
+	ErrFormatterNotFound = errors.ConstError("formatter not found")
+)
+
 type Formatter struct {
 	Name     string
 	Command  string
@@ -32,8 +36,13 @@ type Formatter struct {
 
 func (f *Formatter) Init(name string) error {
 	f.Name = name
-	f.log = log.WithPrefix("format | " + name)
 
+	// test if the formatter is available
+	if err := exec.Command(f.Command, "--help").Run(); err != nil {
+		return ErrFormatterNotFound
+	}
+
+	f.log = log.WithPrefix("format | " + name)
 	f.inbox = make(chan string, 1024)
 
 	f.batchSize = 1024
