@@ -1,8 +1,8 @@
 package main
 
 import (
+	"git.numtide.com/numtide/treefmt/internal/cli"
 	"github.com/alecthomas/kong"
-	"github.com/numtide/treefmt/internal/cli"
 )
 
 func main() {

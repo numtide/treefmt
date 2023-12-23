@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/numtide/treefmt/internal/cache"
-	"github.com/numtide/treefmt/internal/format"
+	"git.numtide.com/numtide/treefmt/internal/cache"
+	"git.numtide.com/numtide/treefmt/internal/format"
 
 	"github.com/charmbracelet/log"
 	"github.com/juju/errors"

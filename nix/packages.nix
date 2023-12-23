@@ -28,7 +28,7 @@
 
         meta = with lib; {
           description = "treefmt: one CLI to format your repo";
-          homepage = "https://github.com/numtide/treefmt";
+          homepage = "https://git.numtide.com/numtide/treefmt";
           license = licenses.mit;
           mainProgram = "treefmt";
         };
