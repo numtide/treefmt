@@ -80,7 +80,7 @@ func (f *Format) Run() error {
 		batchSize := 1024
 		batch := make([]string, batchSize)
 
-		var pending, completed int
+		var pending, completed, changes int
 
 	LOOP:
 		for {
@@ -98,9 +98,11 @@ func (f *Format) Run() error {
 				}
 				batch = append(batch, path)
 				if len(batch) == batchSize {
-					if err := cache.WriteModTime(batch); err != nil {
+					count, err := cache.Update(batch)
+					if err != nil {
 						return err
 					}
+					changes += count
 					batch = batch[:0]
 				}
 
@@ -113,11 +115,13 @@ func (f *Format) Run() error {
 		}
 
 		// final flush
-		if err := cache.WriteModTime(batch); err != nil {
+		count, err := cache.Update(batch)
+		if err != nil {
 			return err
 		}
+		changes += count
 
-		println(fmt.Sprintf("%v files changed in %v", completed, time.Now().Sub(start)))
+		println(fmt.Sprintf("%v files changed in %v", changes, time.Now().Sub(start)))
 		return nil
 	})
 

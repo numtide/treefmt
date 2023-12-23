@@ -64,6 +64,19 @@ func Close() error {
 	return db.Close()
 }
 
+func getFileInfo(bucket *bolt.Bucket, path string) (*FileInfo, error) {
+	b := bucket.Get([]byte(path))
+	if b != nil {
+		var cached FileInfo
+		if err := msgpack.Unmarshal(b, &cached); err != nil {
+			return nil, errors.Annotatef(err, "failed to unmarshal cache info for path '%v'", path)
+		}
+		return &cached, nil
+	} else {
+		return nil, nil
+	}
+}
+
 func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(modifiedBucket))
@@ -83,17 +96,12 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 				return nil
 			}
 
-			b := bucket.Get([]byte(path))
-
-			var cached FileInfo
-
-			if b != nil {
-				if err = msgpack.Unmarshal(b, &cached); err != nil {
-					return errors.Annotatef(err, "failed to unmarshal cache info for path '%v'", path)
-				}
+			cached, err := getFileInfo(bucket, path)
+			if err != nil {
+				return err
 			}
 
-			changedOrNew := !(cached.Modified == info.ModTime() && cached.Size == info.Size())
+			changedOrNew := cached == nil || !(cached.Modified == info.ModTime() && cached.Size == info.Size())
 
 			if !changedOrNew {
 				// no change
@@ -107,21 +115,36 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 	})
 }
 
-func WriteModTime(paths []string) error {
+func Update(paths []string) (int, error) {
 	if len(paths) == 0 {
-		return nil
+		return 0, nil
 	}
 
-	return db.Update(func(tx *bolt.Tx) error {
+	var changes int
+
+	return changes, db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(modifiedBucket))
 
 		for _, path := range paths {
 			if path == "" {
 				continue
 			}
+
+			cached, err := getFileInfo(bucket, path)
+			if err != nil {
+				return err
+			}
+
 			pathInfo, err := os.Stat(path)
 			if err != nil {
 				return err
+			}
+
+			if cached == nil || !(cached.Modified == pathInfo.ModTime() && cached.Size == pathInfo.Size()) {
+				changes += 1
+			} else {
+				// no change to write
+				continue
 			}
 
 			cacheInfo := FileInfo{
