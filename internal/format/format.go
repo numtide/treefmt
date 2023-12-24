@@ -11,41 +11,50 @@ import (
 )
 
 const (
+	// ErrFormatterNotFound is returned when the Command for a Formatter is not available.
 	ErrFormatterNotFound = errors.ConstError("formatter not found")
 )
 
+// Formatter represents a command which should be applied to a filesystem.
 type Formatter struct {
-	Name     string
-	Command  string
-	Options  []string
+	// Command is the command invoke when applying this Formatter.
+	Command string
+	// Options are an optional list of args to be passed to Command.
+	Options []string
+	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
 	Includes []string
+	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
 	Excludes []string
-	Before   []string
 
-	log *log.Logger
+	name string
+	log  *log.Logger
 
-	// globs for matching against paths
+	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
 	excludes []glob.Glob
 
+	// inbox is used to accept new paths for formatting.
 	inbox chan string
 
+	// Entries from inbox are batched according to batchSize and stored in batch for processing when the batchSize has
+	// been reached or Close is invoked.
 	batch     []string
 	batchSize int
 }
 
 func (f *Formatter) Init(name string) error {
-	f.Name = name
+	// capture the name from the config file
+	f.name = name
 
 	// test if the formatter is available
 	if err := exec.Command(f.Command, "--help").Run(); err != nil {
 		return ErrFormatterNotFound
 	}
 
+	// initialise internal state
 	f.log = log.WithPrefix("format | " + name)
-	f.inbox = make(chan string, 1024)
-
 	f.batchSize = 1024
+	f.inbox = make(chan string, f.batchSize)
 	f.batch = make([]string, f.batchSize)
 	f.batch = f.batch[:0]
 
@@ -54,7 +63,7 @@ func (f *Formatter) Init(name string) error {
 		for _, pattern := range f.Includes {
 			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
-				return errors.Annotatef(err, "failed to compile include pattern '%v' for formatter '%v'", pattern, f.Name)
+				return errors.Annotatef(err, "failed to compile include pattern '%v' for formatter '%v'", pattern, f.name)
 			}
 			f.includes = append(f.includes, g)
 		}
@@ -64,7 +73,7 @@ func (f *Formatter) Init(name string) error {
 		for _, pattern := range f.Excludes {
 			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
-				return errors.Annotatef(err, "failed to compile exclude pattern '%v' for formatter '%v'", pattern, f.Name)
+				return errors.Annotatef(err, "failed to compile exclude pattern '%v' for formatter '%v'", pattern, f.name)
 			}
 			f.excludes = append(f.excludes, g)
 		}
@@ -73,6 +82,8 @@ func (f *Formatter) Init(name string) error {
 	return nil
 }
 
+// Wants is used to test if a Formatter wants path based on it's configured Includes and Excludes patterns.
+// Returns true if the Formatter should be applied to path, false otherwise.
 func (f *Formatter) Wants(path string) bool {
 	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)
 	if match {
@@ -81,24 +92,31 @@ func (f *Formatter) Wants(path string) bool {
 	return match
 }
 
+// Put add path into this Formatter's inbox for processing.
 func (f *Formatter) Put(path string) {
 	f.inbox <- path
 }
 
+// Run is the main processing loop for this Formatter.
+// It accepts a context which is used to lookup certain dependencies and for cancellation.
 func (f *Formatter) Run(ctx context.Context) (err error) {
 LOOP:
+	// keep processing until ctx has been cancelled or inbox has been closed
 	for {
 		select {
+
 		case <-ctx.Done():
+			// ctx has been cancelled
 			err = ctx.Err()
 			break LOOP
 
 		case path, ok := <-f.inbox:
+			// check if the inbox has been closed
 			if !ok {
 				break LOOP
 			}
 
-			// add to the current batch
+			// add path to the current batch
 			f.batch = append(f.batch, path)
 
 			if len(f.batch) == f.batchSize {
@@ -110,14 +128,17 @@ LOOP:
 		}
 	}
 
+	// check if LOOP was exited due to an error
 	if err != nil {
 		return
 	}
 
-	// final flush
+	// processing any lingering batch
 	return f.apply(ctx)
 }
 
+// apply executes Command against the latest batch of paths.
+// It accepts a context which is used to lookup certain dependencies and for cancellation.
 func (f *Formatter) apply(ctx context.Context) error {
 	// empty check
 	if len(f.batch) == 0 {
@@ -132,6 +153,7 @@ func (f *Formatter) apply(ctx context.Context) error {
 		args = append(args, path)
 	}
 
+	// execute
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, f.Command, args...)
 
@@ -142,15 +164,9 @@ func (f *Formatter) apply(ctx context.Context) error {
 
 	f.log.Infof("%v files processed in %v", len(f.batch), time.Now().Sub(start))
 
-	// mark completed or forward on
-	if len(f.Before) == 0 {
-		for _, path := range f.batch {
-			MarkFormatComplete(ctx, path)
-		}
-	} else {
-		for _, path := range f.batch {
-			ForwardPath(ctx, path, f.Before)
-		}
+	// mark each path in this batch as completed
+	for _, path := range f.batch {
+		MarkFormatComplete(ctx, path)
 	}
 
 	// reset batch
@@ -159,6 +175,7 @@ func (f *Formatter) apply(ctx context.Context) error {
 	return nil
 }
 
+// Close is used to indicate that a Formatter should process any remaining paths and then stop it's processing loop.
 func (f *Formatter) Close() {
 	close(f.inbox)
 }

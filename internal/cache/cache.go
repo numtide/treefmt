@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/juju/errors"
@@ -19,8 +20,19 @@ const (
 	modifiedBucket = "modified"
 )
 
+// Entry represents a cache entry, indicating the last size and modified time for a file path.
+type Entry struct {
+	Size     int64
+	Modified time.Time
+}
+
 var db *bolt.DB
 
+// Open creates an instance of bolt.DB for a given treeRoot path.
+// If clean is true, Open will delete any existing data in the cache.
+//
+// The database will be located in `XDG_CACHE_DIR/treefmt/eval-cache/<id>.db`, where <id> is determined by hashing
+// the treeRoot path. This associates a given treeRoot with a given instance of the cache.
 func Open(treeRoot string, clean bool) (err error) {
 	// determine a unique and consistent db name for the tree root
 	h := sha1.New()
@@ -30,7 +42,7 @@ func Open(treeRoot string, clean bool) (err error) {
 	name := base32.StdEncoding.EncodeToString(digest)
 	path, err := xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name))
 
-	// bust the cache if specified
+	// force a clean of the cache if specified
 	if clean {
 		err := os.Remove(path)
 		if errors.Is(err, os.ErrNotExist) {
@@ -60,6 +72,7 @@ func Open(treeRoot string, clean bool) (err error) {
 	return
 }
 
+// Close closes any open instance of the cache.
 func Close() error {
 	if db == nil {
 		return nil
@@ -67,10 +80,11 @@ func Close() error {
 	return db.Close()
 }
 
-func getFileInfo(bucket *bolt.Bucket, path string) (*FileInfo, error) {
+// getEntry is a helper for reading cache entries from bolt.
+func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 	b := bucket.Get([]byte(path))
 	if b != nil {
-		var cached FileInfo
+		var cached Entry
 		if err := msgpack.Unmarshal(b, &cached); err != nil {
 			return nil, errors.Annotatef(err, "failed to unmarshal cache info for path '%v'", path)
 		}
@@ -80,6 +94,8 @@ func getFileInfo(bucket *bolt.Bucket, path string) (*FileInfo, error) {
 	}
 }
 
+// ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
+// It determines if a path is new or has changed by comparing against cache entries.
 func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(modifiedBucket))
@@ -99,7 +115,7 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 				return nil
 			}
 
-			cached, err := getFileInfo(bucket, path)
+			cached, err := getEntry(bucket, path)
 			if err != nil {
 				return err
 			}
@@ -118,6 +134,7 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 	})
 }
 
+// Update is used to record updated cache information for the specified list of paths.
 func Update(paths []string) (int, error) {
 	if len(paths) == 0 {
 		return 0, nil
@@ -133,7 +150,7 @@ func Update(paths []string) (int, error) {
 				continue
 			}
 
-			cached, err := getFileInfo(bucket, path)
+			cached, err := getEntry(bucket, path)
 			if err != nil {
 				return err
 			}
@@ -150,7 +167,7 @@ func Update(paths []string) (int, error) {
 				continue
 			}
 
-			cacheInfo := FileInfo{
+			cacheInfo := Entry{
 				Size:     pathInfo.Size(),
 				Modified: pathInfo.ModTime(),
 			}
