@@ -23,7 +23,7 @@
       packages = with pkgs; [
         # golang
         go
-        go-tools
+        gotools
         delve
         golangci-lint
 
