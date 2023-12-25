@@ -19,7 +19,7 @@ type Format struct{}
 func (f *Format) Run() error {
 	start := time.Now()
 
-	Cli.ConfigureLogger()
+	Cli.Configure()
 
 	l := log.WithPrefix("format")
 
@@ -42,8 +42,34 @@ func (f *Format) Run() error {
 		return errors.Annotate(err, "failed to read config file")
 	}
 
+	// create optional formatter filter set
+	formatterSet := make(map[string]bool)
+	for _, name := range Cli.Formatters {
+		_, ok := cfg.Formatters[name]
+		if !ok {
+			return errors.Errorf("formatter not found in config: %v", name)
+		}
+		formatterSet[name] = true
+	}
+
+	includeFormatter := func(name string) bool {
+		if len(formatterSet) == 0 {
+			return true
+		} else {
+			_, include := formatterSet[name]
+			return include
+		}
+	}
+
 	// init formatters
 	for name, formatter := range cfg.Formatters {
+		if !includeFormatter(name) {
+			// remove this formatter
+			delete(cfg.Formatters, name)
+			l.Debugf("formatter %v is not in formatter list %v, skipping", name, Cli.Formatters)
+			continue
+		}
+
 		err = formatter.Init(name)
 		if err == format.ErrFormatterNotFound && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
@@ -126,7 +152,7 @@ func (f *Format) Run() error {
 		}
 		changes += count
 
-		println(fmt.Sprintf("%v files changed in %v", changes, time.Now().Sub(start)))
+		fmt.Printf("%v files changed in %v", changes, time.Now().Sub(start))
 		return nil
 	})
 

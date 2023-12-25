@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/log v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/juju/errors v1.0.0
+	github.com/otiai10/copy v1.14.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/ztrue/shutdown v0.1.1
