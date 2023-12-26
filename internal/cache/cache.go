@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 	"crypto/sha1"
-	"encoding/base32"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -39,7 +39,7 @@ func Open(treeRoot string, clean bool) (err error) {
 	h.Write([]byte(treeRoot))
 	digest := h.Sum(nil)
 
-	name := base32.StdEncoding.EncodeToString(digest)
+	name := hex.EncodeToString(digest)
 	path, err := xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name))
 	if err != nil {
 		return fmt.Errorf("%w: could not resolve local path for the cache", err)
