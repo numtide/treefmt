@@ -159,7 +159,6 @@ func (f *Format) Run() error {
 		count := 0
 
 		for path := range pathsCh {
-			// todo cycle detection in Befores
 			for _, formatter := range cfg.Formatters {
 				if formatter.Wants(path) {
 					pendingCh <- path
