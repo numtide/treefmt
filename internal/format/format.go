@@ -25,8 +25,9 @@ type Formatter struct {
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
 	Excludes []string
 
-	name string
-	log  *log.Logger
+	name       string
+	log        *log.Logger
+	executable string // path to the executable described by Command
 
 	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
@@ -41,14 +42,24 @@ type Formatter struct {
 	batchSize int
 }
 
+// Executable returns the path to the executable defined by Command
+func (f *Formatter) Executable() string {
+	return f.executable
+}
+
+// Init is used to initialise internal state before this Formatter is ready to accept paths.
 func (f *Formatter) Init(name string) error {
 	// capture the name from the config file
 	f.name = name
 
 	// test if the formatter is available
-	if err := exec.Command(f.Command, "--help").Run(); err != nil {
+	executable, err := exec.LookPath(f.Command)
+	if errors.Is(err, exec.ErrNotFound) {
 		return ErrFormatterNotFound
+	} else if err != nil {
+		return err
 	}
+	f.executable = executable
 
 	// initialise internal state
 	f.log = log.WithPrefix("format | " + name)
