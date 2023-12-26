@@ -3,6 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"git.numtide.com/numtide/treefmt/internal/cache"
@@ -10,7 +13,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/juju/errors"
-	"github.com/ztrue/shutdown"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,9 +34,6 @@ func (f *Format) Run() error {
 	// create an overall context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	// register shutdown hook
-	shutdown.Add(cancel)
 
 	// read config
 	cfg, err := format.ReadConfigFile(Cli.ConfigFile)
@@ -186,7 +185,13 @@ func (f *Format) Run() error {
 		return cache.ChangeSet(ctx, Cli.TreeRoot, pathsCh)
 	})
 
-	// shutdown.Listen(syscall.SIGINT, syscall.SIGTERM)
+	// listen for shutdown and call cancel if required
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+		<-exit
+		cancel()
+	}()
 
 	return eg.Wait()
 }
