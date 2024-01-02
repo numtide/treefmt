@@ -101,9 +101,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
 
 	// globally exclude nix files
-	config.Global = struct{ Excludes []string }{
-		Excludes: []string{"*.nix"},
-	}
+	config.Global.Excludes = []string{"*.nix"}
 
 	test.WriteConfig(t, configPath, config)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
@@ -118,8 +116,10 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 22))
 
+	echo := config.Formatters["echo"]
+
 	// remove python files from the echo formatter
-	config.Formatters["echo"].Excludes = []string{"*.py"}
+	echo.Excludes = []string{"*.py"}
 
 	test.WriteConfig(t, configPath, config)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
@@ -127,7 +127,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 20))
 
 	// remove go files from the echo formatter
-	config.Formatters["echo"].Excludes = []string{"*.py", "*.go"}
+	echo.Excludes = []string{"*.py", "*.go"}
 
 	test.WriteConfig(t, configPath, config)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
@@ -135,7 +135,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 19))
 
 	// adjust the includes for echo to only include elm files
-	config.Formatters["echo"].Includes = []string{"*.elm"}
+	echo.Includes = []string{"*.elm"}
 
 	test.WriteConfig(t, configPath, config)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
@@ -143,7 +143,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 1))
 
 	// add js files to echo formatter
-	config.Formatters["echo"].Includes = []string{"*.elm", "*.js"}
+	echo.Includes = []string{"*.elm", "*.js"}
 
 	test.WriteConfig(t, configPath, config)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
