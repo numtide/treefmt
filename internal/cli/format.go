@@ -40,6 +40,8 @@ func (f *Format) Run() error {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
+	globalExcludes, err := format.CompileGlobs(cfg.Global.Excludes)
+
 	// create optional formatter filter set
 	formatterSet := make(map[string]bool)
 	for _, name := range Cli.Formatters {
@@ -68,7 +70,7 @@ func (f *Format) Run() error {
 			continue
 		}
 
-		err = formatter.Init(name)
+		err = formatter.Init(name, globalExcludes)
 		if err == format.ErrFormatterNotFound && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			// remove this formatter

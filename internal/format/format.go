@@ -48,7 +48,9 @@ func (f *Formatter) Executable() string {
 }
 
 // Init is used to initialise internal state before this Formatter is ready to accept paths.
-func (f *Formatter) Init(name string) error {
+func (f *Formatter) Init(name string, globalExcludes []glob.Glob) error {
+	var err error
+
 	// capture the name from the config file
 	f.name = name
 
@@ -68,26 +70,16 @@ func (f *Formatter) Init(name string) error {
 	f.batch = make([]string, f.batchSize)
 	f.batch = f.batch[:0]
 
-	// todo refactor common code below
-	if len(f.Includes) > 0 {
-		for _, pattern := range f.Includes {
-			g, err := glob.Compile("**/" + pattern)
-			if err != nil {
-				return fmt.Errorf("%w: failed to compile include pattern '%v' for formatter '%v'", err, pattern, f.name)
-			}
-			f.includes = append(f.includes, g)
-		}
+	f.includes, err = CompileGlobs(f.Includes)
+	if err != nil {
+		return fmt.Errorf("%w: formatter '%v' includes", err, f.name)
 	}
 
-	if len(f.Excludes) > 0 {
-		for _, pattern := range f.Excludes {
-			g, err := glob.Compile("**/" + pattern)
-			if err != nil {
-				return fmt.Errorf("%w: failed to compile exclude pattern '%v' for formatter '%v'", err, pattern, f.name)
-			}
-			f.excludes = append(f.excludes, g)
-		}
+	f.excludes, err = CompileGlobs(f.Excludes)
+	if err != nil {
+		return fmt.Errorf("%w: formatter '%v' excludes", err, f.name)
 	}
+	f.excludes = append(f.excludes, globalExcludes...)
 
 	return nil
 }
