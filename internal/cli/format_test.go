@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"git.numtide.com/numtide/treefmt/internal/format"
 	"github.com/BurntSushi/toml"
 	"github.com/alecthomas/kong"
-	"github.com/juju/errors"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,12 +78,12 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 
 	// reset and read the temporary output
 	if _, err = tempOut.Seek(0, 0); err != nil {
-		return nil, errors.Annotate(err, "failed to reset temp output for reading")
+		return nil, fmt.Errorf("%w: failed to reset temp output for reading", err)
 	}
 
 	out, err := io.ReadAll(tempOut)
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to read temp output")
+		return nil, fmt.Errorf("%w: failed to read temp output", err)
 	}
 
 	// swap outputs back

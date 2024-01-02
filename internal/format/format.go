@@ -2,18 +2,17 @@ package format
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
-	"github.com/juju/errors"
 )
 
-const (
-	// ErrFormatterNotFound is returned when the Command for a Formatter is not available.
-	ErrFormatterNotFound = errors.ConstError("formatter not found")
-)
+// ErrFormatterNotFound is returned when the Command for a Formatter is not available.
+var ErrFormatterNotFound = errors.New("formatter not found")
 
 // Formatter represents a command which should be applied to a filesystem.
 type Formatter struct {
@@ -63,7 +62,7 @@ func (f *Formatter) Init(name string) error {
 		for _, pattern := range f.Includes {
 			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
-				return errors.Annotatef(err, "failed to compile include pattern '%v' for formatter '%v'", pattern, f.name)
+				return fmt.Errorf("%w: failed to compile include pattern '%v' for formatter '%v'", err, pattern, f.name)
 			}
 			f.includes = append(f.includes, g)
 		}
@@ -73,7 +72,7 @@ func (f *Formatter) Init(name string) error {
 		for _, pattern := range f.Excludes {
 			g, err := glob.Compile("**/" + pattern)
 			if err != nil {
-				return errors.Annotatef(err, "failed to compile exclude pattern '%v' for formatter '%v'", pattern, f.name)
+				return fmt.Errorf("%w: failed to compile exclude pattern '%v' for formatter '%v'", err, pattern, f.name)
 			}
 			f.excludes = append(f.excludes, g)
 		}

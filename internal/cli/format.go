@@ -12,7 +12,6 @@ import (
 	"git.numtide.com/numtide/treefmt/internal/format"
 
 	"github.com/charmbracelet/log"
-	"github.com/juju/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -38,7 +37,7 @@ func (f *Format) Run() error {
 	// read config
 	cfg, err := format.ReadConfigFile(Cli.ConfigFile)
 	if err != nil {
-		return errors.Annotate(err, "failed to read config file")
+		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
 	// create optional formatter filter set
@@ -46,7 +45,7 @@ func (f *Format) Run() error {
 	for _, name := range Cli.Formatters {
 		_, ok := cfg.Formatters[name]
 		if !ok {
-			return errors.Errorf("formatter not found in config: %v", name)
+			return fmt.Errorf("%w: formatter not found in config: %v", err, name)
 		}
 		formatterSet[name] = true
 	}
@@ -75,7 +74,7 @@ func (f *Format) Run() error {
 			// remove this formatter
 			delete(cfg.Formatters, name)
 		} else if err != nil {
-			return errors.Annotatef(err, "failed to initialise formatter: %v", name)
+			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
 		}
 	}
 

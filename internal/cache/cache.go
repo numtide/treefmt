@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/base32"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
-	"github.com/juju/errors"
 	"github.com/vmihailenco/msgpack/v5"
 	bolt "go.etcd.io/bbolt"
 )
@@ -41,6 +41,9 @@ func Open(treeRoot string, clean bool) (err error) {
 
 	name := base32.StdEncoding.EncodeToString(digest)
 	path, err := xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name))
+	if err != nil {
+		return fmt.Errorf("%w: could not resolve local path for the cache", err)
+	}
 
 	// force a clean of the cache if specified
 	if clean {
@@ -48,17 +51,13 @@ func Open(treeRoot string, clean bool) (err error) {
 		if errors.Is(err, os.ErrNotExist) {
 			err = nil
 		} else if err != nil {
-			return errors.Annotate(err, "failed to clear cache")
+			return fmt.Errorf("%w: failed to clear cache", err)
 		}
-	}
-
-	if err != nil {
-		return errors.Annotate(err, "could not resolve local path for the cache")
 	}
 
 	db, err = bolt.Open(path, 0o600, nil)
 	if err != nil {
-		return errors.Annotate(err, "failed to open cache")
+		return fmt.Errorf("%w: failed to open cache", err)
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -86,7 +85,7 @@ func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 	if b != nil {
 		var cached Entry
 		if err := msgpack.Unmarshal(b, &cached); err != nil {
-			return nil, errors.Annotatef(err, "failed to unmarshal cache info for path '%v'", path)
+			return nil, fmt.Errorf("%w: failed to unmarshal cache info for path '%v'", err, path)
 		}
 		return &cached, nil
 	} else {
@@ -102,7 +101,7 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 
 		return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
-				return errors.Annotate(err, "failed to walk path")
+				return fmt.Errorf("%w: failed to walk path", err)
 			} else if ctx.Err() != nil {
 				return ctx.Err()
 			} else if info.IsDir() {
@@ -174,11 +173,11 @@ func Update(paths []string) (int, error) {
 
 			bytes, err := msgpack.Marshal(cacheInfo)
 			if err != nil {
-				return errors.Annotate(err, "failed to marshal mod time")
+				return fmt.Errorf("%w: failed to marshal mod time", err)
 			}
 
 			if err = bucket.Put([]byte(path), bytes); err != nil {
-				return errors.Annotate(err, "failed to put mode time")
+				return fmt.Errorf("%w: failed to put mode time", err)
 			}
 		}
 

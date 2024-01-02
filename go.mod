@@ -12,7 +12,6 @@ require (
 	github.com/otiai10/copy v1.14.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/ztrue/shutdown v0.1.1
 	go.etcd.io/bbolt v1.3.8
 	golang.org/x/sync v0.5.0
 )
