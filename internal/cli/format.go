@@ -110,8 +110,7 @@ func (f *Format) Run() error {
 	// update cache as paths are completed
 	eg.Go(func() error {
 		batchSize := 1024
-		batch := make([]string, batchSize)
-		batch = batch[:0]
+		batch := make([]string, 0, batchSize)
 
 		var pending, completed, changes int
 
