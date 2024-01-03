@@ -179,6 +179,40 @@ func TestCache(t *testing.T) {
 	as.Contains(string(out), "0 files changed")
 }
 
+func TestChangeWorkingDirectory(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/treefmt.toml"
+
+	// test without any excludes
+	config := format.Config{
+		Formatters: map[string]*format.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, config)
+
+	// by default, we look for ./treefmt.toml and use the cwd for the tree root
+	// this should fail if the working directory hasn't been changed first
+	out, err := cmd(t, "-C", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+}
+
 func TestFailOnChange(t *testing.T) {
 	as := require.New(t)
 
