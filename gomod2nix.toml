@@ -46,6 +46,9 @@ schema = 3
   [mod."github.com/muesli/termenv"]
     version = "v0.15.2"
     hash = "sha256-Eum/SpyytcNIchANPkG4bYGBgcezLgej7j/+6IhqoMU="
+  [mod."github.com/otiai10/copy"]
+    version = "v1.14.0"
+    hash = "sha256-xsaL1ddkPS544y0Jv7u/INUALBYmYq29ddWvysLXk4A="
   [mod."github.com/pmezard/go-difflib"]
     version = "v1.0.0"
     hash = "sha256-/FtmHnaGjdvEIKAJtrUfEhV7EVo5A/eYrtdnUkuxLDA="
@@ -61,9 +64,6 @@ schema = 3
   [mod."github.com/vmihailenco/tagparser/v2"]
     version = "v2.0.0"
     hash = "sha256-M9QyaKhSmmYwsJk7gkjtqu9PuiqZHSmTkous8VWkWY0="
-  [mod."github.com/ztrue/shutdown"]
-    version = "v0.1.1"
-    hash = "sha256-+ygx5THHu9g+vBAn6b63tV35bvQGdRyto4pLhkontJI="
   [mod."go.etcd.io/bbolt"]
     version = "v1.3.8"
     hash = "sha256-ekKy8198B2GfPldHLYZnvNjID6x07dUPYKgFx84TgVs="

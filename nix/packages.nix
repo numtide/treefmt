@@ -26,6 +26,14 @@
           "-X 'build.Version=${version}'"
         ];
 
+        # we need some formatters available for the tests
+        nativeBuildInputs = import ./formatters.nix pkgs;
+
+        preCheck = ''
+          XDG_CACHE_HOME=$(mktemp -d)
+          export XDG_CACHE_HOME
+        '';
+
         meta = with lib; {
           description = "treefmt: one CLI to format your repo";
           homepage = "https://git.numtide.com/numtide/treefmt";

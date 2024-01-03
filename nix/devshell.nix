@@ -20,27 +20,15 @@
         }
       ];
 
-      packages = with pkgs; [
-        # golang
-        go
-        gotools
-        delve
-        golangci-lint
-
-        # formatters for testing
-        alejandra
-        elmPackages.elm-format
-        haskellPackages.cabal-fmt
-        haskellPackages.ormolu
-        mdsh
-        nodePackages.prettier
-        python3.pkgs.black
-        rufo
-        rustfmt
-        shellcheck
-        shfmt
-        terraform
-      ];
+      packages = with pkgs;
+        [
+          # golang
+          go
+          delve
+        ]
+        ++
+        # include formatters for development and testing
+        (import ./formatters.nix pkgs);
 
       commands = [
         {
