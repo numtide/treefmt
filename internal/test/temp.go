@@ -36,3 +36,11 @@ func TempFile(t *testing.T, path string) *os.File {
 	}
 	return file
 }
+
+func RecreateSymlink(t *testing.T, path string) error {
+	t.Helper()
+	src, err := os.Readlink(path)
+	require.NoError(t, err, "failed to read symlink")
+	require.NoError(t, os.Remove(path), "failed to remove symlink")
+	return os.Symlink(src, path)
+}

@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
+
+	"git.numtide.com/numtide/treefmt/internal/format"
+	"github.com/charmbracelet/log"
 
 	"github.com/adrg/xdg"
 	"github.com/vmihailenco/msgpack/v5"
@@ -17,7 +19,8 @@ import (
 )
 
 const (
-	modifiedBucket = "modified"
+	pathsBucket      = "paths"
+	formattersBucket = "formatters"
 )
 
 // Entry represents a cache entry, indicating the last size and modified time for a file path.
@@ -33,7 +36,9 @@ var db *bolt.DB
 //
 // The database will be located in `XDG_CACHE_DIR/treefmt/eval-cache/<id>.db`, where <id> is determined by hashing
 // the treeRoot path. This associates a given treeRoot with a given instance of the cache.
-func Open(treeRoot string, clean bool) (err error) {
+func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) (err error) {
+	l := log.WithPrefix("cache")
+
 	// determine a unique and consistent db name for the tree root
 	h := sha1.New()
 	h.Write([]byte(treeRoot))
@@ -45,27 +50,84 @@ func Open(treeRoot string, clean bool) (err error) {
 		return fmt.Errorf("%w: could not resolve local path for the cache", err)
 	}
 
-	// force a clean of the cache if specified
-	if clean {
-		err := os.Remove(path)
-		if errors.Is(err, os.ErrNotExist) {
-			err = nil
-		} else if err != nil {
-			return fmt.Errorf("%w: failed to clear cache", err)
-		}
-	}
-
 	db, err = bolt.Open(path, 0o600, nil)
 	if err != nil {
 		return fmt.Errorf("%w: failed to open cache", err)
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucket([]byte(modifiedBucket))
-		if errors.Is(err, bolt.ErrBucketExists) {
-			return nil
+		// create bucket for tracking paths
+		pathsBucket, err := tx.CreateBucketIfNotExists([]byte(pathsBucket))
+		if err != nil {
+			return fmt.Errorf("%w: failed to create paths bucket", err)
 		}
-		return err
+
+		// create bucket for tracking formatters
+		formattersBucket, err := tx.CreateBucketIfNotExists([]byte(formattersBucket))
+		if err != nil {
+			return fmt.Errorf("%w: failed to create formatters bucket", err)
+		}
+
+		// check for any newly configured or modified formatters
+		for name, formatter := range formatters {
+
+			stat, err := os.Lstat(formatter.Executable())
+			if err != nil {
+				return fmt.Errorf("%w: failed to state formatter executable", err)
+			}
+
+			entry, err := getEntry(formattersBucket, name)
+			if err != nil {
+				return fmt.Errorf("%w: failed to retrieve entry for formatter", err)
+			}
+
+			clean = clean || entry == nil || !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
+			l.Debug(
+				"checking if formatter has changed",
+				"name", name,
+				"clean", clean,
+				"entry", entry,
+				"stat", stat,
+			)
+
+			// record formatters info
+			entry = &Entry{
+				Size:     stat.Size(),
+				Modified: stat.ModTime(),
+			}
+
+			if err = putEntry(formattersBucket, name, entry); err != nil {
+				return fmt.Errorf("%w: failed to write formatter entry", err)
+			}
+		}
+
+		// check for any removed formatters
+		if err = formattersBucket.ForEach(func(key []byte, _ []byte) error {
+			_, ok := formatters[string(key)]
+			if !ok {
+				// remove the formatter entry from the cache
+				if err = formattersBucket.Delete(key); err != nil {
+					return fmt.Errorf("%w: failed to remove formatter entry", err)
+				}
+				// indicate a clean is required
+				clean = true
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("%w: failed to check for removed formatters", err)
+		}
+
+		if clean {
+			// remove all path entries
+			c := pathsBucket.Cursor()
+			for k, v := c.First(); !(k == nil && v == nil); k, v = c.Next() {
+				if err = c.Delete(); err != nil {
+					return fmt.Errorf("%w: failed to remove path entry", err)
+				}
+			}
+		}
+
+		return nil
 	})
 
 	return
@@ -93,11 +155,24 @@ func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 	}
 }
 
+// putEntry is a helper for writing cache entries into bolt.
+func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
+	bytes, err := msgpack.Marshal(entry)
+	if err != nil {
+		return fmt.Errorf("%w: failed to marshal cache entry", err)
+	}
+
+	if err = bucket.Put([]byte(path), bytes); err != nil {
+		return fmt.Errorf("%w: failed to put cache entry", err)
+	}
+	return nil
+}
+
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
 func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(modifiedBucket))
+		bucket := tx.Bucket([]byte(pathsBucket))
 
 		return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
@@ -142,13 +217,9 @@ func Update(paths []string) (int, error) {
 	var changes int
 
 	return changes, db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(modifiedBucket))
+		bucket := tx.Bucket([]byte(pathsBucket))
 
 		for _, path := range paths {
-			if path == "" {
-				continue
-			}
-
 			cached, err := getEntry(bucket, path)
 			if err != nil {
 				return err
@@ -166,18 +237,13 @@ func Update(paths []string) (int, error) {
 				continue
 			}
 
-			cacheInfo := Entry{
+			entry := Entry{
 				Size:     pathInfo.Size(),
 				Modified: pathInfo.ModTime(),
 			}
 
-			bytes, err := msgpack.Marshal(cacheInfo)
-			if err != nil {
-				return fmt.Errorf("%w: failed to marshal mod time", err)
-			}
-
-			if err = bucket.Put([]byte(path), bytes); err != nil {
-				return fmt.Errorf("%w: failed to put mode time", err)
+			if err = putEntry(bucket, path, &entry); err != nil {
+				return err
 			}
 		}
 

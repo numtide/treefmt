@@ -159,7 +159,8 @@ func (f *Formatter) apply(ctx context.Context) error {
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, f.Command, args...)
 
-	if _, err := cmd.CombinedOutput(); err != nil {
+	if out, err := cmd.CombinedOutput(); err != nil {
+		f.log.Debugf("\n%v", string(out))
 		// todo log output
 		return err
 	}

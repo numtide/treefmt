@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"testing"
 
 	"git.numtide.com/numtide/treefmt/internal/test"
@@ -54,28 +56,28 @@ func TestSpecifyingFormatters(t *testing.T) {
 		},
 	})
 
-	out, err := cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir)
+	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	as.Contains(string(out), "3 files changed")
 
-	out, err = cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
+	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
 	as.NoError(err)
 	as.Contains(string(out), "2 files changed")
 
-	out, err = cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
+	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
 	as.NoError(err)
 	as.Contains(string(out), "2 files changed")
 
-	out, err = cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
+	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
 	as.NoError(err)
 	as.Contains(string(out), "1 files changed")
 
 	// test bad names
 
-	out, err = cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
+	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 
-	out, err = cmd(t, "--clear-cache", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "bar,foo")
+	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "bar,foo")
 	as.Errorf(err, "formatter not found in config: bar")
 }
 
@@ -149,4 +151,140 @@ func TestIncludesAndExcludes(t *testing.T) {
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 2))
+}
+
+func TestCache(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/echo.toml"
+
+	// test without any excludes
+	config := format.Config{
+		Formatters: map[string]*format.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, config)
+	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+}
+
+func TestBustCacheOnFormatterChange(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/echo.toml"
+
+	// symlink some formatters into temp dir, so we can mess with their mod times
+	binPath := tempDir + "/bin"
+	as.NoError(os.Mkdir(binPath, 0o755))
+
+	binaries := []string{"black", "elm-format", "gofmt"}
+
+	for _, name := range binaries {
+		src, err := exec.LookPath(name)
+		as.NoError(err)
+		as.NoError(os.Symlink(src, binPath+"/"+name))
+	}
+
+	// prepend our test bin directory to PATH
+	as.NoError(os.Setenv("PATH", binPath+":"+os.Getenv("PATH")))
+
+	// start with 2 formatters
+	config := format.Config{
+		Formatters: map[string]*format.Formatter{
+			"python": {
+				Command:  "black",
+				Includes: []string{"*.py"},
+			},
+			"elm": {
+				Command:  "elm-format",
+				Options:  []string{"--yes"},
+				Includes: []string{"*.elm"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, config)
+	args := []string{"--config-file", configPath, "--tree-root", tempDir}
+	out, err := cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+
+	// tweak mod time of elm formatter
+	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
+
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+
+	// check cache is working
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// tweak mod time of python formatter
+	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
+
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+
+	// check cache is working
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// add go formatter
+	config.Formatters["go"] = &format.Formatter{
+		Command:  "gofmt",
+		Options:  []string{"-w"},
+		Includes: []string{"*.go"},
+	}
+	test.WriteConfig(t, configPath, config)
+
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 4))
+
+	// check cache is working
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// remove python formatter
+	delete(config.Formatters, "python")
+	test.WriteConfig(t, configPath, config)
+
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 2))
+
+	// check cache is working
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// remove elm formatter
+	delete(config.Formatters, "elm")
+	test.WriteConfig(t, configPath, config)
+
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 1))
+
+	// check cache is working
+	out, err = cmd(t, args...)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
 }

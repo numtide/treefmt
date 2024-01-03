@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -71,7 +72,7 @@ func (f *Format) Run() error {
 		}
 
 		err = formatter.Init(name, globalExcludes)
-		if err == format.ErrFormatterNotFound && Cli.AllowMissingFormatter {
+		if errors.Is(err, format.ErrFormatterNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			// remove this formatter
 			delete(cfg.Formatters, name)
@@ -82,7 +83,7 @@ func (f *Format) Run() error {
 
 	ctx = format.RegisterFormatters(ctx, cfg.Formatters)
 
-	if err = cache.Open(Cli.TreeRoot, Cli.ClearCache); err != nil {
+	if err = cache.Open(Cli.TreeRoot, Cli.ClearCache, cfg.Formatters); err != nil {
 		return err
 	}
 
@@ -110,12 +111,15 @@ func (f *Format) Run() error {
 	eg.Go(func() error {
 		batchSize := 1024
 		batch := make([]string, batchSize)
+		batch = batch[:0]
 
 		var pending, completed, changes int
 
 	LOOP:
 		for {
 			select {
+			case <-ctx.Done():
+				return ctx.Err()
 			case _, ok := <-pendingCh:
 				if ok {
 					pending += 1
