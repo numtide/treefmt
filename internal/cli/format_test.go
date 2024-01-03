@@ -179,6 +179,27 @@ func TestCache(t *testing.T) {
 	as.Contains(string(out), "0 files changed")
 }
 
+func TestFailOnChange(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/echo.toml"
+
+	// test without any excludes
+	config := format.Config{
+		Formatters: map[string]*format.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, config)
+	_, err := cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+	as.ErrorIs(err, ErrFailOnChange)
+}
+
 func TestBustCacheOnFormatterChange(t *testing.T) {
 	as := require.New(t)
 

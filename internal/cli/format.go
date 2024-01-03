@@ -18,6 +18,8 @@ import (
 
 type Format struct{}
 
+var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
+
 func (f *Format) Run() error {
 	start := time.Now()
 
@@ -154,6 +156,10 @@ func (f *Format) Run() error {
 			return err
 		}
 		changes += count
+
+		if Cli.FailOnChange && changes != 0 {
+			return ErrFailOnChange
+		}
 
 		fmt.Printf("%v files changed in %v", changes, time.Now().Sub(start))
 		return nil
