@@ -18,6 +18,8 @@
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-filter.url = "github:numtide/nix-filter";
   };
 
   outputs = inputs @ {flake-parts, ...}:

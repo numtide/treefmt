@@ -2,16 +2,22 @@ package walk
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/charmbracelet/log"
+	"github.com/go-git/go-git/v5/plumbing/format/index"
 
 	"github.com/go-git/go-git/v5"
 )
 
 type gitWalker struct {
-	root string
-	repo *git.Repository
+	root  string
+	paths []string
+	repo  *git.Repository
 }
 
 func (g *gitWalker) Root() string {
@@ -24,17 +30,45 @@ func (g *gitWalker) Walk(ctx context.Context, fn filepath.WalkFunc) error {
 		return fmt.Errorf("%w: failed to open index", err)
 	}
 
-	for _, entry := range idx.Entries {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			path := filepath.Join(g.root, entry.Name)
+	if len(g.paths) > 0 {
+		for _, path := range g.paths {
 
-			// stat the file
-			info, err := os.Lstat(path)
-			if err = fn(path, info, err); err != nil {
+			err = filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+				if info.IsDir() {
+					return nil
+				}
+
+				relPath, err := filepath.Rel(g.root, path)
+				if err != nil {
+					return err
+				}
+
+				if _, err = idx.Entry(relPath); errors.Is(err, index.ErrEntryNotFound) {
+					// we skip this path as it's not staged
+					log.Debugf("Path not found in git index, skipping: %v, %v", relPath, path)
+					return nil
+				}
+
+				return fn(path, info, err)
+			})
+			if err != nil {
 				return err
+			}
+
+		}
+	} else {
+		for _, entry := range idx.Entries {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				path := filepath.Join(g.root, entry.Name)
+
+				// stat the file
+				info, err := os.Lstat(path)
+				if err = fn(path, info, err); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -42,10 +76,10 @@ func (g *gitWalker) Walk(ctx context.Context, fn filepath.WalkFunc) error {
 	return nil
 }
 
-func NewGit(root string) (Walker, error) {
+func NewGit(root string, paths []string) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to open git repo", err)
 	}
-	return &gitWalker{root, repo}, nil
+	return &gitWalker{root, paths, repo}, nil
 }

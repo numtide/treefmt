@@ -2,11 +2,18 @@
   imports = [
     inputs.treefmt-nix.flakeModule
   ];
-  perSystem = {config, ...}: {
+  perSystem = {
+    config,
+    self',
+    ...
+  }: {
     treefmt.config = {
       inherit (config.flake-root) projectRootFile;
       flakeCheck = true;
       flakeFormatter = true;
+
+      package = self'.packages.default;
+
       programs = {
         alejandra.enable = true;
         deadnix.enable = true;

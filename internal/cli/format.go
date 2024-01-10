@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/internal/walk"
+
 	"git.numtide.com/numtide/treefmt/internal/config"
 
 	"git.numtide.com/numtide/treefmt/internal/cache"
@@ -18,8 +21,6 @@ import (
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
 )
-
-type Format struct{}
 
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
@@ -201,7 +202,7 @@ func (f *Format) Run() error {
 			return ErrFailOnChange
 		}
 
-		fmt.Printf("%v files changed in %v", changes, time.Now().Sub(start))
+		fmt.Printf("%v files changed in %v\n", changes, time.Now().Sub(start))
 		return nil
 	})
 
@@ -235,10 +236,24 @@ func (f *Format) Run() error {
 		return nil
 	})
 
-	eg.Go(func() error {
-		err := cache.ChangeSet(ctx, Cli.TreeRoot, Cli.Walk, pathsCh)
-		close(pathsCh)
-		return err
+	eg.Go(func() (err error) {
+		paths := Cli.Paths
+
+		if len(paths) == 0 && Cli.Stdin {
+			// read in all the paths
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				paths = append(paths, scanner.Text())
+			}
+		}
+
+		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
+		if err != nil {
+			return fmt.Errorf("%w: failed to create walker", err)
+		}
+
+		defer close(pathsCh)
+		return cache.ChangeSet(ctx, walker, pathsCh)
 	})
 
 	// listen for shutdown and call cancel if required

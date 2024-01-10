@@ -481,3 +481,103 @@ func TestOrderingFormatters(t *testing.T) {
 	as.NoError(err)
 	as.Contains(string(out), "8 files changed")
 }
+
+func TestPathsArg(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	// change working directory to temp root
+	as.NoError(os.Chdir(tempDir))
+
+	// basic config
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, cfg)
+
+	// without any path args
+	out, err := cmd(t, "-C", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+
+	// specify some explicit paths
+	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 2))
+
+	// specify a bad path
+	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
+	as.ErrorContains(err, "no such file or directory")
+}
+
+func TestStdIn(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	// change working directory to temp root
+	as.NoError(os.Chdir(tempDir))
+
+	// basic config
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, cfg)
+
+	// swap out stdin
+	prevStdIn := os.Stdin
+	stdin, err := os.CreateTemp("", "stdin")
+	as.NoError(err)
+
+	os.Stdin = stdin
+
+	t.Cleanup(func() {
+		os.Stdin = prevStdIn
+		_ = os.Remove(stdin.Name())
+	})
+
+	go func() {
+		_, err := stdin.WriteString(`treefmt.toml
+elm/elm.json
+go/main.go
+`)
+		as.NoError(err, "failed to write to stdin")
+		as.NoError(stdin.Sync())
+		_, _ = stdin.Seek(0, 0)
+	}()
+
+	out, err := cmd(t, "-C", tempDir, "--stdin")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+}

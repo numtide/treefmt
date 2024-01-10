@@ -173,7 +173,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
-func ChangeSet(ctx context.Context, root string, walkerType walk.Type, pathsCh chan<- string) error {
+func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) error {
 	var tx *bolt.Tx
 	var bucket *bolt.Bucket
 	var processed int
@@ -185,12 +185,7 @@ func ChangeSet(ctx context.Context, root string, walkerType walk.Type, pathsCh c
 		}
 	}()
 
-	w, err := walk.New(walkerType, root)
-	if err != nil {
-		return fmt.Errorf("%w: failed to create walker", err)
-	}
-
-	return w.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+	return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
