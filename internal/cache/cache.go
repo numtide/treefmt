@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"time"
+
+	"git.numtide.com/numtide/treefmt/internal/walk"
 
 	"git.numtide.com/numtide/treefmt/internal/format"
 	"github.com/charmbracelet/log"
@@ -172,7 +173,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
-func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
+func ChangeSet(ctx context.Context, root string, walkerType walk.Type, pathsCh chan<- string) error {
 	var tx *bolt.Tx
 	var bucket *bolt.Bucket
 	var processed int
@@ -184,14 +185,22 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 		}
 	}()
 
-	return filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf("%w: failed to walk path", err)
-		} else if ctx.Err() != nil {
+	w, err := walk.New(walkerType, root)
+	if err != nil {
+		return fmt.Errorf("%w: failed to create walker", err)
+	}
+
+	return w.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+		select {
+		case <-ctx.Done():
 			return ctx.Err()
-		} else if info.IsDir() {
-			// todo what about symlinks?
-			return nil
+		default:
+			if err != nil {
+				return fmt.Errorf("%w: failed to walk path", err)
+			} else if info.IsDir() {
+				// ignore directories
+				return nil
+			}
 		}
 
 		// ignore symlinks
@@ -222,7 +231,12 @@ func ChangeSet(ctx context.Context, root string, pathsCh chan<- string) error {
 		}
 
 		// pass on the path
-		pathsCh <- path
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			pathsCh <- path
+		}
 
 		// close the current tx if we have reached the batch size
 		processed += 1

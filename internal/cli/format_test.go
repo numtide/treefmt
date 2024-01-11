@@ -4,9 +4,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"testing"
 
 	"git.numtide.com/numtide/treefmt/internal/test"
+	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 
 	"git.numtide.com/numtide/treefmt/internal/format"
 	"github.com/stretchr/testify/require"
@@ -342,4 +348,59 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	out, err = cmd(t, args...)
 	as.NoError(err)
 	as.Contains(string(out), "0 files changed")
+}
+
+func TestGitWorktree(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	// basic config
+	config := format.Config{
+		Formatters: map[string]*format.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, config)
+
+	// init a git repo
+	repo, err := git.Init(
+		filesystem.NewStorage(
+			osfs.New(path.Join(tempDir, ".git")),
+			cache.NewObjectLRUDefault(),
+		),
+		osfs.New(tempDir),
+	)
+	as.NoError(err, "failed to init git repository")
+
+	// get worktree
+	wt, err := repo.Worktree()
+	as.NoError(err, "failed to get git worktree")
+
+	run := func(changed int) {
+		out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+		as.NoError(err)
+		as.Contains(string(out), fmt.Sprintf("%d files changed", changed))
+	}
+
+	// run before adding anything to the worktree
+	run(0)
+
+	// add everything to the worktree
+	as.NoError(wt.AddGlob("."))
+	as.NoError(err)
+	run(29)
+
+	// remove python directory
+	as.NoError(wt.RemoveGlob("python/*"))
+	run(26)
+
+	// walk with filesystem instead of git
+	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 55))
 }

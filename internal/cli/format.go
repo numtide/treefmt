@@ -190,8 +190,9 @@ func (f *Format) Run() error {
 	})
 
 	eg.Go(func() error {
-		defer close(pathsCh)
-		return cache.ChangeSet(ctx, Cli.TreeRoot, pathsCh)
+		err := cache.ChangeSet(ctx, Cli.TreeRoot, Cli.Walk, pathsCh)
+		close(pathsCh)
+		return err
 	})
 
 	// listen for shutdown and call cancel if required

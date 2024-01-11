@@ -11,7 +11,7 @@ func CompileGlobs(patterns []string) ([]glob.Glob, error) {
 	globs := make([]glob.Glob, len(patterns))
 
 	for i, pattern := range patterns {
-		g, err := glob.Compile("**/" + pattern)
+		g, err := glob.Compile(pattern)
 		if err != nil {
 			return nil, fmt.Errorf("%w: failed to compile include pattern '%v'", err, pattern)
 		}
