@@ -8,7 +8,7 @@ type Config struct {
 		// Excludes is an optional list of glob patterns used to exclude certain files from all formatters.
 		Excludes []string
 	}
-	Formatters map[string]*Formatter `toml:"formatter"`
+	Formatters map[string]*FormatterConfig `toml:"formatter"`
 }
 
 // ReadConfigFile reads from path and unmarshals toml into a Config instance.

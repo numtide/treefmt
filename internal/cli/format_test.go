@@ -25,7 +25,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 	configPath := tempDir + "/treefmt.toml"
 
 	test.WriteConfig(t, configPath, format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"foo-fmt": {
 				Command: "foo-fmt",
 			},
@@ -39,6 +39,27 @@ func TestAllowMissingFormatter(t *testing.T) {
 	as.NoError(err)
 }
 
+func TestDependencyCycle(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := t.TempDir()
+	configPath := tempDir + "/treefmt.toml"
+
+	test.WriteConfig(t, configPath, format.Config{
+		Formatters: map[string]*format.FormatterConfig{
+			"a": {Command: "echo", Before: "b"},
+			"b": {Command: "echo", Before: "c"},
+			"c": {Command: "echo", Before: "a"},
+			"d": {Command: "echo", Before: "e"},
+			"e": {Command: "echo", Before: "f"},
+			"f": {Command: "echo"},
+		},
+	})
+
+	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.ErrorContains(err, "formatter cycle detected a -> b -> c")
+}
+
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
@@ -46,7 +67,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 	configPath := tempDir + "/treefmt.toml"
 
 	test.WriteConfig(t, configPath, format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"elm": {
 				Command:  "echo",
 				Includes: []string{"*.elm"},
@@ -95,7 +116,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 
 	// test without any excludes
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -167,7 +188,7 @@ func TestCache(t *testing.T) {
 
 	// test without any excludes
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -202,7 +223,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 
 	// test without any excludes
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -227,7 +248,7 @@ func TestFailOnChange(t *testing.T) {
 
 	// test without any excludes
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -263,7 +284,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	// start with 2 formatters
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"python": {
 				Command:  "black",
 				Includes: []string{"*.py"},
@@ -307,7 +328,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as.Contains(string(out), "0 files changed")
 
 	// add go formatter
-	config.Formatters["go"] = &format.Formatter{
+	config.Formatters["go"] = &format.FormatterConfig{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
@@ -358,7 +379,7 @@ func TestGitWorktree(t *testing.T) {
 
 	// basic config
 	config := format.Config{
-		Formatters: map[string]*format.Formatter{
+		Formatters: map[string]*format.FormatterConfig{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -403,4 +424,58 @@ func TestGitWorktree(t *testing.T) {
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 55))
+}
+
+func TestOrderingFormatters(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := path.Join(tempDir, "treefmt.toml")
+
+	// missing child
+	test.WriteConfig(t, configPath, format.Config{
+		Formatters: map[string]*format.FormatterConfig{
+			"hs-a": {
+				Command:  "echo",
+				Includes: []string{"*.hs"},
+				Before:   "hs-b",
+			},
+		},
+	})
+
+	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.ErrorContains(err, "formatter hs-a is before hs-b but config for hs-b was not found")
+
+	// multiple roots
+	test.WriteConfig(t, configPath, format.Config{
+		Formatters: map[string]*format.FormatterConfig{
+			"hs-a": {
+				Command:  "echo",
+				Includes: []string{"*.hs"},
+				Before:   "hs-b",
+			},
+			"hs-b": {
+				Command:  "echo",
+				Includes: []string{"*.hs"},
+				Before:   "hs-c",
+			},
+			"hs-c": {
+				Command:  "echo",
+				Includes: []string{"*.hs"},
+			},
+			"py-a": {
+				Command:  "echo",
+				Includes: []string{"*.py"},
+				Before:   "py-b",
+			},
+			"py-b": {
+				Command:  "echo",
+				Includes: []string{"*.py"},
+			},
+		},
+	})
+
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), "8 files changed")
 }

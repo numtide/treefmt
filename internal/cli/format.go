@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -64,8 +65,46 @@ func (f *Format) Run() error {
 		}
 	}
 
+	formatters := make(map[string]*format.Formatter)
+
+	// detect broken dependencies
+	for name, config := range cfg.Formatters {
+		before := config.Before
+		if before != "" {
+			// check child formatter exists
+			_, ok := cfg.Formatters[before]
+			if !ok {
+				return fmt.Errorf("formatter %v is before %v but config for %v was not found", name, before, before)
+			}
+		}
+	}
+
+	// dependency cycle detection
+	for name, config := range cfg.Formatters {
+		var ok bool
+		var history []string
+		childName := name
+		for {
+			// add to history
+			history = append(history, childName)
+
+			if config.Before == "" {
+				break
+			} else if config.Before == name {
+				return fmt.Errorf("formatter cycle detected %v", strings.Join(history, " -> "))
+			}
+
+			// load child config
+			childName = config.Before
+			config, ok = cfg.Formatters[config.Before]
+			if !ok {
+				return fmt.Errorf("formatter not found: %v", config.Before)
+			}
+		}
+	}
+
 	// init formatters
-	for name, formatter := range cfg.Formatters {
+	for name, config := range cfg.Formatters {
 		if !includeFormatter(name) {
 			// remove this formatter
 			delete(cfg.Formatters, name)
@@ -73,24 +112,36 @@ func (f *Format) Run() error {
 			continue
 		}
 
-		err = formatter.Init(name, globalExcludes)
+		formatter, err := format.NewFormatter(name, config, globalExcludes)
 		if errors.Is(err, format.ErrFormatterNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
-			// remove this formatter
-			delete(cfg.Formatters, name)
+			continue
 		} else if err != nil {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
 		}
+
+		formatters[name] = formatter
 	}
 
-	ctx = format.RegisterFormatters(ctx, cfg.Formatters)
+	// iterate the initialised formatters configuring parent/child relationships
+	for _, formatter := range formatters {
+		if formatter.Before() != "" {
+			child, ok := formatters[formatter.Before()]
+			if !ok {
+				// formatter has been filtered out by the user
+				formatter.ResetBefore()
+				continue
+			}
+			formatter.SetChild(child)
+			child.SetParent(formatter)
+		}
+	}
 
-	if err = cache.Open(Cli.TreeRoot, Cli.ClearCache, cfg.Formatters); err != nil {
+	if err = cache.Open(Cli.TreeRoot, Cli.ClearCache, formatters); err != nil {
 		return err
 	}
 
 	//
-	pendingCh := make(chan string, 1024)
 	completedCh := make(chan string, 1024)
 
 	ctx = format.SetCompletedChannel(ctx, completedCh)
@@ -99,8 +150,8 @@ func (f *Format) Run() error {
 	eg, ctx := errgroup.WithContext(ctx)
 
 	// start the formatters
-	for name := range cfg.Formatters {
-		formatter := cfg.Formatters[name]
+	for name := range formatters {
+		formatter := formatters[name]
 		eg.Go(func() error {
 			return formatter.Run(ctx)
 		})
@@ -114,20 +165,13 @@ func (f *Format) Run() error {
 		batchSize := 1024
 		batch := make([]string, 0, batchSize)
 
-		var pending, completed, changes int
+		var changes int
 
 	LOOP:
 		for {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case _, ok := <-pendingCh:
-				if ok {
-					pending += 1
-				} else if pending == completed {
-					break LOOP
-				}
-
 			case path, ok := <-completedCh:
 				if !ok {
 					break LOOP
@@ -140,12 +184,6 @@ func (f *Format) Run() error {
 					}
 					changes += count
 					batch = batch[:0]
-				}
-
-				completed += 1
-
-				if completed == pending {
-					close(completedCh)
 				}
 			}
 		}
@@ -166,25 +204,31 @@ func (f *Format) Run() error {
 	})
 
 	eg.Go(func() error {
-		count := 0
-
+		// pass paths to each formatter
 		for path := range pathsCh {
-			for _, formatter := range cfg.Formatters {
+			for _, formatter := range formatters {
 				if formatter.Wants(path) {
-					pendingCh <- path
-					count += 1
 					formatter.Put(path)
 				}
 			}
 		}
 
-		for _, formatter := range cfg.Formatters {
+		// indicate no more paths for each formatter
+		for _, formatter := range formatters {
+			if formatter.Parent() != nil {
+				// this formatter is not a root, it will be closed by a parent
+				continue
+			}
 			formatter.Close()
 		}
 
-		if count == 0 {
-			close(completedCh)
+		// await completion
+		for _, formatter := range formatters {
+			formatter.AwaitCompletion()
 		}
+
+		// indicate no more completion events
+		close(completedCh)
 
 		return nil
 	})
