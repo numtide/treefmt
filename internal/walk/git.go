@@ -3,9 +3,10 @@ package walk
 import (
 	"context"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"os"
 	"path/filepath"
+
+	"github.com/go-git/go-git/v5"
 )
 
 type gitWalker struct {
@@ -18,14 +19,12 @@ func (g *gitWalker) Root() string {
 }
 
 func (g *gitWalker) Walk(ctx context.Context, fn filepath.WalkFunc) error {
-
 	idx, err := g.repo.Storer.Index()
 	if err != nil {
 		return fmt.Errorf("%w: failed to open index", err)
 	}
 
 	for _, entry := range idx.Entries {
-
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -38,7 +37,6 @@ func (g *gitWalker) Walk(ctx context.Context, fn filepath.WalkFunc) error {
 				return err
 			}
 		}
-
 	}
 
 	return nil

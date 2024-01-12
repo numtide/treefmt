@@ -122,6 +122,10 @@ func (f *Formatter) SetChild(formatter *Formatter) {
 // Wants is used to test if a Formatter wants path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
 func (f *Formatter) Wants(path string) bool {
+	if f.parent != nil {
+		// we don't accept this path directly, our parent will forward it
+		return false
+	}
 	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)
 	if match {
 		f.log.Debugf("match: %v", path)

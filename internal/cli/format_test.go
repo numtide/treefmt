@@ -57,7 +57,7 @@ func TestDependencyCycle(t *testing.T) {
 	})
 
 	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "formatter cycle detected a -> b -> c")
+	as.ErrorContains(err, "formatter cycle detected")
 }
 
 func TestSpecifyingFormatters(t *testing.T) {

@@ -28,7 +28,7 @@
 
         nativeBuildInputs =
           # we need some formatters available for the tests
-          (import ./formatters.nix pkgs);
+          import ./formatters.nix pkgs;
 
         preCheck = ''
           XDG_CACHE_HOME=$(mktemp -d)
