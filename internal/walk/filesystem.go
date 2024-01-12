@@ -5,18 +5,18 @@ import (
 	"path/filepath"
 )
 
-type filesystem struct {
+type filesystemWalker struct {
 	root string
 }
 
-func (f filesystem) Root() string {
+func (f filesystemWalker) Root() string {
 	return f.root
 }
 
-func (f filesystem) Walk(_ context.Context, fn filepath.WalkFunc) error {
+func (f filesystemWalker) Walk(_ context.Context, fn filepath.WalkFunc) error {
 	return filepath.Walk(f.root, fn)
 }
 
 func NewFilesystem(root string) (Walker, error) {
-	return filesystem{root}, nil
+	return filesystemWalker{root}, nil
 }

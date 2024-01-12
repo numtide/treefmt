@@ -26,14 +26,9 @@
           "-X 'build.Version=${version}'"
         ];
 
-        # needed for git ls-files
-        buildInputs = [pkgs.git];
-
         nativeBuildInputs =
-          # needed for git ls-files
-          [pkgs.git]
           # we need some formatters available for the tests
-          ++ (import ./formatters.nix pkgs);
+          (import ./formatters.nix pkgs);
 
         preCheck = ''
           XDG_CACHE_HOME=$(mktemp -d)

@@ -1,69 +1,53 @@
 package walk
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
+	"github.com/go-git/go-git/v5"
 	"os"
-	"os/exec"
 	"path/filepath"
-
-	"golang.org/x/sync/errgroup"
 )
 
-type git struct {
+type gitWalker struct {
 	root string
+	repo *git.Repository
 }
 
-func (g *git) Root() string {
+func (g *gitWalker) Root() string {
 	return g.root
 }
 
-func (g *git) Walk(ctx context.Context, fn filepath.WalkFunc) error {
-	r, w := io.Pipe()
+func (g *gitWalker) Walk(ctx context.Context, fn filepath.WalkFunc) error {
 
-	cmd := exec.Command("git", "-C", g.root, "ls-files")
-	cmd.Stdout = w
-	cmd.Stderr = w
+	idx, err := g.repo.Storer.Index()
+	if err != nil {
+		return fmt.Errorf("%w: failed to open index", err)
+	}
 
-	eg := errgroup.Group{}
+	for _, entry := range idx.Entries {
 
-	eg.Go(func() error {
-		scanner := bufio.NewScanner(r)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			path := filepath.Join(g.root, entry.Name)
 
-		for scanner.Scan() {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				line := scanner.Text()
-				path := filepath.Join(g.root, line)
-
-				// stat the file
-				info, err := os.Lstat(path)
-				if err = fn(path, info, err); err != nil {
-					return err
-				}
+			// stat the file
+			info, err := os.Lstat(path)
+			if err = fn(path, info, err); err != nil {
+				return err
 			}
 		}
 
-		return nil
-	})
-
-	if err := w.CloseWithError(cmd.Run()); err != nil {
-		return err
 	}
 
-	return eg.Wait()
+	return nil
 }
 
 func NewGit(root string) (Walker, error) {
-	// check if we're dealing with a git repository
-	cmd := exec.Command("git", "-C", root, "rev-parse", "--is-inside-work-tree")
-	_, err := cmd.CombinedOutput()
+	repo, err := git.PlainOpen(root)
 	if err != nil {
-		return nil, fmt.Errorf("%w: git repo check failed", err)
+		return nil, fmt.Errorf("%w: failed to open git repo", err)
 	}
-	return &git{root}, nil
+	return &gitWalker{root, repo}, nil
 }
