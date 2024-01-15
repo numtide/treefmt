@@ -7,37 +7,27 @@ import (
 	"os/exec"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/internal/config"
+
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
 )
 
-// ErrFormatterNotFound is returned when the Command for a Formatter is not available.
-var ErrFormatterNotFound = errors.New("formatter not found")
-
-type FormatterConfig struct {
-	// Command is the command invoke when applying this Formatter.
-	Command string
-	// Options are an optional list of args to be passed to Command.
-	Options []string
-	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
-	Includes []string
-	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
-	Excludes []string
-	// Before is the name of another formatter which must process a path after this one
-	Before string
-}
+// ErrCommandNotFound is returned when the Command for a Formatter is not available.
+var ErrCommandNotFound = errors.New("formatter command not found in PATH")
 
 // Formatter represents a command which should be applied to a filesystem.
 type Formatter struct {
 	name   string
-	config *FormatterConfig
+	config *config.Formatter
 
 	log        *log.Logger
 	executable string // path to the executable described by Command
 
 	before string
-	parent *Formatter
+
 	child  *Formatter
+	parent *Formatter
 
 	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
@@ -68,7 +58,7 @@ func (f *Formatter) Executable() string {
 }
 
 // NewFormatter is used to create a new Formatter.
-func NewFormatter(name string, config *FormatterConfig, globalExcludes []glob.Glob) (*Formatter, error) {
+func NewFormatter(name string, config *config.Formatter, globalExcludes []glob.Glob) (*Formatter, error) {
 	var err error
 
 	f := Formatter{}
@@ -80,7 +70,7 @@ func NewFormatter(name string, config *FormatterConfig, globalExcludes []glob.Gl
 	// test if the formatter is available
 	executable, err := exec.LookPath(config.Command)
 	if errors.Is(err, exec.ErrNotFound) {
-		return nil, ErrFormatterNotFound
+		return nil, ErrCommandNotFound
 	} else if err != nil {
 		return nil, err
 	}

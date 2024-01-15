@@ -4,13 +4,14 @@ import (
 	"os"
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/internal/format"
+	"git.numtide.com/numtide/treefmt/internal/config"
+
 	"github.com/BurntSushi/toml"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
 )
 
-func WriteConfig(t *testing.T, path string, cfg format.Config) {
+func WriteConfig(t *testing.T, path string, cfg config.Config) {
 	t.Helper()
 	f, err := os.Create(path)
 	if err != nil {

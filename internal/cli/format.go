@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/internal/config"
+
 	"git.numtide.com/numtide/treefmt/internal/cache"
 	"git.numtide.com/numtide/treefmt/internal/format"
 
@@ -39,7 +41,7 @@ func (f *Format) Run() error {
 	defer cancel()
 
 	// read config
-	cfg, err := format.ReadConfigFile(Cli.ConfigFile)
+	cfg, err := config.ReadFile(Cli.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
@@ -68,8 +70,8 @@ func (f *Format) Run() error {
 	formatters := make(map[string]*format.Formatter)
 
 	// detect broken dependencies
-	for name, config := range cfg.Formatters {
-		before := config.Before
+	for name, formatterCfg := range cfg.Formatters {
+		before := formatterCfg.Before
 		if before != "" {
 			// check child formatter exists
 			_, ok := cfg.Formatters[before]
@@ -80,7 +82,7 @@ func (f *Format) Run() error {
 	}
 
 	// dependency cycle detection
-	for name, config := range cfg.Formatters {
+	for name, formatterCfg := range cfg.Formatters {
 		var ok bool
 		var history []string
 		childName := name
@@ -88,23 +90,23 @@ func (f *Format) Run() error {
 			// add to history
 			history = append(history, childName)
 
-			if config.Before == "" {
+			if formatterCfg.Before == "" {
 				break
-			} else if config.Before == name {
+			} else if formatterCfg.Before == name {
 				return fmt.Errorf("formatter cycle detected %v", strings.Join(history, " -> "))
 			}
 
 			// load child config
-			childName = config.Before
-			config, ok = cfg.Formatters[config.Before]
+			childName = formatterCfg.Before
+			formatterCfg, ok = cfg.Formatters[formatterCfg.Before]
 			if !ok {
-				return fmt.Errorf("formatter not found: %v", config.Before)
+				return fmt.Errorf("formatter not found: %v", formatterCfg.Before)
 			}
 		}
 	}
 
 	// init formatters
-	for name, config := range cfg.Formatters {
+	for name, formatterCfg := range cfg.Formatters {
 		if !includeFormatter(name) {
 			// remove this formatter
 			delete(cfg.Formatters, name)
@@ -112,8 +114,8 @@ func (f *Format) Run() error {
 			continue
 		}
 
-		formatter, err := format.NewFormatter(name, config, globalExcludes)
-		if errors.Is(err, format.ErrFormatterNotFound) && Cli.AllowMissingFormatter {
+		formatter, err := format.NewFormatter(name, formatterCfg, globalExcludes)
+		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			continue
 		} else if err != nil {

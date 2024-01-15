@@ -1,4 +1,4 @@
-package format
+package config
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 func TestReadConfigFile(t *testing.T) {
 	as := require.New(t)
 
-	cfg, err := ReadConfigFile("../../test/treefmt.toml")
+	cfg, err := ReadFile("../../test/treefmt.toml")
 	as.NoError(err, "failed to read config file")
 
 	as.NotNil(cfg)
