@@ -22,6 +22,8 @@
         modules = ../gomod2nix.toml;
 
         ldflags = [
+          "-s"
+          "-w"
           "-X 'build.Name=${pname}'"
           "-X 'build.Version=${version}'"
         ];
