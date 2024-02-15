@@ -29,8 +29,10 @@ func (f *Format) Configure() {
 	log.SetReportTimestamp(false)
 
 	if f.Verbosity == 0 {
+		log.SetLevel(log.WarnLevel)
+	} else if f.Verbosity == 1 {
 		log.SetLevel(log.InfoLevel)
-	} else if f.Verbosity > 0 {
+	} else if f.Verbosity > 1 {
 		log.SetLevel(log.DebugLevel)
 	}
 }
