@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
 	"strings"
@@ -168,6 +169,20 @@ func (f *Format) Run() error {
 
 		var changes int
 
+		processBatch := func() error {
+			if Cli.NoCache {
+				changes += len(batch)
+			} else {
+				count, err := cache.Update(batch)
+				if err != nil {
+					return err
+				}
+				changes += count
+			}
+			batch = batch[:0]
+			return nil
+		}
+
 	LOOP:
 		for {
 			select {
@@ -179,22 +194,17 @@ func (f *Format) Run() error {
 				}
 				batch = append(batch, path)
 				if len(batch) == batchSize {
-					count, err := cache.Update(batch)
-					if err != nil {
+					if err = processBatch(); err != nil {
 						return err
 					}
-					changes += count
-					batch = batch[:0]
 				}
 			}
 		}
 
 		// final flush
-		count, err := cache.Update(batch)
-		if err != nil {
+		if err = processBatch(); err != nil {
 			return err
 		}
-		changes += count
 
 		if Cli.FailOnChange && changes != 0 {
 			return ErrFailOnChange
@@ -251,6 +261,22 @@ func (f *Format) Run() error {
 		}
 
 		defer close(pathsCh)
+
+		if Cli.NoCache {
+			return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					// ignore symlinks and directories
+					if !(info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink) {
+						pathsCh <- path
+					}
+					return nil
+				}
+			})
+		}
+
 		return cache.ChangeSet(ctx, walker, pathsCh)
 	})
 

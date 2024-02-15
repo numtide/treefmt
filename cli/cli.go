@@ -11,6 +11,7 @@ var Cli = Format{}
 type Format struct {
 	AllowMissingFormatter bool               `default:"false" help:"Do not exit with error if a configured formatter is missing"`
 	WorkingDirectory      kong.ChangeDirFlag `default:"." short:"C" help:"Run as if treefmt was started in the specified working directory instead of the current working directory"`
+	NoCache               bool               `help:"Ignore the evaluation cache entirely. Useful for CI"`
 	ClearCache            bool               `short:"c" help:"Reset the evaluation cache. Use in case the cache is not precise enough"`
 	ConfigFile            string             `type:"existingfile" default:"./treefmt.toml"`
 	FailOnChange          bool               `help:"Exit with error if any changes were made. Useful for CI."`
