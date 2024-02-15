@@ -12,5 +12,7 @@ with pkgs; [
   rustfmt
   shellcheck
   shfmt
+  statix
+  deadnix
   terraform
 ]
