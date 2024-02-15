@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/internal/config"
+	config2 "git.numtide.com/numtide/treefmt/config"
+	"git.numtide.com/numtide/treefmt/format"
+	"git.numtide.com/numtide/treefmt/test"
 
-	"git.numtide.com/numtide/treefmt/internal/test"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 
-	"git.numtide.com/numtide/treefmt/internal/format"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,8 +26,8 @@ func TestAllowMissingFormatter(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"foo-fmt": {
 				Command: "foo-fmt",
 			},
@@ -47,8 +47,8 @@ func TestDependencyCycle(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"a": {Command: "echo", Before: "b"},
 			"b": {Command: "echo", Before: "c"},
 			"c": {Command: "echo", Before: "a"},
@@ -68,8 +68,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"elm": {
 				Command:  "echo",
 				Includes: []string{"*.elm"},
@@ -117,8 +117,8 @@ func TestIncludesAndExcludes(t *testing.T) {
 	configPath := tempDir + "/echo.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -129,7 +129,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 
 	// globally exclude nix files
 	cfg.Global.Excludes = []string{"*.nix"}
@@ -137,7 +137,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 28))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
 
 	// add haskell files to the global exclude
 	cfg.Global.Excludes = []string{"*.nix", "*.hs"}
@@ -145,7 +145,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 22))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 23))
 
 	echo := cfg.Formatters["echo"]
 
@@ -155,7 +155,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 20))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 21))
 
 	// remove go files from the echo formatter
 	echo.Excludes = []string{"*.py", "*.go"}
@@ -163,7 +163,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 19))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 20))
 
 	// adjust the includes for echo to only include elm files
 	echo.Includes = []string{"*.elm"}
@@ -189,8 +189,8 @@ func TestCache(t *testing.T) {
 	configPath := tempDir + "/echo.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -201,11 +201,34 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	as.Contains(string(out), "0 files changed")
+
+	// clear cache
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// clear cache
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+	as.Contains(string(out), "0 files changed")
+
+	// no cache
+	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -224,8 +247,8 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	configPath := tempDir + "/treefmt.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -239,7 +262,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	// this should fail if the working directory hasn't been changed first
 	out, err := cmd(t, "-C", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 }
 
 func TestFailOnChange(t *testing.T) {
@@ -249,8 +272,8 @@ func TestFailOnChange(t *testing.T) {
 	configPath := tempDir + "/echo.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -285,8 +308,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as.NoError(os.Setenv("PATH", binPath+":"+os.Getenv("PATH")))
 
 	// start with 2 formatters
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"python": {
 				Command:  "black",
 				Includes: []string{"*.py"},
@@ -330,7 +353,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as.Contains(string(out), "0 files changed")
 
 	// add go formatter
-	cfg.Formatters["go"] = &config.Formatter{
+	cfg.Formatters["go"] = &config2.Formatter{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
@@ -380,8 +403,8 @@ func TestGitWorktree(t *testing.T) {
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -416,16 +439,16 @@ func TestGitWorktree(t *testing.T) {
 	// add everything to the worktree
 	as.NoError(wt.AddGlob("."))
 	as.NoError(err)
-	run(29)
+	run(30)
 
 	// remove python directory
 	as.NoError(wt.RemoveGlob("python/*"))
-	run(26)
+	run(27)
 
 	// walk with filesystem instead of git
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 55))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 57))
 }
 
 func TestOrderingFormatters(t *testing.T) {
@@ -435,8 +458,8 @@ func TestOrderingFormatters(t *testing.T) {
 	configPath := path.Join(tempDir, "treefmt.toml")
 
 	// missing child
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"hs-a": {
 				Command:  "echo",
 				Includes: []string{"*.hs"},
@@ -449,8 +472,8 @@ func TestOrderingFormatters(t *testing.T) {
 	as.ErrorContains(err, "formatter hs-a is before hs-b but config for hs-b was not found")
 
 	// multiple roots
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"hs-a": {
 				Command:  "echo",
 				Includes: []string{"*.hs"},
@@ -501,8 +524,8 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(os.Chdir(tempDir))
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -514,7 +537,7 @@ func TestPathsArg(t *testing.T) {
 	// without any path args
 	out, err := cmd(t, "-C", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 
 	// specify some explicit paths
 	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
@@ -545,8 +568,8 @@ func TestStdIn(t *testing.T) {
 	as.NoError(os.Chdir(tempDir))
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},

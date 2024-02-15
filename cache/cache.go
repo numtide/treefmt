@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/internal/walk"
+	"git.numtide.com/numtide/treefmt/format"
+	"git.numtide.com/numtide/treefmt/walk"
 
-	"git.numtide.com/numtide/treefmt/internal/format"
 	"github.com/charmbracelet/log"
 
 	"github.com/adrg/xdg"

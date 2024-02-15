@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"git.numtide.com/numtide/treefmt/internal/walk"
+	"git.numtide.com/numtide/treefmt/walk"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
 )

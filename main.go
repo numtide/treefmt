@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.numtide.com/numtide/treefmt/internal/cli"
+	"git.numtide.com/numtide/treefmt/cli"
 	"github.com/alecthomas/kong"
 )
 

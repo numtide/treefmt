@@ -11,12 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/internal/walk"
-
-	"git.numtide.com/numtide/treefmt/internal/config"
-
-	"git.numtide.com/numtide/treefmt/internal/cache"
-	"git.numtide.com/numtide/treefmt/internal/format"
+	"git.numtide.com/numtide/treefmt/cache"
+	"git.numtide.com/numtide/treefmt/config"
+	format2 "git.numtide.com/numtide/treefmt/format"
+	"git.numtide.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
@@ -47,7 +45,7 @@ func (f *Format) Run() error {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
-	globalExcludes, err := format.CompileGlobs(cfg.Global.Excludes)
+	globalExcludes, err := format2.CompileGlobs(cfg.Global.Excludes)
 
 	// create optional formatter filter set
 	formatterSet := make(map[string]bool)
@@ -68,7 +66,7 @@ func (f *Format) Run() error {
 		}
 	}
 
-	formatters := make(map[string]*format.Formatter)
+	formatters := make(map[string]*format2.Formatter)
 
 	// detect broken dependencies
 	for name, formatterCfg := range cfg.Formatters {
@@ -115,8 +113,8 @@ func (f *Format) Run() error {
 			continue
 		}
 
-		formatter, err := format.NewFormatter(name, formatterCfg, globalExcludes)
-		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
+		formatter, err := format2.NewFormatter(name, formatterCfg, globalExcludes)
+		if errors.Is(err, format2.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			continue
 		} else if err != nil {
@@ -147,7 +145,7 @@ func (f *Format) Run() error {
 	//
 	completedCh := make(chan string, 1024)
 
-	ctx = format.SetCompletedChannel(ctx, completedCh)
+	ctx = format2.SetCompletedChannel(ctx, completedCh)
 
 	//
 	eg, ctx := errgroup.WithContext(ctx)
