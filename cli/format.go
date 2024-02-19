@@ -1,25 +1,25 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/internal/config"
-
-	"git.numtide.com/numtide/treefmt/internal/cache"
-	"git.numtide.com/numtide/treefmt/internal/format"
+	"git.numtide.com/numtide/treefmt/cache"
+	"git.numtide.com/numtide/treefmt/config"
+	format2 "git.numtide.com/numtide/treefmt/format"
+	"git.numtide.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
 )
-
-type Format struct{}
 
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
@@ -46,7 +46,7 @@ func (f *Format) Run() error {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
-	globalExcludes, err := format.CompileGlobs(cfg.Global.Excludes)
+	globalExcludes, err := format2.CompileGlobs(cfg.Global.Excludes)
 
 	// create optional formatter filter set
 	formatterSet := make(map[string]bool)
@@ -67,7 +67,7 @@ func (f *Format) Run() error {
 		}
 	}
 
-	formatters := make(map[string]*format.Formatter)
+	formatters := make(map[string]*format2.Formatter)
 
 	// detect broken dependencies
 	for name, formatterCfg := range cfg.Formatters {
@@ -114,8 +114,8 @@ func (f *Format) Run() error {
 			continue
 		}
 
-		formatter, err := format.NewFormatter(name, formatterCfg, globalExcludes)
-		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
+		formatter, err := format2.NewFormatter(name, formatterCfg, globalExcludes)
+		if errors.Is(err, format2.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			continue
 		} else if err != nil {
@@ -146,7 +146,7 @@ func (f *Format) Run() error {
 	//
 	completedCh := make(chan string, 1024)
 
-	ctx = format.SetCompletedChannel(ctx, completedCh)
+	ctx = format2.SetCompletedChannel(ctx, completedCh)
 
 	//
 	eg, ctx := errgroup.WithContext(ctx)
@@ -169,6 +169,20 @@ func (f *Format) Run() error {
 
 		var changes int
 
+		processBatch := func() error {
+			if Cli.NoCache {
+				changes += len(batch)
+			} else {
+				count, err := cache.Update(batch)
+				if err != nil {
+					return err
+				}
+				changes += count
+			}
+			batch = batch[:0]
+			return nil
+		}
+
 	LOOP:
 		for {
 			select {
@@ -180,28 +194,23 @@ func (f *Format) Run() error {
 				}
 				batch = append(batch, path)
 				if len(batch) == batchSize {
-					count, err := cache.Update(batch)
-					if err != nil {
+					if err = processBatch(); err != nil {
 						return err
 					}
-					changes += count
-					batch = batch[:0]
 				}
 			}
 		}
 
 		// final flush
-		count, err := cache.Update(batch)
-		if err != nil {
+		if err = processBatch(); err != nil {
 			return err
 		}
-		changes += count
 
 		if Cli.FailOnChange && changes != 0 {
 			return ErrFailOnChange
 		}
 
-		fmt.Printf("%v files changed in %v", changes, time.Now().Sub(start))
+		fmt.Printf("%v files changed in %v\n", changes, time.Now().Sub(start))
 		return nil
 	})
 
@@ -235,10 +244,40 @@ func (f *Format) Run() error {
 		return nil
 	})
 
-	eg.Go(func() error {
-		err := cache.ChangeSet(ctx, Cli.TreeRoot, Cli.Walk, pathsCh)
-		close(pathsCh)
-		return err
+	eg.Go(func() (err error) {
+		paths := Cli.Paths
+
+		if len(paths) == 0 && Cli.Stdin {
+			// read in all the paths
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				paths = append(paths, scanner.Text())
+			}
+		}
+
+		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
+		if err != nil {
+			return fmt.Errorf("%w: failed to create walker", err)
+		}
+
+		defer close(pathsCh)
+
+		if Cli.NoCache {
+			return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					// ignore symlinks and directories
+					if !(info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink) {
+						pathsCh <- path
+					}
+					return nil
+				}
+			})
+		}
+
+		return cache.ChangeSet(ctx, walker, pathsCh)
 	})
 
 	// listen for shutdown and call cancel if required

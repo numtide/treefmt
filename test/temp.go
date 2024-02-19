@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/internal/config"
+	"git.numtide.com/numtide/treefmt/config"
 
 	"github.com/BurntSushi/toml"
 	cp "github.com/otiai10/copy"
@@ -25,7 +25,7 @@ func WriteConfig(t *testing.T, path string, cfg config.Config) {
 
 func TempExamples(t *testing.T) string {
 	tempDir := t.TempDir()
-	require.NoError(t, cp.Copy("../../test/examples", tempDir), "failed to copy test data to temp dir")
+	require.NoError(t, cp.Copy("../test/examples", tempDir), "failed to copy test data to temp dir")
 	return tempDir
 }
 

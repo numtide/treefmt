@@ -111,6 +111,21 @@
         "type": "github"
       }
     },
+    "nix-filter": {
+      "locked": {
+        "lastModified": 1705332318,
+        "narHash": "sha256-kcw1yFeJe9N4PjQji9ZeX47jg0p9A0DuU4djKvg1a7I=",
+        "owner": "numtide",
+        "repo": "nix-filter",
+        "rev": "3449dc925982ad46246cfc36469baf66e1b64f17",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "nix-filter",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1707689078,
@@ -151,6 +166,7 @@
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
         "gomod2nix": "gomod2nix",
+        "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "treefmt-nix": "treefmt-nix"
       }

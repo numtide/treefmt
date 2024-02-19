@@ -13,12 +13,19 @@
     packages = rec {
       treefmt = inputs'.gomod2nix.legacyPackages.buildGoApplication rec {
         pname = "treefmt";
-        version = "0.0.1+dev";
+        version = "2.0.0+dev";
 
         # ensure we are using the same version of go to build with
         inherit (pkgs) go;
 
-        src = ../.;
+        src = let
+          filter = inputs.nix-filter.lib;
+        in
+          filter {
+            root = ../.;
+            exclude = [./nix];
+          };
+
         modules = ../gomod2nix.toml;
 
         ldflags = [

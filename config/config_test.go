@@ -9,7 +9,7 @@ import (
 func TestReadConfigFile(t *testing.T) {
 	as := require.New(t)
 
-	cfg, err := ReadFile("../../test/treefmt.toml")
+	cfg, err := ReadFile("../test/examples/treefmt.toml")
 	as.NoError(err, "failed to read config file")
 
 	as.NotNil(cfg)
@@ -52,13 +52,13 @@ func TestReadConfigFile(t *testing.T) {
 	as.Equal([]string{"*.hs"}, haskell.Includes)
 	as.Equal([]string{"examples/haskell/"}, haskell.Excludes)
 
-	// nix
-	nix, ok := cfg.Formatters["nix"]
-	as.True(ok, "nix formatter not found")
-	as.Equal("alejandra", nix.Command)
-	as.Nil(nix.Options)
-	as.Equal([]string{"*.nix"}, nix.Includes)
-	as.Equal([]string{"examples/nix/sources.nix"}, nix.Excludes)
+	// alejandra
+	alejandra, ok := cfg.Formatters["alejandra"]
+	as.True(ok, "alejandra formatter not found")
+	as.Equal("alejandra", alejandra.Command)
+	as.Nil(alejandra.Options)
+	as.Equal([]string{"*.nix"}, alejandra.Includes)
+	as.Equal([]string{"examples/nix/sources.nix"}, alejandra.Excludes)
 
 	// ruby
 	ruby, ok := cfg.Formatters["ruby"]

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/internal/config"
+	"git.numtide.com/numtide/treefmt/config"
 
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"

@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/internal/test"
+	"git.numtide.com/numtide/treefmt/test"
+
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"
 )
