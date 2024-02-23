@@ -20,6 +20,7 @@ type Format struct {
 	Walk                  walk.Type          `enum:"auto,git,filesystem" default:"auto" help:"The method used to traverse the files within --tree-root. Currently supports 'auto', 'git' or 'filesystem'."`
 	Verbosity             int                `name:"verbose" short:"v" type:"counter" default:"0" env:"LOG_LEVEL" help:"Set the verbosity of logs e.g. -vv."`
 	Version               bool               `name:"version" short:"V" help:"Print version"`
+	Init                  bool               `name:"init" short:"i" help:"Create a new treefmt.toml"`
 
 	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree."`
 	Stdin bool     `help:"Format the context passed in via stdin"`
