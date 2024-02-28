@@ -31,8 +31,8 @@
         ldflags = [
           "-s"
           "-w"
-          "-X 'build.Name=${pname}'"
-          "-X 'build.Version=${version}'"
+          "-X git.numtide.com/numtide/treefmt/build.Name=${pname}"
+          "-X git.numtide.com/numtide/treefmt/build.Version=v${version}"
         ];
 
         nativeBuildInputs =
