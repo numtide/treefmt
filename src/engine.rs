@@ -399,10 +399,6 @@ pub fn run_treefmt_stdin(
         // Just copy stdin to stdout
         io::copy(&mut io::stdin().lock(), &mut io::stdout().lock())?;
         return Ok(()); // Nothing more to do here
-    } else if formatters.len() > 1 {
-        warn!("multiple formatters matched the path. picking the first one");
-    } else {
-        info!("running {}", formatters.first().unwrap().name)
     }
 
     // Construct a "unique" filename. We want the code formatter to recognise the file type so it has the same extension.
@@ -422,11 +418,11 @@ pub fn run_treefmt_stdin(
         // Make sure the file content is written to disk.
         tmpfile.flush()?;
 
-        // Now that the file has been written, invoke the formatter.
-        formatters
-            .first()
-            .unwrap()
-            .fmt(&[tmpfile.path().to_path_buf()])?;
+        // Now that the file has been written, invoke the formatter(s).
+        for formatter in formatters.iter() {
+            formatter.fmt(&[tmpfile.path().to_path_buf()])?;
+            info!("running {}", formatter.name)
+        }
 
         // Seek back to start
         let mut tmpfile = File::open(tmpfile.path())?;
