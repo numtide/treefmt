@@ -19,6 +19,43 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Enumeration specifying filesystem scan method for modified files.
+#[derive(Debug, Clone)]
+pub enum FSScan {
+    /// Recursive walking the filesystem using getdents(2) and statx(2) system calls.
+    ///
+    /// Scales linearly with total count of files in the repository.
+    Stat,
+
+    /// Query list of modified files from external watchman(1) process.
+    ///
+    /// Watchman uses inotify(2), so this method scales linearly with count of files in
+    /// the repository that were actually modified.
+    ///
+    /// It is user responsibility to get watchman(1) process up and running and preferable
+    /// set "WATCHMAN_SOCK" environment variable. One way to set that environment variable
+    /// is to put following snippet into ~/.bashrc:
+    ///
+    /// export WATCHMAN_SOCK=$(watchman get-sockname | jq .sockname -r)
+    Watchman,
+
+    /// Try to use watchman(1), and silently fall back on stat should it fail.
+    Auto,
+}
+
+impl std::str::FromStr for FSScan {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "stat" => Ok(Self::Stat),
+            "watchman" => Ok(Self::Watchman),
+            "auto" => Ok(Self::Auto),
+            _ => Err(format!("Unknown file-system scan method: {s}")),
+        }
+    }
+}
+
 /// ✨  format all your language!
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -84,6 +121,10 @@ pub struct Cli {
     /// Select formatters name to apply. Defaults to all formatters.
     #[arg(short, long)]
     pub formatters: Option<Vec<String>>,
+
+    /// Select filesystem scan method (stat, watchman, auto).
+    #[arg(long, default_value = "auto")]
+    pub fs_scan: FSScan,
 }
 
 fn current_dir() -> anyhow::Result<PathBuf> {
@@ -173,6 +214,7 @@ pub fn run_cli(cli: &Cli) -> anyhow::Result<()> {
                         cli.fail_on_change,
                         cli.allow_missing_formatter,
                         &cli.formatters,
+                        &cli.fs_scan,
                     )?
                 }
             }

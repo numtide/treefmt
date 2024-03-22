@@ -1,3 +1,4 @@
+use crate::command::FSScan;
 use crate::engine::run_treefmt;
 use anyhow::anyhow;
 use directories::ProjectDirs;
@@ -18,6 +19,7 @@ pub async fn format_cmd(
     fail_on_change: bool,
     allow_missing_formatter: bool,
     selected_formatters: &Option<Vec<String>>,
+    fs_scan: &FSScan,
 ) -> anyhow::Result<()> {
     let proj_dirs = match ProjectDirs::from("com", "NumTide", "treefmt") {
         Some(x) => x,
@@ -52,23 +54,21 @@ pub async fn format_cmd(
         paths
     );
 
-    let client = match Connector::new().connect().await {
-        Err(e) => {
-            warn!(
-                "watchman is not available (err = {:?}), falling back on stat(2)",
-                e
-            );
-            None
-        }
-        Ok(c) => {
+    let client = match fs_scan {
+        FSScan::Stat => None,
+        FSScan::Watchman => {
             // This is important. Subprocess wastes ~20ms.
             if !std::env::var("WATCHMAN_SOCK").is_ok() {
                 warn!(
                     "Environment variable `WATCHMAN_SOCK' is not set, falling back on subprocess"
                 );
             };
-            Some(c)
+            match Connector::new().connect().await {
+                Err(e) => return Err(anyhow!("watchman is not available (err = {:?})", e)),
+                Ok(c) => Some(c),
+            }
         }
+        FSScan::Auto => Connector::new().connect().await.ok(),
     };
 
     // Finally run the main formatter logic from the engine.
