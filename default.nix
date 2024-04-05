@@ -12,7 +12,7 @@
 let
   lib = nixpkgs.lib;
 
-  # Override license so that we can build zerotierone without
+  # Override license so that we can build terraform without
   # having to re-import nixpkgs.
   terraform' = nixpkgs.terraform.overrideAttrs (old: { meta = { }; });
 
