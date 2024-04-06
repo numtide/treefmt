@@ -235,14 +235,16 @@ fn load_formatters(
     selected_formatters: &Option<Vec<String>>,
     stats: &mut Statistics,
 ) -> anyhow::Result<BTreeMap<FormatterName, Formatter>> {
-    let mut expected_count = 0;
     let formatter = root.formatter;
+    let expected_count = match selected_formatters {
+        Some(f) => f.len(),
+        None => formatter.len(),
+    };
     let global_excludes = root.global.map(|g| g.excludes).unwrap_or_default();
     let formatters =
         formatter
             .into_iter()
             .fold(BTreeMap::new(), |mut sum, (name, mut fmt_config)| {
-                expected_count += 1;
                 fmt_config.excludes.extend_from_slice(&global_excludes);
                 match Formatter::from_config(tree_root, &name, &fmt_config) {
                     Ok(fmt_matcher) => match selected_formatters {
@@ -749,6 +751,42 @@ mod tests {
         .unwrap();
 
         assert_eq!(formatters.len(), 2);
+    }
+    #[test]
+    fn test_formatter_loading_selected() {
+        let tmpdir = utils::tmp_mkdir();
+
+        let black = tmpdir.path().join("black");
+        let nixpkgs_fmt = tmpdir.path().join("nixpkgs-fmt");
+        utils::write_binary_file(&nixpkgs_fmt, " ");
+
+        let config = format!(
+            "
+        [formatter.python]
+        command = {black:?}
+        includes = [\"*.py\"]
+
+        [formatter.nix]
+        command = {nixpkgs_fmt:?}
+        includes = [\"*.nix\"]
+        "
+        );
+
+        let root = from_string(&config).unwrap();
+        let tree_root = tmpdir.path();
+
+        let selected_formatters = Some(vec!["nix".into()]);
+        let allow_missing_formatter = false;
+        let mut stats = Statistics::init();
+
+        load_formatters(
+            root,
+            tree_root,
+            allow_missing_formatter,
+            &selected_formatters,
+            &mut stats,
+        )
+        .unwrap();
     }
     #[test]
     #[should_panic]
