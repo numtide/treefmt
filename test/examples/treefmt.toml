@@ -31,12 +31,12 @@ command = "alejandra"
 includes = ["*.nix"]
 # Act as an example on how to exclude specific files
 excludes = ["examples/nix/sources.nix"]
-# Make this run before deadnix
-# Note this formatter determines the file set for any 'downstream' formatters
-before = "deadnix"
+pipeline = "nix"
 
 [formatter.deadnix]
 command = "deadnix"
+includes = ["*.nix"]
+pipeline = "nix"
 
 [formatter.ruby]
 command = "rufo"

@@ -41,27 +41,6 @@ func TestAllowMissingFormatter(t *testing.T) {
 	as.NoError(err)
 }
 
-func TestDependencyCycle(t *testing.T) {
-	as := require.New(t)
-
-	tempDir := t.TempDir()
-	configPath := tempDir + "/treefmt.toml"
-
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"a": {Command: "echo", Before: "b"},
-			"b": {Command: "echo", Before: "c"},
-			"c": {Command: "echo", Before: "a"},
-			"d": {Command: "echo", Before: "e"},
-			"e": {Command: "echo", Before: "f"},
-			"f": {Command: "echo"},
-		},
-	})
-
-	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "formatter cycle detected")
-}
-
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
@@ -449,60 +428,6 @@ func TestGitWorktree(t *testing.T) {
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 57))
-}
-
-func TestOrderingFormatters(t *testing.T) {
-	as := require.New(t)
-
-	tempDir := test.TempExamples(t)
-	configPath := path.Join(tempDir, "treefmt.toml")
-
-	// missing child
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"hs-a": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-b",
-			},
-		},
-	})
-
-	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "formatter hs-a is before hs-b but config for hs-b was not found")
-
-	// multiple roots
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"hs-a": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-b",
-			},
-			"hs-b": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-c",
-			},
-			"hs-c": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-			},
-			"py-a": {
-				Command:  "echo",
-				Includes: []string{"*.py"},
-				Before:   "py-b",
-			},
-			"py-b": {
-				Command:  "echo",
-				Includes: []string{"*.py"},
-			},
-		},
-	})
-
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-	as.Contains(string(out), "8 files changed")
 }
 
 func TestPathsArg(t *testing.T) {
