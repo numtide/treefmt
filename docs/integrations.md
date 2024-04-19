@@ -4,6 +4,6 @@
 
 Here is a list of projects that integrate with treefmt.
 
-## the vim null-ls plugin
+## The [none-ls](https://github.com/nvimtools/none-ls.nvim) neovim plugin
 
-See <https://github.com/jose-elias-alvarez/null-ls.nvim/pull/1512> for usage.
+See <https://github.com/nvimtools/none-ls.nvim/blob/main/doc/BUILTINS.md#treefmt> for usage.
