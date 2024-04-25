@@ -23,7 +23,7 @@ func (p *Pipeline) Wants(path string) bool {
 
 func (p *Pipeline) Apply(ctx context.Context, paths []string) error {
 	for _, f := range p.sequence {
-		if err := f.Apply(ctx, paths); err != nil {
+		if err := f.Apply(ctx, paths, len(p.sequence) > 1); err != nil {
 			return err
 		}
 	}

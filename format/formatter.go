@@ -27,6 +27,8 @@ type Formatter struct {
 	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
 	excludes []glob.Glob
+
+	batch []string
 }
 
 // Executable returns the path to the executable defined by Command
@@ -34,29 +36,52 @@ func (f *Formatter) Executable() string {
 	return f.executable
 }
 
-func (f *Formatter) Apply(ctx context.Context, paths []string) error {
-	// only apply if the resultant batch is not empty
-	if len(paths) > 0 {
-		// construct args, starting with config
-		args := f.config.Options
+func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) error {
+	// construct args, starting with config
+	args := f.config.Options
 
-		// append each file path
+	// If filter is true it indicates we are executing as part of a pipeline.
+	// In such a scenario each formatter must sub filter the paths provided as different formatters might want different
+	// files in a pipeline.
+	if filter {
+		// reset the batch
+		f.batch = f.batch[:]
+
+		// filter paths
 		for _, path := range paths {
-			args = append(args, path)
+			if f.Wants(path) {
+				f.batch = append(f.batch, path)
+			}
 		}
 
-		// execute
-		start := time.Now()
-		cmd := exec.CommandContext(ctx, f.config.Command, args...)
-
-		if out, err := cmd.CombinedOutput(); err != nil {
-			f.log.Debugf("\n%v", string(out))
-			// todo log output
-			return err
+		// exit early if nothing to process
+		if len(f.batch) == 0 {
+			return nil
 		}
 
-		f.log.Infof("%v files processed in %v", len(paths), time.Now().Sub(start))
+		// append paths to the args
+		args = append(args, f.batch...)
+	} else {
+		// exit early if nothing to process
+		if len(paths) == 0 {
+			return nil
+		}
+
+		// append paths to the args
+		args = append(args, paths...)
 	}
+
+	// execute the command
+	start := time.Now()
+	cmd := exec.CommandContext(ctx, f.config.Command, args...)
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		f.log.Debugf("\n%v", string(out))
+		// todo log output
+		return err
+	}
+
+	f.log.Infof("%v files processed in %v", len(paths), time.Now().Sub(start))
 
 	return nil
 }
@@ -95,7 +120,11 @@ func NewFormatter(
 	f.executable = executable
 
 	// initialise internal state
-	f.log = log.WithPrefix("format | " + name)
+	if config.Pipeline == "" {
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
+	} else {
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", config.Pipeline, name))
+	}
 
 	f.includes, err = CompileGlobs(config.Includes)
 	if err != nil {
