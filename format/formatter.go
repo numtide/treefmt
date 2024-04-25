@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -23,6 +24,7 @@ type Formatter struct {
 
 	log        *log.Logger
 	executable string // path to the executable described by Command
+	workingDir string
 
 	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
@@ -37,6 +39,8 @@ func (f *Formatter) Executable() string {
 }
 
 func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) error {
+	start := time.Now()
+
 	// construct args, starting with config
 	args := f.config.Options
 
@@ -45,7 +49,7 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 	// files in a pipeline.
 	if filter {
 		// reset the batch
-		f.batch = f.batch[:]
+		f.batch = f.batch[:0]
 
 		// filter paths
 		for _, path := range paths {
@@ -72,14 +76,17 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 	}
 
 	// execute the command
-	start := time.Now()
 	cmd := exec.CommandContext(ctx, f.config.Command, args...)
+	cmd.Dir = f.workingDir
 
 	if out, err := cmd.CombinedOutput(); err != nil {
-		f.log.Debugf("\n%v", string(out))
-		// todo log output
-		return err
+		if len(out) > 0 {
+			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
+		}
+		return fmt.Errorf("%w: formatter %s failed to apply", err, f.name)
 	}
+
+	//
 
 	f.log.Infof("%v files processed in %v", len(paths), time.Now().Sub(start))
 
@@ -99,6 +106,7 @@ func (f *Formatter) Wants(path string) bool {
 // NewFormatter is used to create a new Formatter.
 func NewFormatter(
 	name string,
+	treeRoot string,
 	config *config.Formatter,
 	globalExcludes []glob.Glob,
 ) (*Formatter, error) {
@@ -109,6 +117,7 @@ func NewFormatter(
 	// capture config and the formatter's name
 	f.name = name
 	f.config = config
+	f.workingDir = treeRoot
 
 	// test if the formatter is available
 	executable, err := exec.LookPath(config.Command)

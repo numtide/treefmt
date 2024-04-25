@@ -8,7 +8,10 @@ import (
 	"io/fs"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -83,7 +86,7 @@ func (f *Format) Run() (err error) {
 
 	// init formatters
 	for name, formatterCfg := range cfg.Formatters {
-		formatter, err := format.NewFormatter(name, formatterCfg, globalExcludes)
+		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			continue
@@ -129,7 +132,7 @@ func (f *Format) Run() (err error) {
 
 	// create a channel for paths to be processed
 	// we use a multiple of batch size here to allow for greater concurrency
-	pathsCh = make(chan string, 10*BatchSize)
+	pathsCh = make(chan string, BatchSize*runtime.NumCPU())
 
 	// create a channel for tracking paths that have been processed
 	processedCh = make(chan string, cap(pathsCh))
@@ -148,10 +151,22 @@ func walkFilesystem(ctx context.Context) func() error {
 		paths := Cli.Paths
 
 		if len(paths) == 0 && Cli.Stdin {
+
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("%w: failed to determine current working directory", err)
+			}
+
 			// read in all the paths
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
-				paths = append(paths, scanner.Text())
+				path := scanner.Text()
+				if !strings.HasPrefix(path, "/") {
+					// append the cwd
+					path = filepath.Join(cwd, path)
+				}
+
+				paths = append(paths, path)
 			}
 		}
 
@@ -194,7 +209,7 @@ func updateCache(ctx context.Context) func() error {
 			if Cli.NoCache {
 				changes += len(batch)
 			} else {
-				count, err := cache.Update(batch)
+				count, err := cache.Update(Cli.TreeRoot, batch)
 				if err != nil {
 					return err
 				}
@@ -278,7 +293,7 @@ func applyFormatters(ctx context.Context) func() error {
 			if len(batch) > 0 {
 				fg.Go(func() error {
 					if err := pipeline.Apply(ctx, batch); err != nil {
-						return fmt.Errorf("%w: pipeline failure, %s", err, key)
+						return fmt.Errorf("%s failure: %w", key, err)
 					}
 					for _, path := range batch {
 						processedCh <- path

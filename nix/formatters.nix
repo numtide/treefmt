@@ -6,6 +6,7 @@ with pkgs; [
   haskellPackages.cabal-fmt
   haskellPackages.ormolu
   mdsh
+  nixpkgs-fmt
   nodePackages.prettier
   python3.pkgs.black
   rufo
