@@ -1,6 +1,9 @@
 package format
 
-import "context"
+import (
+	"context"
+	"slices"
+)
 
 type Pipeline struct {
 	sequence []*Formatter
@@ -8,6 +11,10 @@ type Pipeline struct {
 
 func (p *Pipeline) Add(f *Formatter) {
 	p.sequence = append(p.sequence, f)
+	// sort by priority in ascending order
+	slices.SortFunc(p.sequence, func(a, b *Formatter) int {
+		return a.config.Priority - b.config.Priority
+	})
 }
 
 func (p *Pipeline) Wants(path string) bool {
