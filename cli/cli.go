@@ -27,7 +27,7 @@ type Format struct {
 }
 
 func (f *Format) Configure() {
-	log.SetReportTimestamp(true)
+	log.SetReportTimestamp(false)
 
 	if f.Verbosity == 0 {
 		log.SetLevel(log.WarnLevel)
