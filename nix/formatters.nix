@@ -16,4 +16,17 @@ with pkgs; [
   statix
   deadnix
   terraform
+  # util for unit testing
+  (pkgs.writeShellApplication {
+    name = "test-fmt";
+    text = ''
+      VALUE="$1"
+      shift
+
+      # append value to each file
+      for FILE in "$@"; do
+          echo "$VALUE" >> "$FILE"
+      done
+    '';
+  })
 ]

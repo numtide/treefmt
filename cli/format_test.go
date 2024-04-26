@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	config2 "git.numtide.com/numtide/treefmt/config"
@@ -23,7 +25,7 @@ import (
 func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 
-	tempDir := t.TempDir()
+	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
 	test.WriteConfig(t, configPath, config2.Config{
@@ -528,4 +530,64 @@ go/main.go
 	out, err := cmd(t, "-C", tempDir, "--stdin")
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+}
+
+func TestDeterministicOrderingInPipeline(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/treefmt.toml"
+
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
+			// a and b should execute in lexicographical order as they have default priority 0, with c last since it has
+			// priority 1
+			"fmt-a": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-a"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+			},
+			"fmt-b": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-b"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+			},
+			"fmt-c": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-c"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+				Priority: 1,
+			},
+		},
+	})
+
+	_, err := cmd(t, "-C", tempDir)
+	as.NoError(err)
+
+	matcher := regexp.MustCompile("^fmt-(.*)")
+
+	// check each affected file for the sequence of test statements which should be prepended to the end
+	sequence := []string{"fmt-a", "fmt-b", "fmt-c"}
+	paths := []string{"python/main.py", "python/virtualenv_proxy.py"}
+
+	for _, p := range paths {
+		file, err := os.Open(filepath.Join(tempDir, p))
+		as.NoError(err)
+		scanner := bufio.NewScanner(file)
+
+		idx := 0
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			matches := matcher.FindAllString(line, -1)
+			if len(matches) != 1 {
+				continue
+			}
+			as.Equal(sequence[idx], matches[0])
+			idx += 1
+		}
+	}
 }

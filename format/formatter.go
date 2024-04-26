@@ -93,7 +93,7 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 	return nil
 }
 
-// Wants is used to test if a Formatter wants path based on it's configured Includes and Excludes patterns.
+// Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
 func (f *Formatter) Wants(path string) bool {
 	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)

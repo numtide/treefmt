@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -84,8 +85,18 @@ func (f *Format) Run() (err error) {
 		}
 	}
 
+	// sort the formatter names so that, as we construct pipelines, we add formatters in a determinstic fashion. This
+	// ensures a deterministic order even when all priority values are the same e.g. 0
+
+	names := make([]string, 0, len(cfg.Formatters))
+	for name := range cfg.Formatters {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
 	// init formatters
-	for name, formatterCfg := range cfg.Formatters {
+	for _, name := range names {
+		formatterCfg := cfg.Formatters[name]
 		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
