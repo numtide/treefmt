@@ -8,23 +8,42 @@ import (
 	"io/fs"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
+	"slices"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/format"
+	"github.com/gobwas/glob"
+
 	"git.numtide.com/numtide/treefmt/cache"
 	"git.numtide.com/numtide/treefmt/config"
-	format2 "git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
 )
 
-var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
+const (
+	BatchSize = 1024
+)
 
-func (f *Format) Run() error {
-	start := time.Now()
+var (
+	start          time.Time
+	globalExcludes []glob.Glob
+	formatters     map[string]*format.Formatter
+	pipelines      map[string]*format.Pipeline
+	pathsCh        chan string
+	processedCh    chan string
+
+	ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
+)
+
+func (f *Format) Run() (err error) {
+	start = time.Now()
 
 	Cli.Configure()
 
@@ -36,86 +55,50 @@ func (f *Format) Run() error {
 		}
 	}()
 
-	// create an overall context
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	// read config
 	cfg, err := config.ReadFile(Cli.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
-	globalExcludes, err := format2.CompileGlobs(cfg.Global.Excludes)
-
-	// create optional formatter filter set
-	formatterSet := make(map[string]bool)
-	for _, name := range Cli.Formatters {
-		_, ok := cfg.Formatters[name]
-		if !ok {
-			return fmt.Errorf("%w: formatter not found in config: %v", err, name)
-		}
-		formatterSet[name] = true
+	if globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
+		return fmt.Errorf("%w: failed to compile global globs", err)
 	}
 
-	includeFormatter := func(name string) bool {
-		if len(formatterSet) == 0 {
-			return true
-		} else {
-			_, include := formatterSet[name]
-			return include
-		}
-	}
+	pipelines = make(map[string]*format.Pipeline)
+	formatters = make(map[string]*format.Formatter)
 
-	formatters := make(map[string]*format2.Formatter)
-
-	// detect broken dependencies
-	for name, formatterCfg := range cfg.Formatters {
-		before := formatterCfg.Before
-		if before != "" {
-			// check child formatter exists
-			_, ok := cfg.Formatters[before]
+	// filter formatters
+	if len(Cli.Formatters) > 0 {
+		// first check the cli formatter list is valid
+		for _, name := range Cli.Formatters {
+			_, ok := cfg.Formatters[name]
 			if !ok {
-				return fmt.Errorf("formatter %v is before %v but config for %v was not found", name, before, before)
+				return fmt.Errorf("formatter not found in config: %v", name)
+			}
+		}
+		// next we remove any formatter configs that were not specified
+		for name := range cfg.Formatters {
+			if !slices.Contains(Cli.Formatters, name) {
+				delete(cfg.Formatters, name)
 			}
 		}
 	}
 
-	// dependency cycle detection
-	for name, formatterCfg := range cfg.Formatters {
-		var ok bool
-		var history []string
-		childName := name
-		for {
-			// add to history
-			history = append(history, childName)
+	// sort the formatter names so that, as we construct pipelines, we add formatters in a determinstic fashion. This
+	// ensures a deterministic order even when all priority values are the same e.g. 0
 
-			if formatterCfg.Before == "" {
-				break
-			} else if formatterCfg.Before == name {
-				return fmt.Errorf("formatter cycle detected %v", strings.Join(history, " -> "))
-			}
-
-			// load child config
-			childName = formatterCfg.Before
-			formatterCfg, ok = cfg.Formatters[formatterCfg.Before]
-			if !ok {
-				return fmt.Errorf("formatter not found: %v", formatterCfg.Before)
-			}
-		}
+	names := make([]string, 0, len(cfg.Formatters))
+	for name := range cfg.Formatters {
+		names = append(names, name)
 	}
+	sort.Strings(names)
 
 	// init formatters
-	for name, formatterCfg := range cfg.Formatters {
-		if !includeFormatter(name) {
-			// remove this formatter
-			delete(cfg.Formatters, name)
-			l.Debugf("formatter %v is not in formatter list %v, skipping", name, Cli.Formatters)
-			continue
-		}
-
-		formatter, err := format2.NewFormatter(name, formatterCfg, globalExcludes)
-		if errors.Is(err, format2.ErrCommandNotFound) && Cli.AllowMissingFormatter {
+	for _, name := range names {
+		formatterCfg := cfg.Formatters[name]
+		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
+		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
 			l.Debugf("formatter not found: %v", name)
 			continue
 		} else if err != nil {
@@ -123,141 +106,84 @@ func (f *Format) Run() error {
 		}
 
 		formatters[name] = formatter
-	}
 
-	// iterate the initialised formatters configuring parent/child relationships
-	for _, formatter := range formatters {
-		if formatter.Before() != "" {
-			child, ok := formatters[formatter.Before()]
+		if formatterCfg.Pipeline == "" {
+			pipeline := format.Pipeline{}
+			pipeline.Add(formatter)
+			pipelines[name] = &pipeline
+		} else {
+			key := fmt.Sprintf("p:%s", formatterCfg.Pipeline)
+			pipeline, ok := pipelines[key]
 			if !ok {
-				// formatter has been filtered out by the user
-				formatter.ResetBefore()
-				continue
+				pipeline = &format.Pipeline{}
+				pipelines[key] = pipeline
 			}
-			formatter.SetChild(child)
-			child.SetParent(formatter)
+			pipeline.Add(formatter)
 		}
 	}
 
+	// open the cache
 	if err = cache.Open(Cli.TreeRoot, Cli.ClearCache, formatters); err != nil {
 		return err
 	}
 
-	//
-	completedCh := make(chan string, 1024)
+	// create an app context and listen for shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ctx = format2.SetCompletedChannel(ctx, completedCh)
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+		<-exit
+		cancel()
+	}()
 
-	//
+	// create some groups for concurrent processing and control flow
 	eg, ctx := errgroup.WithContext(ctx)
 
-	// start the formatters
-	for name := range formatters {
-		formatter := formatters[name]
-		eg.Go(func() error {
-			return formatter.Run(ctx)
-		})
-	}
+	// create a channel for paths to be processed
+	// we use a multiple of batch size here to allow for greater concurrency
+	pathsCh = make(chan string, BatchSize*runtime.NumCPU())
 
-	// determine paths to be formatted
-	pathsCh := make(chan string, 1024)
+	// create a channel for tracking paths that have been processed
+	processedCh = make(chan string, cap(pathsCh))
 
-	// update cache as paths are completed
-	eg.Go(func() error {
-		batchSize := 1024
-		batch := make([]string, 0, batchSize)
+	// start concurrent processing tasks
+	eg.Go(updateCache(ctx))
+	eg.Go(applyFormatters(ctx))
+	eg.Go(walkFilesystem(ctx))
 
-		var changes int
+	// wait for everything to complete
+	return eg.Wait()
+}
 
-		processBatch := func() error {
-			if Cli.NoCache {
-				changes += len(batch)
-			} else {
-				count, err := cache.Update(batch)
-				if err != nil {
-					return err
-				}
-				changes += count
-			}
-			batch = batch[:0]
-			return nil
-		}
-
-	LOOP:
-		for {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case path, ok := <-completedCh:
-				if !ok {
-					break LOOP
-				}
-				batch = append(batch, path)
-				if len(batch) == batchSize {
-					if err = processBatch(); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		// final flush
-		if err = processBatch(); err != nil {
-			return err
-		}
-
-		if Cli.FailOnChange && changes != 0 {
-			return ErrFailOnChange
-		}
-
-		fmt.Printf("%v files changed in %v\n", changes, time.Now().Sub(start))
-		return nil
-	})
-
-	eg.Go(func() error {
-		// pass paths to each formatter
-		for path := range pathsCh {
-			for _, formatter := range formatters {
-				if formatter.Wants(path) {
-					formatter.Put(path)
-				}
-			}
-		}
-
-		// indicate no more paths for each formatter
-		for _, formatter := range formatters {
-			if formatter.Parent() != nil {
-				// this formatter is not a root, it will be closed by a parent
-				continue
-			}
-			formatter.Close()
-		}
-
-		// await completion
-		for _, formatter := range formatters {
-			formatter.AwaitCompletion()
-		}
-
-		// indicate no more completion events
-		close(completedCh)
-
-		return nil
-	})
-
-	eg.Go(func() (err error) {
+func walkFilesystem(ctx context.Context) func() error {
+	return func() error {
 		paths := Cli.Paths
 
 		if len(paths) == 0 && Cli.Stdin {
+
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("%w: failed to determine current working directory", err)
+			}
+
 			// read in all the paths
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
-				paths = append(paths, scanner.Text())
+				path := scanner.Text()
+				if !strings.HasPrefix(path, "/") {
+					// append the cwd
+					path = filepath.Join(cwd, path)
+				}
+
+				paths = append(paths, path)
 			}
 		}
 
 		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
 		if err != nil {
-			return fmt.Errorf("%w: failed to create walker", err)
+			return fmt.Errorf("failed to create walker: %w", err)
 		}
 
 		defer close(pathsCh)
@@ -277,16 +203,140 @@ func (f *Format) Run() error {
 			})
 		}
 
-		return cache.ChangeSet(ctx, walker, pathsCh)
-	})
+		if err = cache.ChangeSet(ctx, walker, pathsCh); err != nil {
+			return fmt.Errorf("failed to generate change set: %w", err)
+		}
+		return nil
+	}
+}
 
-	// listen for shutdown and call cancel if required
-	go func() {
-		exit := make(chan os.Signal, 1)
-		signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
-		<-exit
-		cancel()
-	}()
+func updateCache(ctx context.Context) func() error {
+	return func() error {
+		batch := make([]string, 0, BatchSize)
 
-	return eg.Wait()
+		var changes int
+
+		processBatch := func() error {
+			if Cli.NoCache {
+				changes += len(batch)
+			} else {
+				count, err := cache.Update(Cli.TreeRoot, batch)
+				if err != nil {
+					return err
+				}
+				changes += count
+			}
+			batch = batch[:0]
+			return nil
+		}
+
+	LOOP:
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case path, ok := <-processedCh:
+				if !ok {
+					break LOOP
+				}
+				batch = append(batch, path)
+				if len(batch) == BatchSize {
+					if err := processBatch(); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		// final flush
+		if err := processBatch(); err != nil {
+			return err
+		}
+
+		if Cli.FailOnChange && changes != 0 {
+			return ErrFailOnChange
+		}
+
+		fmt.Printf("%v files changed in %v\n", changes, time.Now().Sub(start))
+		return nil
+	}
+}
+
+func applyFormatters(ctx context.Context) func() error {
+	fg, ctx := errgroup.WithContext(ctx)
+	batches := make(map[string][]string)
+
+	tryApply := func(key string, path string) {
+		batch, ok := batches[key]
+		if !ok {
+			batch = make([]string, 0, BatchSize)
+		}
+		batch = append(batch, path)
+		batches[key] = batch
+
+		if len(batch) == BatchSize {
+			pipeline := pipelines[key]
+
+			// copy the batch
+			paths := make([]string, len(batch))
+			copy(paths, batch)
+
+			fg.Go(func() error {
+				if err := pipeline.Apply(ctx, paths); err != nil {
+					return err
+				}
+				for _, path := range paths {
+					processedCh <- path
+				}
+				return nil
+			})
+
+			batches[key] = batch[:0]
+		}
+	}
+
+	flushBatches := func() {
+		for key, pipeline := range pipelines {
+
+			batch := batches[key]
+			pipeline := pipeline // capture for closure
+
+			if len(batch) > 0 {
+				fg.Go(func() error {
+					if err := pipeline.Apply(ctx, batch); err != nil {
+						return fmt.Errorf("%s failure: %w", key, err)
+					}
+					for _, path := range batch {
+						processedCh <- path
+					}
+					return nil
+				})
+			}
+		}
+	}
+
+	return func() error {
+		defer func() {
+			// close processed channel
+			close(processedCh)
+		}()
+
+		for path := range pathsCh {
+			for key, pipeline := range pipelines {
+				if !pipeline.Wants(path) {
+					continue
+				}
+				tryApply(key, path)
+			}
+		}
+
+		// flush any partial batches which remain
+		flushBatches()
+
+		// wait for all outstanding formatting tasks to complete
+		if err := fg.Wait(); err != nil {
+			return fmt.Errorf("pipeline processing failure: %w", err)
+		}
+		return nil
+	}
 }

@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	config2 "git.numtide.com/numtide/treefmt/config"
@@ -23,7 +25,7 @@ import (
 func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 
-	tempDir := t.TempDir()
+	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
 	test.WriteConfig(t, configPath, config2.Config{
@@ -39,27 +41,6 @@ func TestAllowMissingFormatter(t *testing.T) {
 
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--allow-missing-formatter")
 	as.NoError(err)
-}
-
-func TestDependencyCycle(t *testing.T) {
-	as := require.New(t)
-
-	tempDir := t.TempDir()
-	configPath := tempDir + "/treefmt.toml"
-
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"a": {Command: "echo", Before: "b"},
-			"b": {Command: "echo", Before: "c"},
-			"c": {Command: "echo", Before: "a"},
-			"d": {Command: "echo", Before: "e"},
-			"e": {Command: "echo", Before: "f"},
-			"f": {Command: "echo"},
-		},
-	})
-
-	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "formatter cycle detected")
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
@@ -129,7 +110,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 
 	// globally exclude nix files
 	cfg.Global.Excludes = []string{"*.nix"}
@@ -137,7 +118,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 29))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
 
 	// add haskell files to the global exclude
 	cfg.Global.Excludes = []string{"*.nix", "*.hs"}
@@ -145,7 +126,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 23))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 24))
 
 	echo := cfg.Formatters["echo"]
 
@@ -155,7 +136,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 21))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 22))
 
 	// remove go files from the echo formatter
 	echo.Excludes = []string{"*.py", "*.go"}
@@ -163,7 +144,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 20))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 21))
 
 	// adjust the includes for echo to only include elm files
 	echo.Includes = []string{"*.elm"}
@@ -201,7 +182,7 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -210,7 +191,7 @@ func TestCache(t *testing.T) {
 	// clear cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -219,7 +200,7 @@ func TestCache(t *testing.T) {
 	// clear cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -228,7 +209,7 @@ func TestCache(t *testing.T) {
 	// no cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -262,7 +243,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	// this should fail if the working directory hasn't been changed first
 	out, err := cmd(t, "-C", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 }
 
 func TestFailOnChange(t *testing.T) {
@@ -439,70 +420,16 @@ func TestGitWorktree(t *testing.T) {
 	// add everything to the worktree
 	as.NoError(wt.AddGlob("."))
 	as.NoError(err)
-	run(30)
+	run(31)
 
 	// remove python directory
 	as.NoError(wt.RemoveGlob("python/*"))
-	run(27)
+	run(28)
 
 	// walk with filesystem instead of git
 	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 57))
-}
-
-func TestOrderingFormatters(t *testing.T) {
-	as := require.New(t)
-
-	tempDir := test.TempExamples(t)
-	configPath := path.Join(tempDir, "treefmt.toml")
-
-	// missing child
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"hs-a": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-b",
-			},
-		},
-	})
-
-	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "formatter hs-a is before hs-b but config for hs-b was not found")
-
-	// multiple roots
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"hs-a": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-b",
-			},
-			"hs-b": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-				Before:   "hs-c",
-			},
-			"hs-c": {
-				Command:  "echo",
-				Includes: []string{"*.hs"},
-			},
-			"py-a": {
-				Command:  "echo",
-				Includes: []string{"*.py"},
-				Before:   "py-b",
-			},
-			"py-b": {
-				Command:  "echo",
-				Includes: []string{"*.py"},
-			},
-		},
-	})
-
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-	as.Contains(string(out), "8 files changed")
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 59))
 }
 
 func TestPathsArg(t *testing.T) {
@@ -537,7 +464,7 @@ func TestPathsArg(t *testing.T) {
 	// without any path args
 	out, err := cmd(t, "-C", tempDir)
 	as.NoError(err)
-	as.Contains(string(out), fmt.Sprintf("%d files changed", 30))
+	as.Contains(string(out), fmt.Sprintf("%d files changed", 31))
 
 	// specify some explicit paths
 	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
@@ -603,4 +530,64 @@ go/main.go
 	out, err := cmd(t, "-C", tempDir, "--stdin")
 	as.NoError(err)
 	as.Contains(string(out), fmt.Sprintf("%d files changed", 3))
+}
+
+func TestDeterministicOrderingInPipeline(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/treefmt.toml"
+
+	test.WriteConfig(t, configPath, config2.Config{
+		Formatters: map[string]*config2.Formatter{
+			// a and b should execute in lexicographical order as they have default priority 0, with c last since it has
+			// priority 1
+			"fmt-a": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-a"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+			},
+			"fmt-b": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-b"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+			},
+			"fmt-c": {
+				Command:  "test-fmt",
+				Options:  []string{"fmt-c"},
+				Includes: []string{"*.py"},
+				Pipeline: "foo",
+				Priority: 1,
+			},
+		},
+	})
+
+	_, err := cmd(t, "-C", tempDir)
+	as.NoError(err)
+
+	matcher := regexp.MustCompile("^fmt-(.*)")
+
+	// check each affected file for the sequence of test statements which should be prepended to the end
+	sequence := []string{"fmt-a", "fmt-b", "fmt-c"}
+	paths := []string{"python/main.py", "python/virtualenv_proxy.py"}
+
+	for _, p := range paths {
+		file, err := os.Open(filepath.Join(tempDir, p))
+		as.NoError(err)
+		scanner := bufio.NewScanner(file)
+
+		idx := 0
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			matches := matcher.FindAllString(line, -1)
+			if len(matches) != 1 {
+				continue
+			}
+			as.Equal(sequence[idx], matches[0])
+			idx += 1
+		}
+	}
 }

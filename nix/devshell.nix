@@ -25,6 +25,7 @@
           # golang
           go
           delve
+          graphviz
         ]
         ++
         # include formatters for development and testing

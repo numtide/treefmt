@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"git.numtide.com/numtide/treefmt/format"
@@ -22,8 +24,6 @@ import (
 const (
 	pathsBucket      = "paths"
 	formattersBucket = "formatters"
-
-	readBatchSize = 1024
 )
 
 // Entry represents a cache entry, indicating the last size and modified time for a file path.
@@ -32,7 +32,11 @@ type Entry struct {
 	Modified time.Time
 }
 
-var db *bolt.DB
+var (
+	db            *bolt.DB
+	ReadBatchSize = 1024 * runtime.NumCPU()
+	logger        *log.Logger
+)
 
 // Open creates an instance of bolt.DB for a given treeRoot path.
 // If clean is true, Open will delete any existing data in the cache.
@@ -40,7 +44,7 @@ var db *bolt.DB
 // The database will be located in `XDG_CACHE_DIR/treefmt/eval-cache/<id>.db`, where <id> is determined by hashing
 // the treeRoot path. This associates a given treeRoot with a given instance of the cache.
 func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) (err error) {
-	l := log.WithPrefix("cache")
+	logger = log.WithPrefix("cache")
 
 	// determine a unique and consistent db name for the tree root
 	h := sha1.New()
@@ -85,7 +89,7 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 			}
 
 			clean = clean || entry == nil || !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
-			l.Debug(
+			logger.Debug(
 				"checking if formatter has changed",
 				"name", name,
 				"clean", clean,
@@ -174,6 +178,12 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
 func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) error {
+	start := time.Now()
+
+	defer func() {
+		logger.Infof("finished generating change set in %v", time.Since(start))
+	}()
+
 	var tx *bolt.Tx
 	var bucket *bolt.Bucket
 	var processed int
@@ -184,6 +194,9 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 			_ = tx.Rollback()
 		}
 	}()
+
+	// for quick removal of tree root from paths
+	relPathOffset := len(walker.Root()) + 1
 
 	return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
 		select {
@@ -213,7 +226,8 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 			bucket = tx.Bucket([]byte(pathsBucket))
 		}
 
-		cached, err := getEntry(bucket, path)
+		relPath := path[relPathOffset:]
+		cached, err := getEntry(bucket, relPath)
 		if err != nil {
 			return err
 		}
@@ -230,13 +244,15 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			pathsCh <- path
+			pathsCh <- relPath
 		}
 
 		// close the current tx if we have reached the batch size
 		processed += 1
-		if processed == readBatchSize {
-			return tx.Rollback()
+		if processed == ReadBatchSize {
+			err = tx.Rollback()
+			tx = nil
+			return err
 		}
 
 		return nil
@@ -244,7 +260,12 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 }
 
 // Update is used to record updated cache information for the specified list of paths.
-func Update(paths []string) (int, error) {
+func Update(treeRoot string, paths []string) (int, error) {
+	start := time.Now()
+	defer func() {
+		logger.Infof("finished updating %v paths in %v", len(paths), time.Since(start))
+	}()
+
 	if len(paths) == 0 {
 		return 0, nil
 	}
@@ -260,7 +281,7 @@ func Update(paths []string) (int, error) {
 				return err
 			}
 
-			pathInfo, err := os.Stat(path)
+			pathInfo, err := os.Stat(filepath.Join(treeRoot, path))
 			if err != nil {
 				return err
 			}

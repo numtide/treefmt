@@ -9,6 +9,8 @@ type Formatter struct {
 	Includes []string
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
 	Excludes []string
-	// Before is the name of another formatter which must process a path after this one
-	Before string
+	// Indicates this formatter should be executed as part of a group of formatters all sharing the same pipeline key.
+	Pipeline string
+	// Indicates the order of precedence when executing as part of a pipeline.
+	Priority int
 }
