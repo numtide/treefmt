@@ -6,8 +6,7 @@ hero:
     name: "Treefmt"
     text: "One CLI to format your repo"
     image:
-        dark: ./assets/fmt.gif
-        light: ./assets/fmt-light.gif
+        src: ./assets/fmt.gif
         alt: Treefmt
     actions:
         - theme: brand
@@ -16,12 +15,4 @@ hero:
         - theme: alt
           text: More Info
           link: /overview
-
-features:
-    - title: Feature A
-      details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-    - title: Feature B
-      details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-    - title: Feature C
-      details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
 ---
