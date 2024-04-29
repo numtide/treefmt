@@ -11,11 +11,11 @@ hero:
         alt: Treefmt
     actions:
         - theme: brand
-          text: Markdown Examples
-          link: /markdown-examples
+          text: Quick Start
+          link: /quick-start
         - theme: alt
-          text: API Examples
-          link: /api-examples
+          text: More Info
+          link: /overview
 
 features:
     - title: Feature A
