@@ -1,5 +1,21 @@
 _: {
-  perSystem = {pkgs, ...}: {
+  perSystem = {pkgs, self', ...}: {
+        packages.docs = pkgs.buildNpmPackage {
+        pname = "treefmt-docs";
+        inherit (self'.packages.default) version;
+
+        src = ../docs;
+        npmDepsHash = "sha256-acT9uaUhvxyM/S3hv1M9h5h2H5EpzrNbaxCYmzYn100=";
+
+        npmBuildScript = "docs:build";
+
+        installPhase = ''
+            runHook preInstall
+            cp -rv .vitepress/dist/ $out
+            runHook postInstall
+        '';
+    };
+
     devshells.default = {
       commands = let
         category = "docs";
