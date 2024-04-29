@@ -1,28 +1,50 @@
 _: {
-  perSystem = {pkgs, self', ...}: {
-        packages.docs = pkgs.buildNpmPackage {
-        pname = "treefmt-docs";
-        inherit (self'.packages.default) version;
+  perSystem = {
+    pkgs,
+    self',
+    ...
+  }: {
+    packages.docs = pkgs.buildNpmPackage {
+      pname = "treefmt-docs";
+      inherit (self'.packages.default) version;
 
-        src = ../docs;
-        npmDepsHash = "sha256-acT9uaUhvxyM/S3hv1M9h5h2H5EpzrNbaxCYmzYn100=";
+      src = ../docs;
+      npmDepsHash = "sha256-acT9uaUhvxyM/S3hv1M9h5h2H5EpzrNbaxCYmzYn100=";
 
-        npmBuildScript = "docs:build";
+      npmBuildScript = "docs:build";
 
-        installPhase = ''
-            runHook preInstall
-            cp -rv .vitepress/dist/ $out
-            runHook postInstall
-        '';
+      installPhase = ''
+        runHook preInstall
+        cp -rv .vitepress/dist/ $out
+        runHook postInstall
+      '';
     };
 
     devshells.default = {
+      packages = [
+        pkgs.nodejs
+      ];
+
       commands = let
         category = "docs";
       in [
         {
           inherit category;
-          package = pkgs.nodejs;
+          name = "docs:dev";
+          help = "serve docs for local development";
+          command = "cd $PRJ_ROOT/docs && npm run docs:dev";
+        }
+        {
+          inherit category;
+          name = "docs:build";
+          help = "create a production build of docs";
+          command = "cd $PRJ_ROOT/docs && npm run docs:build";
+        }
+        {
+          inherit category;
+          name = "docs:preview";
+          help = "preview a production build of docs";
+          command = "cd $PRJ_ROOT/docs && npm run docs:preview";
         }
         {
           inherit category;
