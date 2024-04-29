@@ -11,4 +11,4 @@ To run `treefmt` in your project, please follow these steps:
 In the following sections we will guide you through installing and configuring `treefmt` in detail.
 
 [install]: installation.md
-[here]: formatters-spec.md
+[here]: formatter-spec.md
