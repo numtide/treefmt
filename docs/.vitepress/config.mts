@@ -25,6 +25,11 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://git.numtide.com/numtide/treefmt' }
-    ]
+    ],
+
+    footer: {
+      message: 'Released under the <a href="https://git.numtide.com/numtide/treefmt/src/branch/main/LICENSE.md">MIT License</a>.',
+      copyright: "Copyright © 2024-present Treefmt Contributors"
+    }
   }
 })
