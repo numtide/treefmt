@@ -21,7 +21,7 @@ _: {
             set -xeuo pipefail
 
             for tape in $PRJ_ROOT/docs/vhs/*; do
-                vhs $tape -o "$PRJ_ROOT/docs/assets/$(basename $tape .tape).gif"
+                vhs $tape -o "$PRJ_ROOT/docs/public/$(basename $tape .tape).gif"
             done
           '';
         }

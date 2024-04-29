@@ -6,7 +6,7 @@ export default defineConfig({
   description: "one CLI to format your repo",
   themeConfig: {
 
-    logo: '../assets/logo.svg',
+    logo: '/logo.svg',
 
     // https://vitepress.dev/reference/default-theme-config
     nav: [
