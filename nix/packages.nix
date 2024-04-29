@@ -25,6 +25,7 @@
             root = ../.;
             exclude = [
               "nix"
+              "docs"
             ];
           };
 
