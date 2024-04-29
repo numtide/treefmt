@@ -10,3 +10,7 @@ repl-result-*
 
 # devshell
 /.data
+
+# docs
+node_modules
+docs/.vitepress/cache
