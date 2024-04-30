@@ -9,9 +9,12 @@ _: {
       inherit (self'.packages.default) version;
 
       src = ../docs;
-      npmDepsHash = "sha256-acT9uaUhvxyM/S3hv1M9h5h2H5EpzrNbaxCYmzYn100=";
+      npmDepsHash = "sha256-J9qTWueOcSBq7qRec6YdTuWI2VlVQ0q6AynDLovf6s0=";
 
-      npmBuildScript = "docs:build";
+      # we have to use a custom build phase because vitepress is doing something funky with the ttty
+      buildPhase = ''
+        cat | npm run build 2>&1 | cat
+      '';
 
       installPhase = ''
         runHook preInstall
@@ -32,19 +35,19 @@ _: {
           inherit category;
           name = "docs:dev";
           help = "serve docs for local development";
-          command = "cd $PRJ_ROOT/docs && npm run docs:dev";
+          command = "cd $PRJ_ROOT/docs && npm dev";
         }
         {
           inherit category;
           name = "docs:build";
           help = "create a production build of docs";
-          command = "cd $PRJ_ROOT/docs && npm run docs:build";
+          command = "cd $PRJ_ROOT/docs && npm build";
         }
         {
           inherit category;
           name = "docs:preview";
           help = "preview a production build of docs";
-          command = "cd $PRJ_ROOT/docs && npm run docs:preview";
+          command = "cd $PRJ_ROOT/docs && npm preview";
         }
         {
           inherit category;
