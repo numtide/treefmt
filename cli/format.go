@@ -14,9 +14,9 @@ import (
 	"sort"
 	"strings"
 	"syscall"
-	"time"
 
 	"git.numtide.com/numtide/treefmt/format"
+	"git.numtide.com/numtide/treefmt/stats"
 	"github.com/gobwas/glob"
 
 	"git.numtide.com/numtide/treefmt/cache"
@@ -32,7 +32,6 @@ const (
 )
 
 var (
-	start          time.Time
 	globalExcludes []glob.Glob
 	formatters     map[string]*format.Formatter
 	pipelines      map[string]*format.Pipeline
@@ -43,7 +42,7 @@ var (
 )
 
 func (f *Format) Run() (err error) {
-	start = time.Now()
+	stats.Init()
 
 	Cli.Configure()
 
@@ -196,6 +195,8 @@ func walkFilesystem(ctx context.Context) func() error {
 				default:
 					// ignore symlinks and directories
 					if !(info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink) {
+						stats.Add(stats.Traversed, 1)
+						stats.Add(stats.Emitted, 1)
 						pathsCh <- path
 					}
 					return nil
@@ -257,7 +258,7 @@ func updateCache(ctx context.Context) func() error {
 			return ErrFailOnChange
 		}
 
-		fmt.Printf("%v files changed in %v\n", changes, time.Now().Sub(start))
+		stats.Print()
 		return nil
 	}
 }
@@ -322,11 +323,16 @@ func applyFormatters(ctx context.Context) func() error {
 		}()
 
 		for path := range pathsCh {
+			var matched bool
 			for key, pipeline := range pipelines {
 				if !pipeline.Wants(path) {
 					continue
 				}
+				matched = true
 				tryApply(key, path)
+			}
+			if matched {
+				stats.Add(stats.Matched, 1)
 			}
 		}
 
