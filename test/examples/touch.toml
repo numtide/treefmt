@@ -1,3 +1,3 @@
 [formatter.echo]
-command = "echo"
+command = "touch"
 includes = [ "*.*" ]

@@ -5,9 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 
@@ -180,7 +178,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
-func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) error {
+func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.File) error {
 	start := time.Now()
 
 	defer func() {
@@ -198,24 +196,21 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 		}
 	}()
 
-	// for quick removal of tree root from paths
-	relPathOffset := len(walker.Root()) + 1
-
-	return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+	return walker.Walk(ctx, func(file *walk.File, err error) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 			if err != nil {
 				return fmt.Errorf("%w: failed to walk path", err)
-			} else if info.IsDir() {
+			} else if file.Info.IsDir() {
 				// ignore directories
 				return nil
 			}
 		}
 
 		// ignore symlinks
-		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+		if file.Info.Mode()&os.ModeSymlink == os.ModeSymlink {
 			return nil
 		}
 
@@ -229,13 +224,12 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 			bucket = tx.Bucket([]byte(pathsBucket))
 		}
 
-		relPath := path[relPathOffset:]
-		cached, err := getEntry(bucket, relPath)
+		cached, err := getEntry(bucket, file.RelPath)
 		if err != nil {
 			return err
 		}
 
-		changedOrNew := cached == nil || !(cached.Modified == info.ModTime() && cached.Size == info.Size())
+		changedOrNew := cached == nil || !(cached.Modified == file.Info.ModTime() && cached.Size == file.Info.Size())
 
 		stats.Add(stats.Traversed, 1)
 		if !changedOrNew {
@@ -250,7 +244,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			pathsCh <- relPath
+			filesCh <- file
 		}
 
 		// close the current tx if we have reached the batch size
@@ -266,47 +260,35 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 }
 
 // Update is used to record updated cache information for the specified list of paths.
-func Update(treeRoot string, paths []string) (int, error) {
+func Update(files []*walk.File) error {
 	start := time.Now()
 	defer func() {
-		logger.Infof("finished updating %v paths in %v", len(paths), time.Since(start))
+		logger.Infof("finished processing %v paths in %v", len(files), time.Since(start))
 	}()
 
-	if len(paths) == 0 {
-		return 0, nil
+	if len(files) == 0 {
+		return nil
 	}
 
-	var changes int
-
-	return changes, db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(pathsBucket))
 
-		for _, path := range paths {
-			cached, err := getEntry(bucket, path)
+		for _, f := range files {
+			currentInfo, err := os.Stat(f.Path)
 			if err != nil {
 				return err
 			}
 
-			pathInfo, err := os.Stat(filepath.Join(treeRoot, path))
-			if err != nil {
-				return err
+			if !(f.Info.ModTime() == currentInfo.ModTime() && f.Info.Size() == currentInfo.Size()) {
+				stats.Add(stats.Formatted, 1)
 			}
-
-			if cached == nil || !(cached.Modified == pathInfo.ModTime() && cached.Size == pathInfo.Size()) {
-				changes += 1
-			} else {
-				// no change to write
-				continue
-			}
-
-			stats.Add(stats.Formatted, 1)
 
 			entry := Entry{
-				Size:     pathInfo.Size(),
-				Modified: pathInfo.ModTime(),
+				Size:     currentInfo.Size(),
+				Modified: currentInfo.ModTime(),
 			}
 
-			if err = putEntry(bucket, path, &entry); err != nil {
+			if err = putEntry(bucket, f.RelPath, &entry); err != nil {
 				return err
 			}
 		}

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -35,8 +34,8 @@ var (
 	globalExcludes []glob.Glob
 	formatters     map[string]*format.Formatter
 	pipelines      map[string]*format.Pipeline
-	pathsCh        chan string
-	processedCh    chan string
+	filesCh        chan *walk.File
+	processedCh    chan *walk.File
 
 	ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 )
@@ -142,10 +141,10 @@ func (f *Format) Run() (err error) {
 
 	// create a channel for paths to be processed
 	// we use a multiple of batch size here to allow for greater concurrency
-	pathsCh = make(chan string, BatchSize*runtime.NumCPU())
+	filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
 
 	// create a channel for tracking paths that have been processed
-	processedCh = make(chan string, cap(pathsCh))
+	processedCh = make(chan *walk.File, cap(filesCh))
 
 	// start concurrent processing tasks
 	eg.Go(updateCache(ctx))
@@ -185,26 +184,26 @@ func walkFilesystem(ctx context.Context) func() error {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
 
-		defer close(pathsCh)
+		defer close(filesCh)
 
 		if Cli.NoCache {
-			return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
+			return walker.Walk(ctx, func(file *walk.File, err error) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
 					// ignore symlinks and directories
-					if !(info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink) {
+					if !(file.Info.IsDir() || file.Info.Mode()&os.ModeSymlink == os.ModeSymlink) {
 						stats.Add(stats.Traversed, 1)
 						stats.Add(stats.Emitted, 1)
-						pathsCh <- path
+						filesCh <- file
 					}
 					return nil
 				}
 			})
 		}
 
-		if err = cache.ChangeSet(ctx, walker, pathsCh); err != nil {
+		if err = cache.ChangeSet(ctx, walker, filesCh); err != nil {
 			return fmt.Errorf("failed to generate change set: %w", err)
 		}
 		return nil
@@ -213,19 +212,11 @@ func walkFilesystem(ctx context.Context) func() error {
 
 func updateCache(ctx context.Context) func() error {
 	return func() error {
-		batch := make([]string, 0, BatchSize)
-
-		var changes int
+		batch := make([]*walk.File, 0, BatchSize)
 
 		processBatch := func() error {
-			if Cli.NoCache {
-				changes += len(batch)
-			} else {
-				count, err := cache.Update(Cli.TreeRoot, batch)
-				if err != nil {
-					return err
-				}
-				changes += count
+			if err := cache.Update(batch); err != nil {
+				return err
 			}
 			batch = batch[:0]
 			return nil
@@ -254,7 +245,7 @@ func updateCache(ctx context.Context) func() error {
 			return err
 		}
 
-		if Cli.FailOnChange && changes != 0 {
+		if Cli.FailOnChange && stats.Value(stats.Formatted) != 0 {
 			return ErrFailOnChange
 		}
 
@@ -265,28 +256,28 @@ func updateCache(ctx context.Context) func() error {
 
 func applyFormatters(ctx context.Context) func() error {
 	fg, ctx := errgroup.WithContext(ctx)
-	batches := make(map[string][]string)
+	batches := make(map[string][]*walk.File)
 
-	tryApply := func(key string, path string) {
+	tryApply := func(key string, file *walk.File) {
 		batch, ok := batches[key]
 		if !ok {
-			batch = make([]string, 0, BatchSize)
+			batch = make([]*walk.File, 0, BatchSize)
 		}
-		batch = append(batch, path)
+		batch = append(batch, file)
 		batches[key] = batch
 
 		if len(batch) == BatchSize {
 			pipeline := pipelines[key]
 
 			// copy the batch
-			paths := make([]string, len(batch))
-			copy(paths, batch)
+			files := make([]*walk.File, len(batch))
+			copy(files, batch)
 
 			fg.Go(func() error {
-				if err := pipeline.Apply(ctx, paths); err != nil {
+				if err := pipeline.Apply(ctx, files); err != nil {
 					return err
 				}
-				for _, path := range paths {
+				for _, path := range files {
 					processedCh <- path
 				}
 				return nil
@@ -322,17 +313,19 @@ func applyFormatters(ctx context.Context) func() error {
 			close(processedCh)
 		}()
 
-		for path := range pathsCh {
+		for file := range filesCh {
 			var matched bool
 			for key, pipeline := range pipelines {
-				if !pipeline.Wants(path) {
+				if !pipeline.Wants(file) {
 					continue
 				}
 				matched = true
-				tryApply(key, path)
+				tryApply(key, file)
 			}
 			if matched {
 				stats.Add(stats.Matched, 1)
+			} else {
+				processedCh <- file
 			}
 		}
 

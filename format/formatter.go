@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/walk"
+
 	"git.numtide.com/numtide/treefmt/config"
 
 	"github.com/charmbracelet/log"
@@ -38,7 +40,7 @@ func (f *Formatter) Executable() string {
 	return f.executable
 }
 
-func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) error {
+func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) error {
 	start := time.Now()
 
 	// construct args, starting with config
@@ -52,9 +54,9 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 		f.batch = f.batch[:0]
 
 		// filter paths
-		for _, path := range paths {
-			if f.Wants(path) {
-				f.batch = append(f.batch, path)
+		for _, file := range files {
+			if f.Wants(file) {
+				f.batch = append(f.batch, file.RelPath)
 			}
 		}
 
@@ -67,12 +69,14 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 		args = append(args, f.batch...)
 	} else {
 		// exit early if nothing to process
-		if len(paths) == 0 {
+		if len(files) == 0 {
 			return nil
 		}
 
 		// append paths to the args
-		args = append(args, paths...)
+		for _, file := range files {
+			args = append(args, file.RelPath)
+		}
 	}
 
 	// execute the command
@@ -88,17 +92,17 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 
 	//
 
-	f.log.Infof("%v files processed in %v", len(paths), time.Now().Sub(start))
+	f.log.Infof("%v files processed in %v", len(files), time.Now().Sub(start))
 
 	return nil
 }
 
 // Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
-func (f *Formatter) Wants(path string) bool {
-	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)
+func (f *Formatter) Wants(file *walk.File) bool {
+	match := !PathMatches(file.RelPath, f.excludes) && PathMatches(file.RelPath, f.includes)
 	if match {
-		f.log.Debugf("match: %v", path)
+		f.log.Debugf("match: %v", file)
 	}
 	return match
 }
