@@ -16,6 +16,7 @@ export default defineConfig({
 
     sidebar: [
       { text: 'Quick Start', link: '/quick-start' },
+      { text: 'Installation', link: '/installation' },
       { text: 'Overview', link: '/overview' },
       { text: 'Usage', link: '/usage' },
       { text: 'Formatter Specification', link: '/formatter-spec' },
