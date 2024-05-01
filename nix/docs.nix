@@ -35,19 +35,19 @@ _: {
           inherit category;
           name = "docs:dev";
           help = "serve docs for local development";
-          command = "cd $PRJ_ROOT/docs && npm dev";
+          command = "cd $PRJ_ROOT/docs && npm run dev";
         }
         {
           inherit category;
           name = "docs:build";
           help = "create a production build of docs";
-          command = "cd $PRJ_ROOT/docs && npm build";
+          command = "cd $PRJ_ROOT/docs && npm run build";
         }
         {
           inherit category;
           name = "docs:preview";
           help = "preview a production build of docs";
-          command = "cd $PRJ_ROOT/docs && npm preview";
+          command = "cd $PRJ_ROOT/docs && npm run preview";
         }
         {
           inherit category;
