@@ -1,20 +1,24 @@
-Require nix
+Require treefmt
 
 Set Shell zsh
-Set FontSize 14
+Set FontSize 11
 
 Set Theme "Catppuccin Mocha"
 
-Set Width 720
-Set Height 400
+Set Width 320
+Set Height 220
+Set Padding 20
 
-Type "nix fmt -- -v -c"
+Type "treefmt -c"
+Sleep 1s
 Enter
 
 Sleep 3s
-
 Enter
-Type "nix fmt -- -v"
+Enter
+Sleep 1s
+
+Type "treefmt"
 Enter
 
-Sleep 3s
+Sleep 5s
