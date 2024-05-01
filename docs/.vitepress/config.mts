@@ -18,7 +18,7 @@ export default defineConfig({
       { text: 'Quick Start', link: '/quick-start' },
       { text: 'Overview', link: '/overview' },
       { text: 'Usage', link: '/usage' },
-      { text: 'Formatter Spec', link: '/formatter-spec' },
+      { text: 'Formatter Specification', link: '/formatter-spec' },
       { text: 'Contributing', link: '/contributing' },
       { text: 'FAQ', link: '/faq' },
     ],
