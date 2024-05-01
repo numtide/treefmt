@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/stats"
+
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/walk"
 
@@ -33,9 +35,10 @@ type Entry struct {
 }
 
 var (
-	db            *bolt.DB
+	db     *bolt.DB
+	logger *log.Logger
+
 	ReadBatchSize = 1024 * runtime.NumCPU()
-	logger        *log.Logger
 )
 
 // Open creates an instance of bolt.DB for a given treeRoot path.
@@ -234,10 +237,13 @@ func ChangeSet(ctx context.Context, walker walk.Walker, pathsCh chan<- string) e
 
 		changedOrNew := cached == nil || !(cached.Modified == info.ModTime() && cached.Size == info.Size())
 
+		stats.Add(stats.Traversed, 1)
 		if !changedOrNew {
 			// no change
 			return nil
 		}
+
+		stats.Add(stats.Emitted, 1)
 
 		// pass on the path
 		select {
@@ -292,6 +298,8 @@ func Update(treeRoot string, paths []string) (int, error) {
 				// no change to write
 				continue
 			}
+
+			stats.Add(stats.Formatted, 1)
 
 			entry := Entry{
 				Size:     pathInfo.Size(),
