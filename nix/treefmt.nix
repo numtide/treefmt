@@ -22,20 +22,37 @@
         statix.enable = true;
       };
 
-      settings.formatter.prettier = {
-        options = ["--tab-width" "4"];
-        includes = [
-          "*.css"
-          "*.html"
-          "*.js"
-          "*.json"
-          "*.jsx"
-          "*.md"
-          "*.mdx"
-          "*.scss"
-          "*.ts"
-          "*.yaml"
-        ];
+      settings.formatter = {
+        deadnix = {
+          pipeline = "nix";
+          priority = 1;
+        };
+
+        statix = {
+          pipeline = "nix";
+          priority = 2;
+        };
+
+        alejandra = {
+          pipeline = "nix";
+          priority = 3;
+        };
+
+        prettier = {
+          options = ["--tab-width" "4"];
+          includes = [
+            "*.css"
+            "*.html"
+            "*.js"
+            "*.json"
+            "*.jsx"
+            "*.md"
+            "*.mdx"
+            "*.scss"
+            "*.ts"
+            "*.yaml"
+          ];
+        };
       };
     };
 

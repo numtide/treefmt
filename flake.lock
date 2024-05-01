@@ -208,15 +208,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1707300477,
-        "narHash": "sha256-qQF0fEkHlnxHcrKIMRzOETnRBksUK048MXkX0SOmxvA=",
-        "owner": "numtide",
+        "lastModified": 1714382886,
+        "narHash": "sha256-+gooxbbYcP+MORKQ7W/C2ATvlonW+dyHgCUPnu5dfco=",
+        "owner": "brianmcgee",
         "repo": "treefmt-nix",
-        "rev": "ac599dab59a66304eb511af07b3883114f061b9d",
+        "rev": "535e6904c34964ce56d8c092835c11fe6341acc8",
         "type": "github"
       },
       "original": {
-        "owner": "numtide",
+        "owner": "brianmcgee",
+        "ref": "feat/pipelines",
         "repo": "treefmt-nix",
         "type": "github"
       }

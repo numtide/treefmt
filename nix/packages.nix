@@ -23,7 +23,9 @@
         in
           filter {
             root = ../.;
-            exclude = [./nix];
+            exclude = [
+              "nix"
+            ];
           };
 
         modules = ../gomod2nix.toml;
