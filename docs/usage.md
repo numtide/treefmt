@@ -64,14 +64,6 @@ treefmt [FLAGS] [OPTIONS] [--] [paths]...
 
 > Only apply selected formatters. Defaults to all formatters.
 
-`-H, --hidden`
-
-> Also traverse hidden files (files that start with a .). This behaviour can be overridden with the `--no-hidden` flag.
-
-`--no-hidden`
-
-> Override the `--hidden` flag. Don't traverse hidden files.
-
 `--tree-root <tree-root>`
 
 > Set the path to the tree root directory where treefmt will look for the files to format. Defaults to the folder holding the `treefmt.toml` file. It’s mostly useful in combination with `--config-file` to specify the project root which won’t coincide with the directory holding `treefmt.toml`.
@@ -92,24 +84,24 @@ Typically, you would use treefmt in the CI with the `--fail-on-change` and `--no
 
 You can you set a `treefmt` job in the GitHub pipeline for Ubuntu with nix-shell like this:
 
-```
+```yaml
 name: treefmt
 on:
-  pull_request:
-  push:
-    branches: main
+    pull_request:
+    push:
+        branches: main
 jobs:
-  formatter:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: cachix/install-nix-action@v12
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-    - uses: cachix/cachix-action@v10
-      with:
-        name: nix-community
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - name: treefmt
-      run: nix-shell --run "treefmt --fail-on-change --no-cache"
+    formatter:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v1
+            - uses: cachix/install-nix-action@v12
+              with:
+                  nix_path: nixpkgs=channel:nixos-unstable
+            - uses: cachix/cachix-action@v10
+              with:
+                  name: nix-community
+                  authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+            - name: treefmt
+              run: nix-shell --run "treefmt --fail-on-change --no-cache"
 ```
