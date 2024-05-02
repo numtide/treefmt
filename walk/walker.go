@@ -3,7 +3,7 @@ package walk
 import (
 	"context"
 	"fmt"
-	"path/filepath"
+	"io/fs"
 )
 
 type Type string
@@ -14,9 +14,21 @@ const (
 	Filesystem Type = "filesystem"
 )
 
+type File struct {
+	Path    string
+	RelPath string
+	Info    fs.FileInfo
+}
+
+func (f File) String() string {
+	return f.Path
+}
+
+type WalkFunc func(file *File, err error) error
+
 type Walker interface {
 	Root() string
-	Walk(ctx context.Context, fn filepath.WalkFunc) error
+	Walk(ctx context.Context, fn WalkFunc) error
 }
 
 func New(walkerType Type, root string, paths []string) (Walker, error) {

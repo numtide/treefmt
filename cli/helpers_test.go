@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.numtide.com/numtide/treefmt/stats"
+
 	"git.numtide.com/numtide/treefmt/test"
 
 	"github.com/alecthomas/kong"
@@ -55,12 +57,12 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 
 	// reset and read the temporary output
 	if _, err = tempOut.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("%w: failed to reset temp output for reading", err)
+		return nil, fmt.Errorf("failed to reset temp output for reading: %w", err)
 	}
 
 	out, err := io.ReadAll(tempOut)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to read temp output", err)
+		return nil, fmt.Errorf("failed to read temp output: %w", err)
 	}
 
 	// swap outputs back
@@ -70,12 +72,12 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	return out, nil
 }
 
-func assertStats(t *testing.T, as *require.Assertions, output []byte, traversed int32, emitted int32, matched int32, formatted int32) {
+func assertStats(t *testing.T, as *require.Assertions, traversed int32, emitted int32, matched int32, formatted int32) {
 	t.Helper()
-	as.Contains(string(output), fmt.Sprintf("traversed %d files", traversed))
-	as.Contains(string(output), fmt.Sprintf("emitted %d files", emitted))
-	as.Contains(string(output), fmt.Sprintf("matched %d files", matched))
-	as.Contains(string(output), fmt.Sprintf("formatted %d files", formatted))
+	as.Equal(traversed, stats.Value(stats.Traversed))
+	as.Equal(emitted, stats.Value(stats.Emitted))
+	as.Equal(matched, stats.Value(stats.Matched))
+	as.Equal(formatted, stats.Value(stats.Formatted))
 }
 
 func assertFormatted(t *testing.T, as *require.Assertions, output []byte, count int) {

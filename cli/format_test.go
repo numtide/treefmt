@@ -51,42 +51,42 @@ func TestSpecifyingFormatters(t *testing.T) {
 	test.WriteConfig(t, configPath, config2.Config{
 		Formatters: map[string]*config2.Formatter{
 			"elm": {
-				Command:  "echo",
+				Command:  "touch",
 				Includes: []string{"*.elm"},
 			},
 			"nix": {
-				Command:  "echo",
+				Command:  "touch",
 				Includes: []string{"*.nix"},
 			},
 			"ruby": {
-				Command:  "echo",
+				Command:  "touch",
 				Includes: []string{"*.rb"},
 			},
 		},
 	})
 
-	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 3)
+	assertStats(t, as, 31, 31, 3, 3)
 
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
 	as.NoError(err)
-	assertFormatted(t, as, out, 2)
+	assertStats(t, as, 31, 31, 2, 2)
 
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
 	as.NoError(err)
-	assertFormatted(t, as, out, 2)
+	assertStats(t, as, 31, 31, 2, 2)
 
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
 	as.NoError(err)
-	assertFormatted(t, as, out, 1)
+	assertStats(t, as, 31, 31, 1, 1)
 
 	// test bad names
 
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "bar,foo")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "bar,foo")
 	as.Errorf(err, "formatter not found in config: bar")
 }
 
@@ -94,7 +94,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/echo.toml"
+	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
 	cfg := config2.Config{
@@ -107,25 +107,25 @@ func TestIncludesAndExcludes(t *testing.T) {
 	}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 
 	// globally exclude nix files
 	cfg.Global.Excludes = []string{"*.nix"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 30)
+	assertStats(t, as, 31, 31, 30, 0)
 
 	// add haskell files to the global exclude
 	cfg.Global.Excludes = []string{"*.nix", "*.hs"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 24)
+	assertStats(t, as, 31, 31, 24, 0)
 
 	echo := cfg.Formatters["echo"]
 
@@ -133,40 +133,40 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Excludes = []string{"*.py"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 22)
+	assertStats(t, as, 31, 31, 22, 0)
 
 	// remove go files from the echo formatter
 	echo.Excludes = []string{"*.py", "*.go"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 21)
+	assertStats(t, as, 31, 31, 21, 0)
 
 	// adjust the includes for echo to only include elm files
 	echo.Includes = []string{"*.elm"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 1)
+	assertStats(t, as, 31, 31, 1, 0)
 
 	// add js files to echo formatter
 	echo.Includes = []string{"*.elm", "*.js"}
 
 	test.WriteConfig(t, configPath, cfg)
-	out, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 2)
+	assertStats(t, as, 31, 31, 2, 0)
 }
 
 func TestCache(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/echo.toml"
+	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
 	cfg := config2.Config{
@@ -181,7 +181,7 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -190,7 +190,7 @@ func TestCache(t *testing.T) {
 	// clear cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -199,7 +199,7 @@ func TestCache(t *testing.T) {
 	// clear cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
@@ -208,7 +208,7 @@ func TestCache(t *testing.T) {
 	// no cache
 	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.NoError(err)
-	assertStats(t, as, out, 31, 31, 31, 0)
+	assertStats(t, as, 31, 31, 31, 0)
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -240,22 +240,22 @@ func TestChangeWorkingDirectory(t *testing.T) {
 
 	// by default, we look for ./treefmt.toml and use the cwd for the tree root
 	// this should fail if the working directory hasn't been changed first
-	out, err := cmd(t, "-C", tempDir)
+	_, err = cmd(t, "-C", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 }
 
 func TestFailOnChange(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/echo.toml"
+	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
 	cfg := config2.Config{
 		Formatters: map[string]*config2.Formatter{
-			"echo": {
-				Command:  "echo",
+			"touch": {
+				Command:  "touch",
 				Includes: []string{"*"},
 			},
 		},
@@ -270,7 +270,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/echo.toml"
+	configPath := tempDir + "/touch.toml"
 
 	// symlink some formatters into temp dir, so we can mess with their mod times
 	binPath := tempDir + "/bin"
@@ -304,33 +304,33 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 	args := []string{"--config-file", configPath, "--tree-root", tempDir}
-	out, err := cmd(t, args...)
+	_, err := cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 3)
+	assertStats(t, as, 31, 31, 3, 0)
 
 	// tweak mod time of elm formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
 
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 3)
+	assertStats(t, as, 31, 31, 3, 0)
 
 	// check cache is working
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 31, 0, 0, 0)
 
 	// tweak mod time of python formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
 
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 3)
+	assertStats(t, as, 31, 31, 3, 0)
 
 	// check cache is working
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 31, 0, 0, 0)
 
 	// add go formatter
 	cfg.Formatters["go"] = &config2.Formatter{
@@ -340,40 +340,40 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	}
 	test.WriteConfig(t, configPath, cfg)
 
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 4)
+	assertStats(t, as, 31, 31, 4, 0)
 
 	// check cache is working
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 31, 0, 0, 0)
 
 	// remove python formatter
 	delete(cfg.Formatters, "python")
 	test.WriteConfig(t, configPath, cfg)
 
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 2)
+	assertStats(t, as, 31, 31, 2, 0)
 
 	// check cache is working
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 31, 0, 0, 0)
 
 	// remove elm formatter
 	delete(cfg.Formatters, "elm")
 	test.WriteConfig(t, configPath, cfg)
 
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 1)
+	assertStats(t, as, 31, 31, 1, 0)
 
 	// check cache is working
-	out, err = cmd(t, args...)
+	_, err = cmd(t, args...)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 31, 0, 0, 0)
 }
 
 func TestGitWorktree(t *testing.T) {
@@ -407,28 +407,28 @@ func TestGitWorktree(t *testing.T) {
 	wt, err := repo.Worktree()
 	as.NoError(err, "failed to get git worktree")
 
-	run := func(formatted int) {
+	run := func(traversed int, emitted int, matched int, formatted int) {
 		out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
 		assertFormatted(t, as, out, formatted)
 	}
 
 	// run before adding anything to the worktree
-	run(0)
+	run(0, 0, 0, 0)
 
 	// add everything to the worktree
 	as.NoError(wt.AddGlob("."))
 	as.NoError(err)
-	run(31)
+	run(31, 31, 31, 0)
 
 	// remove python directory
 	as.NoError(wt.RemoveGlob("python/*"))
-	run(28)
+	run(28, 28, 28, 0)
 
 	// walk with filesystem instead of git
-	out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	assertFormatted(t, as, out, 59)
+	assertStats(t, as, 59, 59, 59, 0)
 }
 
 func TestPathsArg(t *testing.T) {
@@ -461,17 +461,17 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	out, err := cmd(t, "-C", tempDir)
+	_, err = cmd(t, "-C", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 31)
+	assertStats(t, as, 31, 31, 31, 0)
 
 	// specify some explicit paths
-	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
-	assertFormatted(t, as, out, 2)
+	assertStats(t, as, 4, 4, 4, 0)
 
 	// specify a bad path
-	out, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
+	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
 	as.ErrorContains(err, "no such file or directory")
 }
 
@@ -526,9 +526,9 @@ go/main.go
 		_, _ = stdin.Seek(0, 0)
 	}()
 
-	out, err := cmd(t, "-C", tempDir, "--stdin")
+	_, err = cmd(t, "-C", tempDir, "--stdin")
 	as.NoError(err)
-	assertFormatted(t, as, out, 3)
+	assertStats(t, as, 6, 6, 6, 0)
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {

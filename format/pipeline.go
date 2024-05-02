@@ -3,6 +3,8 @@ package format
 import (
 	"context"
 	"slices"
+
+	"git.numtide.com/numtide/treefmt/walk"
 )
 
 type Pipeline struct {
@@ -17,7 +19,7 @@ func (p *Pipeline) Add(f *Formatter) {
 	})
 }
 
-func (p *Pipeline) Wants(path string) bool {
+func (p *Pipeline) Wants(path *walk.File) bool {
 	var match bool
 	for _, f := range p.sequence {
 		match = f.Wants(path)
@@ -28,7 +30,7 @@ func (p *Pipeline) Wants(path string) bool {
 	return match
 }
 
-func (p *Pipeline) Apply(ctx context.Context, paths []string) error {
+func (p *Pipeline) Apply(ctx context.Context, paths []*walk.File) error {
 	for _, f := range p.sequence {
 		if err := f.Apply(ctx, paths, len(p.sequence) > 1); err != nil {
 			return err

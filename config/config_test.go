@@ -9,7 +9,7 @@ import (
 func TestReadConfigFile(t *testing.T) {
 	as := require.New(t)
 
-	cfg, err := ReadFile("../test/examples/treefmt.toml")
+	cfg, err := ReadFile("../test/examples/treefmt.toml", nil)
 	as.NoError(err, "failed to read config file")
 
 	as.NotNil(cfg)

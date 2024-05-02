@@ -2,6 +2,7 @@
 
 [formatter.deadnix]
 command = "deadnix"
+options = ["--edit"]
 includes = ["*.nix"]
 pipeline = "nix"
 priority = 1

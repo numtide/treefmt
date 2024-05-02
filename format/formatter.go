@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/walk"
+
 	"git.numtide.com/numtide/treefmt/config"
 
 	"github.com/charmbracelet/log"
@@ -38,7 +40,7 @@ func (f *Formatter) Executable() string {
 	return f.executable
 }
 
-func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) error {
+func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) error {
 	start := time.Now()
 
 	// construct args, starting with config
@@ -52,9 +54,9 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 		f.batch = f.batch[:0]
 
 		// filter paths
-		for _, path := range paths {
-			if f.Wants(path) {
-				f.batch = append(f.batch, path)
+		for _, file := range files {
+			if f.Wants(file) {
+				f.batch = append(f.batch, file.RelPath)
 			}
 		}
 
@@ -67,12 +69,14 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 		args = append(args, f.batch...)
 	} else {
 		// exit early if nothing to process
-		if len(paths) == 0 {
+		if len(files) == 0 {
 			return nil
 		}
 
 		// append paths to the args
-		args = append(args, paths...)
+		for _, file := range files {
+			args = append(args, file.RelPath)
+		}
 	}
 
 	// execute the command
@@ -83,22 +87,22 @@ func (f *Formatter) Apply(ctx context.Context, paths []string, filter bool) erro
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
 		}
-		return fmt.Errorf("%w: formatter %s failed to apply", err, f.name)
+		return fmt.Errorf("formatter %s failed to apply: %w", f.name, err)
 	}
 
 	//
 
-	f.log.Infof("%v files processed in %v", len(paths), time.Now().Sub(start))
+	f.log.Infof("%v files processed in %v", len(files), time.Now().Sub(start))
 
 	return nil
 }
 
 // Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
-func (f *Formatter) Wants(path string) bool {
-	match := !PathMatches(path, f.excludes) && PathMatches(path, f.includes)
+func (f *Formatter) Wants(file *walk.File) bool {
+	match := !PathMatches(file.RelPath, f.excludes) && PathMatches(file.RelPath, f.includes)
 	if match {
-		f.log.Debugf("match: %v", path)
+		f.log.Debugf("match: %v", file)
 	}
 	return match
 }
@@ -107,7 +111,7 @@ func (f *Formatter) Wants(path string) bool {
 func NewFormatter(
 	name string,
 	treeRoot string,
-	config *config.Formatter,
+	cfg *config.Formatter,
 	globalExcludes []glob.Glob,
 ) (*Formatter, error) {
 	var err error
@@ -116,11 +120,11 @@ func NewFormatter(
 
 	// capture config and the formatter's name
 	f.name = name
-	f.config = config
+	f.config = cfg
 	f.workingDir = treeRoot
 
 	// test if the formatter is available
-	executable, err := exec.LookPath(config.Command)
+	executable, err := exec.LookPath(cfg.Command)
 	if errors.Is(err, exec.ErrNotFound) {
 		return nil, ErrCommandNotFound
 	} else if err != nil {
@@ -129,20 +133,20 @@ func NewFormatter(
 	f.executable = executable
 
 	// initialise internal state
-	if config.Pipeline == "" {
+	if cfg.Pipeline == "" {
 		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
 	} else {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", config.Pipeline, name))
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", cfg.Pipeline, name))
 	}
 
-	f.includes, err = CompileGlobs(config.Includes)
+	f.includes, err = CompileGlobs(cfg.Includes)
 	if err != nil {
-		return nil, fmt.Errorf("%w: formatter '%v' includes", err, f.name)
+		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)
 	}
 
-	f.excludes, err = CompileGlobs(config.Excludes)
+	f.excludes, err = CompileGlobs(cfg.Excludes)
 	if err != nil {
-		return nil, fmt.Errorf("%w: formatter '%v' excludes", err, f.name)
+		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
 	}
 	f.excludes = append(f.excludes, globalExcludes...)
 

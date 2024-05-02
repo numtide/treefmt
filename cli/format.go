@@ -5,13 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"slices"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -35,19 +32,17 @@ var (
 	globalExcludes []glob.Glob
 	formatters     map[string]*format.Formatter
 	pipelines      map[string]*format.Pipeline
-	pathsCh        chan string
-	processedCh    chan string
+	filesCh        chan *walk.File
+	processedCh    chan *walk.File
 
 	ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 )
 
 func (f *Format) Run() (err error) {
-	stats.Init()
-
-	Cli.Configure()
-
+	// create a prefixed logger
 	l := log.WithPrefix("format")
 
+	// ensure cache is closed on return
 	defer func() {
 		if err := cache.Close(); err != nil {
 			l.Errorf("failed to close cache: %v", err)
@@ -55,46 +50,23 @@ func (f *Format) Run() (err error) {
 	}()
 
 	// read config
-	cfg, err := config.ReadFile(Cli.ConfigFile)
+	cfg, err := config.ReadFile(Cli.ConfigFile, Cli.Formatters)
 	if err != nil {
-		return fmt.Errorf("%w: failed to read config file", err)
+		return fmt.Errorf("failed to read config file %v: %w", Cli.ConfigFile, err)
 	}
 
+	// compile global exclude globs
 	if globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
-		return fmt.Errorf("%w: failed to compile global globs", err)
+		return fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
+	// initialise pipelines
 	pipelines = make(map[string]*format.Pipeline)
 	formatters = make(map[string]*format.Formatter)
 
-	// filter formatters
-	if len(Cli.Formatters) > 0 {
-		// first check the cli formatter list is valid
-		for _, name := range Cli.Formatters {
-			_, ok := cfg.Formatters[name]
-			if !ok {
-				return fmt.Errorf("formatter not found in config: %v", name)
-			}
-		}
-		// next we remove any formatter configs that were not specified
-		for name := range cfg.Formatters {
-			if !slices.Contains(Cli.Formatters, name) {
-				delete(cfg.Formatters, name)
-			}
-		}
-	}
-
-	// sort the formatter names so that, as we construct pipelines, we add formatters in a determinstic fashion. This
-	// ensures a deterministic order even when all priority values are the same e.g. 0
-
-	names := make([]string, 0, len(cfg.Formatters))
-	for name := range cfg.Formatters {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	// init formatters
-	for _, name := range names {
+	// iterate the formatters in lexicographical order
+	for _, name := range cfg.Names {
+		// init formatter
 		formatterCfg := cfg.Formatters[name]
 		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
@@ -104,8 +76,12 @@ func (f *Format) Run() (err error) {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
 		}
 
+		// store formatter by name
 		formatters[name] = formatter
 
+		// If no pipeline is configured, we add the formatter to a nominal pipeline of size 1 with the key being the
+		// formatter's name. If a pipeline is configured, we add the formatter to a pipeline keyed by
+		// 'p:<pipeline_name>' in which it is sorted by priority.
 		if formatterCfg.Pipeline == "" {
 			pipeline := format.Pipeline{}
 			pipeline.Add(formatter)
@@ -137,17 +113,20 @@ func (f *Format) Run() (err error) {
 		cancel()
 	}()
 
-	// create some groups for concurrent processing and control flow
+	// initialise stats collection
+	stats.Init()
+
+	// create an overall error group for executing high level tasks concurrently
 	eg, ctx := errgroup.WithContext(ctx)
 
-	// create a channel for paths to be processed
-	// we use a multiple of batch size here to allow for greater concurrency
-	pathsCh = make(chan string, BatchSize*runtime.NumCPU())
+	// create a channel for files needing to be processed
+	// we use a multiple of batch size here as a rudimentary concurrency optimization based on the host machine
+	filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
 
-	// create a channel for tracking paths that have been processed
-	processedCh = make(chan string, cap(pathsCh))
+	// create a channel for files that have been processed
+	processedCh = make(chan *walk.File, cap(filesCh))
 
-	// start concurrent processing tasks
+	// start concurrent processing tasks in reverse order
 	eg.Go(updateCache(ctx))
 	eg.Go(applyFormatters(ctx))
 	eg.Go(walkFilesystem(ctx))
@@ -156,76 +135,15 @@ func (f *Format) Run() (err error) {
 	return eg.Wait()
 }
 
-func walkFilesystem(ctx context.Context) func() error {
-	return func() error {
-		paths := Cli.Paths
-
-		if len(paths) == 0 && Cli.Stdin {
-
-			cwd, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("%w: failed to determine current working directory", err)
-			}
-
-			// read in all the paths
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				path := scanner.Text()
-				if !strings.HasPrefix(path, "/") {
-					// append the cwd
-					path = filepath.Join(cwd, path)
-				}
-
-				paths = append(paths, path)
-			}
-		}
-
-		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
-		if err != nil {
-			return fmt.Errorf("failed to create walker: %w", err)
-		}
-
-		defer close(pathsCh)
-
-		if Cli.NoCache {
-			return walker.Walk(ctx, func(path string, info fs.FileInfo, err error) error {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					// ignore symlinks and directories
-					if !(info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink) {
-						stats.Add(stats.Traversed, 1)
-						stats.Add(stats.Emitted, 1)
-						pathsCh <- path
-					}
-					return nil
-				}
-			})
-		}
-
-		if err = cache.ChangeSet(ctx, walker, pathsCh); err != nil {
-			return fmt.Errorf("failed to generate change set: %w", err)
-		}
-		return nil
-	}
-}
-
 func updateCache(ctx context.Context) func() error {
 	return func() error {
-		batch := make([]string, 0, BatchSize)
+		// used to batch updates for more efficient txs
+		batch := make([]*walk.File, 0, BatchSize)
 
-		var changes int
-
+		// apply a batch
 		processBatch := func() error {
-			if Cli.NoCache {
-				changes += len(batch)
-			} else {
-				count, err := cache.Update(Cli.TreeRoot, batch)
-				if err != nil {
-					return err
-				}
-				changes += count
+			if err := cache.Update(batch); err != nil {
+				return err
 			}
 			batch = batch[:0]
 			return nil
@@ -234,13 +152,17 @@ func updateCache(ctx context.Context) func() error {
 	LOOP:
 		for {
 			select {
+			// detect ctx cancellation
 			case <-ctx.Done():
 				return ctx.Err()
-			case path, ok := <-processedCh:
+			// respond to processed files
+			case file, ok := <-processedCh:
 				if !ok {
+					// channel has been closed, no further files to process
 					break LOOP
 				}
-				batch = append(batch, path)
+				// append to batch and process if we have enough
+				batch = append(batch, file)
 				if len(batch) == BatchSize {
 					if err := processBatch(); err != nil {
 						return err
@@ -254,48 +176,124 @@ func updateCache(ctx context.Context) func() error {
 			return err
 		}
 
-		if Cli.FailOnChange && changes != 0 {
+		// if fail on change has been enabled, check that no files were actually formatted, throwing an error if so
+		if Cli.FailOnChange && stats.Value(stats.Formatted) != 0 {
 			return ErrFailOnChange
 		}
 
+		// print stats to stdout
 		stats.Print()
+
+		return nil
+	}
+}
+
+func walkFilesystem(ctx context.Context) func() error {
+	return func() error {
+		paths := Cli.Paths
+
+		// we read paths from stdin if the cli flag has been set and no paths were provided as cli args
+		if len(paths) == 0 && Cli.Stdin {
+
+			// determine the current working directory
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("failed to determine current working directory: %w", err)
+			}
+
+			// read in all the paths
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				path := scanner.Text()
+				if !strings.HasPrefix(path, "/") {
+					// append the cwd
+					path = filepath.Join(cwd, path)
+				}
+
+				// append the fully qualified path to our paths list
+				paths = append(paths, path)
+			}
+		}
+
+		// create a filesystem walker
+		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
+		if err != nil {
+			return fmt.Errorf("failed to create walker: %w", err)
+		}
+
+		// close the files channel when we're done walking the file system
+		defer close(filesCh)
+
+		// if no cache has been configured, we invoke the walker directly
+		if Cli.NoCache {
+			return walker.Walk(ctx, func(file *walk.File, err error) error {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					// ignore symlinks and directories
+					if !(file.Info.IsDir() || file.Info.Mode()&os.ModeSymlink == os.ModeSymlink) {
+						stats.Add(stats.Traversed, 1)
+						stats.Add(stats.Emitted, 1)
+						filesCh <- file
+					}
+					return nil
+				}
+			})
+		}
+
+		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
+		// they have been added/changed since the last invocation
+		if err = cache.ChangeSet(ctx, walker, filesCh); err != nil {
+			return fmt.Errorf("failed to generate change set: %w", err)
+		}
 		return nil
 	}
 }
 
 func applyFormatters(ctx context.Context) func() error {
+	// create our own errgroup for concurrent formatting tasks
 	fg, ctx := errgroup.WithContext(ctx)
-	batches := make(map[string][]string)
 
-	tryApply := func(key string, path string) {
-		batch, ok := batches[key]
-		if !ok {
-			batch = make([]string, 0, BatchSize)
-		}
-		batch = append(batch, path)
-		batches[key] = batch
+	// pre-initialise batches keyed by pipeline
+	batches := make(map[string][]*walk.File)
+	for key := range pipelines {
+		batches[key] = make([]*walk.File, 0, BatchSize)
+	}
 
+	// for a given pipeline key, add the provided file to the current batch and trigger a format if the batch size has
+	// been reached
+	tryApply := func(key string, file *walk.File) {
+		// append to batch
+		batches[key] = append(batches[key], file)
+
+		// check if the batch is full
+		batch := batches[key]
 		if len(batch) == BatchSize {
+			// get the pipeline
 			pipeline := pipelines[key]
 
 			// copy the batch
-			paths := make([]string, len(batch))
-			copy(paths, batch)
+			files := make([]*walk.File, len(batch))
+			copy(files, batch)
 
+			// apply to the pipeline
 			fg.Go(func() error {
-				if err := pipeline.Apply(ctx, paths); err != nil {
+				if err := pipeline.Apply(ctx, files); err != nil {
 					return err
 				}
-				for _, path := range paths {
+				for _, path := range files {
 					processedCh <- path
 				}
 				return nil
 			})
 
+			// reset the batch
 			batches[key] = batch[:0]
 		}
 	}
 
+	// format any partial batches
 	flushBatches := func() {
 		for key, pipeline := range pipelines {
 
@@ -322,17 +320,21 @@ func applyFormatters(ctx context.Context) func() error {
 			close(processedCh)
 		}()
 
-		for path := range pathsCh {
+		// iterate the files channel, checking if any pipeline wants it, and attempting to apply if so.
+		for file := range filesCh {
 			var matched bool
 			for key, pipeline := range pipelines {
-				if !pipeline.Wants(path) {
+				if !pipeline.Wants(file) {
 					continue
 				}
 				matched = true
-				tryApply(key, path)
+				tryApply(key, file)
 			}
 			if matched {
 				stats.Add(stats.Matched, 1)
+			} else {
+				// no match, so we send it direct to the processed channel
+				processedCh <- file
 			}
 		}
 

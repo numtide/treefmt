@@ -36,5 +36,6 @@ func main() {
 	}
 
 	ctx := kong.Parse(&cli.Cli)
+	cli.ConfigureLogging()
 	ctx.FatalIfErrorf(ctx.Run())
 }
