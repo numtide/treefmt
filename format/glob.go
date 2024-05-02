@@ -13,7 +13,7 @@ func CompileGlobs(patterns []string) ([]glob.Glob, error) {
 	for i, pattern := range patterns {
 		g, err := glob.Compile(pattern)
 		if err != nil {
-			return nil, fmt.Errorf("%w: failed to compile include pattern '%v'", err, pattern)
+			return nil, fmt.Errorf("failed to compile include pattern '%v': %w", pattern, err)
 		}
 		globs[i] = g
 	}

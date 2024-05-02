@@ -55,25 +55,25 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 	name := hex.EncodeToString(digest)
 	path, err := xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name))
 	if err != nil {
-		return fmt.Errorf("%w: could not resolve local path for the cache", err)
+		return fmt.Errorf("could not resolve local path for the cache: %w", err)
 	}
 
 	db, err = bolt.Open(path, 0o600, nil)
 	if err != nil {
-		return fmt.Errorf("%w: failed to open cache", err)
+		return fmt.Errorf("failed to open cache at %v: %w", path, err)
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		// create bucket for tracking paths
 		pathsBucket, err := tx.CreateBucketIfNotExists([]byte(pathsBucket))
 		if err != nil {
-			return fmt.Errorf("%w: failed to create paths bucket", err)
+			return fmt.Errorf("failed to create paths bucket: %w", err)
 		}
 
 		// create bucket for tracking formatters
 		formattersBucket, err := tx.CreateBucketIfNotExists([]byte(formattersBucket))
 		if err != nil {
-			return fmt.Errorf("%w: failed to create formatters bucket", err)
+			return fmt.Errorf("failed to create formatters bucket: %w", err)
 		}
 
 		// check for any newly configured or modified formatters
@@ -81,12 +81,12 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 
 			stat, err := os.Lstat(formatter.Executable())
 			if err != nil {
-				return fmt.Errorf("%w: failed to state formatter executable", err)
+				return fmt.Errorf("failed to stat formatter executable %v: %w", formatter.Executable(), err)
 			}
 
 			entry, err := getEntry(formattersBucket, name)
 			if err != nil {
-				return fmt.Errorf("%w: failed to retrieve entry for formatter", err)
+				return fmt.Errorf("failed to retrieve cache entry for formatter %v: %w", name, err)
 			}
 
 			clean = clean || entry == nil || !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
@@ -105,7 +105,7 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 			}
 
 			if err = putEntry(formattersBucket, name, entry); err != nil {
-				return fmt.Errorf("%w: failed to write formatter entry", err)
+				return fmt.Errorf("failed to write cache entry for formatter %v: %w", name, err)
 			}
 		}
 
@@ -115,14 +115,14 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 			if !ok {
 				// remove the formatter entry from the cache
 				if err = formattersBucket.Delete(key); err != nil {
-					return fmt.Errorf("%w: failed to remove formatter entry", err)
+					return fmt.Errorf("failed to remove cache entry for formatter %v: %w", key, err)
 				}
 				// indicate a clean is required
 				clean = true
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("%w: failed to check for removed formatters", err)
+			return fmt.Errorf("failed to check cache for removed formatters: %w", err)
 		}
 
 		if clean {
@@ -130,7 +130,7 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 			c := pathsBucket.Cursor()
 			for k, v := c.First(); !(k == nil && v == nil); k, v = c.Next() {
 				if err = c.Delete(); err != nil {
-					return fmt.Errorf("%w: failed to remove path entry", err)
+					return fmt.Errorf("failed to remove path entry: %w", err)
 				}
 			}
 		}
@@ -155,7 +155,7 @@ func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 	if b != nil {
 		var cached Entry
 		if err := msgpack.Unmarshal(b, &cached); err != nil {
-			return nil, fmt.Errorf("%w: failed to unmarshal cache info for path '%v'", err, path)
+			return nil, fmt.Errorf("failed to unmarshal cache info for path '%v': %w", path, err)
 		}
 		return &cached, nil
 	} else {
@@ -167,11 +167,11 @@ func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 	bytes, err := msgpack.Marshal(entry)
 	if err != nil {
-		return fmt.Errorf("%w: failed to marshal cache entry", err)
+		return fmt.Errorf("failed to marshal cache path %v: %w", path, err)
 	}
 
 	if err = bucket.Put([]byte(path), bytes); err != nil {
-		return fmt.Errorf("%w: failed to put cache entry", err)
+		return fmt.Errorf("failed to put cache path %v: %w", path, err)
 	}
 	return nil
 }
@@ -202,7 +202,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 			return ctx.Err()
 		default:
 			if err != nil {
-				return fmt.Errorf("%w: failed to walk path", err)
+				return fmt.Errorf("failed to walk path: %w", err)
 			} else if file.Info.IsDir() {
 				// ignore directories
 				return nil
@@ -219,7 +219,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 		if tx == nil {
 			tx, err = db.Begin(false)
 			if err != nil {
-				return fmt.Errorf("%w: failed to open a new read tx", err)
+				return fmt.Errorf("failed to open a new cache read tx: %w", err)
 			}
 			bucket = tx.Bucket([]byte(pathsBucket))
 		}

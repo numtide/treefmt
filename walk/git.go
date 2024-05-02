@@ -37,7 +37,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 
 	idx, err := g.repo.Storer.Index()
 	if err != nil {
-		return fmt.Errorf("%w: failed to open index", err)
+		return fmt.Errorf("failed to open git index: %w", err)
 	}
 
 	if len(g.paths) > 0 {
@@ -102,7 +102,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 func NewGit(root string, paths []string) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to open git repo", err)
+		return nil, fmt.Errorf("failed to open git repo: %w", err)
 	}
 	return &gitWalker{root, paths, repo}, nil
 }

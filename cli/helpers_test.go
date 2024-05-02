@@ -57,12 +57,12 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 
 	// reset and read the temporary output
 	if _, err = tempOut.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("%w: failed to reset temp output for reading", err)
+		return nil, fmt.Errorf("failed to reset temp output for reading: %w", err)
 	}
 
 	out, err := io.ReadAll(tempOut)
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to read temp output", err)
+		return nil, fmt.Errorf("failed to read temp output: %w", err)
 	}
 
 	// swap outputs back

@@ -87,7 +87,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) 
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
 		}
-		return fmt.Errorf("%w: formatter %s failed to apply", err, f.name)
+		return fmt.Errorf("formatter %s failed to apply: %w", f.name, err)
 	}
 
 	//
@@ -141,12 +141,12 @@ func NewFormatter(
 
 	f.includes, err = CompileGlobs(cfg.Includes)
 	if err != nil {
-		return nil, fmt.Errorf("%w: formatter '%v' includes", err, f.name)
+		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)
 	}
 
 	f.excludes, err = CompileGlobs(cfg.Excludes)
 	if err != nil {
-		return nil, fmt.Errorf("%w: formatter '%v' excludes", err, f.name)
+		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
 	}
 	f.excludes = append(f.excludes, globalExcludes...)
 

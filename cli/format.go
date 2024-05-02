@@ -52,12 +52,12 @@ func (f *Format) Run() (err error) {
 	// read config
 	cfg, err := config.ReadFile(Cli.ConfigFile, Cli.Formatters)
 	if err != nil {
-		return fmt.Errorf("%w: failed to read config file", err)
+		return fmt.Errorf("failed to read config file %v: %w", Cli.ConfigFile, err)
 	}
 
 	// compile global exclude globs
 	if globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
-		return fmt.Errorf("%w: failed to compile global globs", err)
+		return fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
 	// initialise pipelines
