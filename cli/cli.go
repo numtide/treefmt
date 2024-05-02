@@ -26,14 +26,14 @@ type Format struct {
 	Stdin bool     `help:"Format the context passed in via stdin"`
 }
 
-func (f *Format) Configure() {
+func ConfigureLogging() {
 	log.SetReportTimestamp(false)
 
-	if f.Verbosity == 0 {
+	if Cli.Verbosity == 0 {
 		log.SetLevel(log.WarnLevel)
-	} else if f.Verbosity == 1 {
+	} else if Cli.Verbosity == 1 {
 		log.SetLevel(log.InfoLevel)
-	} else if f.Verbosity > 1 {
+	} else if Cli.Verbosity > 1 {
 		log.SetLevel(log.DebugLevel)
 	}
 }

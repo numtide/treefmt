@@ -43,8 +43,6 @@ var (
 func (f *Format) Run() (err error) {
 	stats.Init()
 
-	Cli.Configure()
-
 	l := log.WithPrefix("format")
 
 	defer func() {
