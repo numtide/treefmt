@@ -16,6 +16,12 @@ treefmt [FLAGS] [OPTIONS] [--] [paths]...
 
 ## Flags
 
+`--walk <auto|git|filesystem>`
+
+> The method used to traverse the files within `<tree-root>`.
+> Default is `auto`, where we will detect if the `<tree-root>` is a git repository and use the `git` walker for
+> traversal. If not we will fall back to the `filesystem` walker.
+
 `--allow-missing-formatter`
 
 > Do not exit with an error if some of the configured formatters are missing.
