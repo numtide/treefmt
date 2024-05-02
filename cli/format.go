@@ -9,8 +9,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
-	"slices"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -41,10 +39,10 @@ var (
 )
 
 func (f *Format) Run() (err error) {
-	stats.Init()
-
+	// create a prefixed logger
 	l := log.WithPrefix("format")
 
+	// ensure cache is closed on return
 	defer func() {
 		if err := cache.Close(); err != nil {
 			l.Errorf("failed to close cache: %v", err)
@@ -52,46 +50,21 @@ func (f *Format) Run() (err error) {
 	}()
 
 	// read config
-	cfg, err := config.ReadFile(Cli.ConfigFile)
+	cfg, err := config.ReadFile(Cli.ConfigFile, Cli.Formatters)
 	if err != nil {
 		return fmt.Errorf("%w: failed to read config file", err)
 	}
 
+	// compile global exclude globs
 	if globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
 		return fmt.Errorf("%w: failed to compile global globs", err)
 	}
 
+	// initialise pipelines
 	pipelines = make(map[string]*format.Pipeline)
 	formatters = make(map[string]*format.Formatter)
 
-	// filter formatters
-	if len(Cli.Formatters) > 0 {
-		// first check the cli formatter list is valid
-		for _, name := range Cli.Formatters {
-			_, ok := cfg.Formatters[name]
-			if !ok {
-				return fmt.Errorf("formatter not found in config: %v", name)
-			}
-		}
-		// next we remove any formatter configs that were not specified
-		for name := range cfg.Formatters {
-			if !slices.Contains(Cli.Formatters, name) {
-				delete(cfg.Formatters, name)
-			}
-		}
-	}
-
-	// sort the formatter names so that, as we construct pipelines, we add formatters in a determinstic fashion. This
-	// ensures a deterministic order even when all priority values are the same e.g. 0
-
-	names := make([]string, 0, len(cfg.Formatters))
-	for name := range cfg.Formatters {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	// init formatters
-	for _, name := range names {
+	for _, name := range cfg.Names {
 		formatterCfg := cfg.Formatters[name]
 		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
@@ -133,6 +106,9 @@ func (f *Format) Run() (err error) {
 		<-exit
 		cancel()
 	}()
+
+	// initialise stats collection
+	stats.Init()
 
 	// create some groups for concurrent processing and control flow
 	eg, ctx := errgroup.WithContext(ctx)

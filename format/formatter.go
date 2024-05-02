@@ -111,7 +111,7 @@ func (f *Formatter) Wants(file *walk.File) bool {
 func NewFormatter(
 	name string,
 	treeRoot string,
-	config *config.Formatter,
+	cfg *config.Formatter,
 	globalExcludes []glob.Glob,
 ) (*Formatter, error) {
 	var err error
@@ -120,11 +120,11 @@ func NewFormatter(
 
 	// capture config and the formatter's name
 	f.name = name
-	f.config = config
+	f.config = cfg
 	f.workingDir = treeRoot
 
 	// test if the formatter is available
-	executable, err := exec.LookPath(config.Command)
+	executable, err := exec.LookPath(cfg.Command)
 	if errors.Is(err, exec.ErrNotFound) {
 		return nil, ErrCommandNotFound
 	} else if err != nil {
@@ -133,18 +133,18 @@ func NewFormatter(
 	f.executable = executable
 
 	// initialise internal state
-	if config.Pipeline == "" {
+	if cfg.Pipeline == "" {
 		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
 	} else {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", config.Pipeline, name))
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", cfg.Pipeline, name))
 	}
 
-	f.includes, err = CompileGlobs(config.Includes)
+	f.includes, err = CompileGlobs(cfg.Includes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: formatter '%v' includes", err, f.name)
 	}
 
-	f.excludes, err = CompileGlobs(config.Excludes)
+	f.excludes, err = CompileGlobs(cfg.Excludes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: formatter '%v' excludes", err, f.name)
 	}
