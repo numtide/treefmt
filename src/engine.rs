@@ -123,9 +123,9 @@ pub fn run_treefmt(
                 let start_time = Instant::now();
 
                 // Run the formatter
-                paths.par_chunks(1024).try_for_each(|path_chunks| {
-                    formatter.clone().fmt(path_chunks)
-                })?;
+                paths
+                    .par_chunks(1024)
+                    .try_for_each(|path_chunks| formatter.clone().fmt(path_chunks))?;
 
                 // Get the new mtimes and compare them to the original ones
                 let new_paths = paths
