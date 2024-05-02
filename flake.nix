@@ -4,7 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-root.url = "github:srid/flake-root";
     treefmt-nix = {
       # todo switch back to numtide/treefmt-nix once merged
       url = "github:brianmcgee/treefmt-nix/feat/pipelines";
