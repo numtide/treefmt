@@ -4,6 +4,11 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Treefmt",
   description: "one CLI to format your repo",
+
+  head: [
+    ['link', { rel: 'icon', href: '/logo.png' }],
+  ],
+
   themeConfig: {
 
     logo: '/logo.svg',
