@@ -44,22 +44,22 @@ formatters run only against them. Moreover, formatters are run in parallel, whic
 The difference may not be significant for smaller projects, but it gets quite visible as the project grows. For
 instance, take the caching optimization.
 
-It takes 22 seconds to traverse a project of 40,559 files and no changes without caching:
+It takes about 23 seconds to traverse a project of 40,559 files and no changes without caching:
 
 ```
-traversed 40559 files
-emitted 40559 files for processing
-matched 33712 files to formatters
-formatted 33712 files in 22.270884528s
+traversed 41273 files
+emitted 41273 files for processing
+matched 34311 files to formatters
+formatted 14338 files in 23.679339987s
 ```
 
-...while it takes **270 milliseconds** to traverse the same project with caching:
+...while it takes **239 milliseconds** to traverse the same project with caching:
 
 ```
-traversed 40559 files
-emitted 6847 files for processing
+traversed 41273 files
+emitted 0 files for processing
 matched 0 files to formatters
-formatted 0 files in 270.53513ms
+formatted 0 files in 239.024064ms
 ```
 
 The tool can be invoked manually or integrated into your CI. There's currently no integration with IDEs, but the feature is coming soon.
