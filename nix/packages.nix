@@ -26,6 +26,10 @@
             exclude = [
               "nix"
               "docs"
+              "README.md"
+              "default.nix"
+              "shell.nix"
+              ".envrc"
             ];
           };
 
