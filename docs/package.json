@@ -1,0 +1,13 @@
+{
+    "name": "treefmt-docs",
+    "version": "0.0.1",
+    "devDependencies": {
+        "vitepress": "^1.1.4"
+    },
+    "scripts": {
+        "vitepress": "vitepress",
+        "dev": "vitepress dev",
+        "build": "vitepress build",
+        "preview": "vitepress preview"
+    }
+}

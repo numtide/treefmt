@@ -8,9 +8,9 @@
     ...
   }: {
     treefmt.config = {
-      inherit (config.flake-root) projectRootFile;
       flakeCheck = true;
       flakeFormatter = true;
+      projectRootFile = "flake.nix";
 
       package = self'.packages.default;
 
