@@ -44,7 +44,7 @@ Its main features are:
         they have changed.
     -   `treefmt` tracks file changes, and only attempts to format files which have changed.
 
-> To reformat the whole source tree, just type `treefmt` in any folder. This is a fast and simple formatting solution.
+To reformat the whole source tree, just type `treefmt` in any folder. This is a fast and simple formatting solution.
 
 ## Installation
 
