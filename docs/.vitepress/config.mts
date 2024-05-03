@@ -30,11 +30,11 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://git.numtide.com/numtide/treefmt' }
+      { icon: 'github', link: 'https://https://github.com/numtide/treefmt.go' }
     ],
 
     footer: {
-      message: 'Released under the <a href="https://git.numtide.com/numtide/treefmt/src/branch/main/LICENSE.md">MIT License</a>.',
+      message: 'Released under the <a href="https://https://github.com/numtide/treefmt.go/src/branch/main/LICENSE.md">MIT License</a>.',
       copyright: "Copyright © 2024-present Treefmt Contributors"
     }
   }

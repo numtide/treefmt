@@ -1,5 +1,5 @@
 {
-  description = "Treefmt";
+  description = "Treefmt: once CLI to format your repo";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
