@@ -26,6 +26,7 @@
             exclude = [
               "nix/"
               "docs/"
+              ".github/"
               "README.md"
               "default.nix"
               "shell.nix"

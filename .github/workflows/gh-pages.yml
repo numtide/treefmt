@@ -22,16 +22,13 @@ jobs:
               with:
                   name: numtide
                   authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-
             - name: Build the docs
               id: build
               run: |
                   nix build .#docs
                   echo "result=$(readlink ./result)" >> $GITHUB_OUTPUT
-
-            - name: Deploy
-              uses: peaceiris/actions-gh-pages@v4
+            - name: Upload artifact
+              uses: actions/upload-pages-artifact@v3
               if: github.ref == 'refs/heads/main'
               with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: "${{ steps.build.outputs.result }}/"
+                  path: result
