@@ -32,7 +32,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://https://github.com/numtide/treefmt-go' }
+      { icon: 'github', link: 'https://github.com/numtide/treefmt-go' }
     ],
 
     footer: {
