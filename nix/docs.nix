@@ -51,11 +51,9 @@ _: {
         }
         {
           inherit category;
-          name = "vhs";
           help = "generate terminal gifs";
-
           package = pkgs.writeShellApplication {
-            name = "gif";
+            name = "vhs";
             runtimeInputs =
               [
                 self'.packages.treefmt
