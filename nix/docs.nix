@@ -51,30 +51,20 @@ _: {
         }
         {
           inherit category;
-          package = pkgs.vhs;
+          name = "vhs";
           help = "generate terminal gifs";
-        }
-        {
-          category = "docs";
-          help = "regenerate gifs for docs";
-          package = let
-            treefmt = pkgs.writeShellApplication {
-              name = "treefmt";
-              runtimeInputs = [self'.packages.treefmt] ++ (import ./formatters.nix pkgs);
-              text = ''
-                treefmt -C "$PRJ_ROOT/test/examples" --allow-missing-formatter "$@"
-              '';
-            };
-          in
-            pkgs.writeShellApplication {
-              name = "gifs";
-              runtimeInputs = [treefmt];
-              text = ''
-                for tape in "$PRJ_ROOT"/docs/vhs/*; do
-                  vhs "$tape" -o "$PRJ_ROOT/docs/public/$(basename "$tape" .tape).gif"
-                done
-              '';
-            };
+
+          package = pkgs.writeShellApplication {
+            name = "gif";
+            runtimeInputs =
+              [
+                self'.packages.treefmt
+                pkgs.rsync
+                pkgs.vhs
+              ]
+              ++ (import ./formatters.nix pkgs);
+            text = ''vhs "$@"'';
+          };
         }
       ];
     };

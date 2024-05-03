@@ -6,7 +6,7 @@ hero:
     name: "Treefmt"
     text: "One CLI to format your repo"
     image:
-        src: /fmt.gif
+        src: /treefmt.gif
         alt: Treefmt
     actions:
         - theme: brand
