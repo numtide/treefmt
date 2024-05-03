@@ -207,10 +207,28 @@ func updateCache(ctx context.Context) func() error {
 
 func walkFilesystem(ctx context.Context) func() error {
 	return func() error {
-		paths := Cli.Paths
+		eg, ctx := errgroup.WithContext(ctx)
+		pathsCh := make(chan string, BatchSize)
 
-		// we read paths from stdin if the cli flag has been set and no paths were provided as cli args
-		if len(paths) == 0 && Cli.Stdin {
+		walkPaths := func() error {
+			defer close(pathsCh)
+
+			var idx int
+			for idx < len(Cli.Paths) {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					pathsCh <- Cli.Paths[idx]
+					idx += 1
+				}
+			}
+
+			return nil
+		}
+
+		walkStdin := func() error {
+			defer close(pathsCh)
 
 			// determine the current working directory
 			cwd, err := os.Getwd()
@@ -220,20 +238,35 @@ func walkFilesystem(ctx context.Context) func() error {
 
 			// read in all the paths
 			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				path := scanner.Text()
-				if !strings.HasPrefix(path, "/") {
-					// append the cwd
-					path = filepath.Join(cwd, path)
-				}
 
-				// append the fully qualified path to our paths list
-				paths = append(paths, path)
+			for scanner.Scan() {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					path := scanner.Text()
+					if !strings.HasPrefix(path, "/") {
+						// append the cwd
+						path = filepath.Join(cwd, path)
+					}
+					pathsCh <- path
+				}
 			}
+			return nil
+		}
+
+		if len(Cli.Paths) > 0 {
+			eg.Go(walkPaths)
+		} else if Cli.Stdin {
+			eg.Go(walkStdin)
+		} else {
+			// no explicit paths to process, so we only need to process root
+			pathsCh <- Cli.TreeRoot
+			close(pathsCh)
 		}
 
 		// create a filesystem walker
-		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
+		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, pathsCh)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}

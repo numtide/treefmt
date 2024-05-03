@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
@@ -16,7 +15,7 @@ import (
 
 type gitWalker struct {
 	root  string
-	paths []string
+	paths chan string
 	repo  *git.Repository
 }
 
@@ -40,66 +39,42 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 		return fmt.Errorf("failed to open git index: %w", err)
 	}
 
-	if len(g.paths) > 0 {
-		for _, path := range g.paths {
+	for path := range g.paths {
 
-			err = filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
-				if info.IsDir() {
-					return nil
-				}
+		err = filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
 
-				relPath, err := filepath.Rel(g.root, path)
-				if err != nil {
-					return err
-				}
-
-				if _, err = idx.Entry(relPath); errors.Is(err, index.ErrEntryNotFound) {
-					// we skip this path as it's not staged
-					log.Debugf("Path not found in git index, skipping: %v, %v", relPath, path)
-					return nil
-				}
-
-				file := File{
-					Path:    path,
-					RelPath: relPathFn(path),
-					Info:    info,
-				}
-
-				return fn(&file, err)
-			})
+			relPath, err := filepath.Rel(g.root, path)
 			if err != nil {
 				return err
 			}
 
-		}
-	} else {
-		for _, entry := range idx.Entries {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				path := filepath.Join(g.root, entry.Name)
-
-				// stat the file
-				info, err := os.Lstat(path)
-
-				file := File{
-					Path:    path,
-					RelPath: relPathFn(path),
-					Info:    info,
-				}
-
-				if err = fn(&file, err); err != nil {
-					return err
-				}
+			if _, err = idx.Entry(relPath); errors.Is(err, index.ErrEntryNotFound) {
+				// we skip this path as it's not staged
+				log.Debugf("Path not found in git index, skipping: %v, %v", relPath, path)
+				return nil
 			}
+
+			file := File{
+				Path:    path,
+				RelPath: relPathFn(path),
+				Info:    info,
+			}
+
+			return fn(&file, err)
+		})
+		if err != nil {
+			return err
 		}
+
 	}
 
 	return nil
 }
 
-func NewGit(root string, paths []string) (Walker, error) {
+func NewGit(root string, paths chan string) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)

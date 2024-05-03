@@ -488,7 +488,7 @@ func TestPathsArg(t *testing.T) {
 	// specify some explicit paths
 	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
-	assertStats(t, as, 4, 4, 4, 0)
+	assertStats(t, as, 2, 2, 2, 0)
 
 	// specify a bad path
 	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
@@ -548,7 +548,7 @@ go/main.go
 
 	_, err = cmd(t, "-C", tempDir, "--stdin")
 	as.NoError(err)
-	assertStats(t, as, 6, 6, 6, 0)
+	assertStats(t, as, 3, 3, 3, 0)
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {
