@@ -11,9 +11,11 @@ on:
 
 permissions:
     contents: write
+    pages: write
+    id-token: write
 
 jobs:
-    gh-pages:
+    build:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -32,3 +34,16 @@ jobs:
               if: github.ref == 'refs/heads/main'
               with:
                   path: result
+
+    # Deployment job
+    deploy:
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        needs: build
+        runs-on: ubuntu-latest
+        name: deploy
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
