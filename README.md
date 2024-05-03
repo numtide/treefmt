@@ -113,7 +113,7 @@ formatters.
 
 ## Compatibility
 
-`Treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt.go/blob/main/docs/formatters-spec.md).
+`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt.go/blob/main/docs/formatters-spec.md).
 
 For instance, you can go for:
 
