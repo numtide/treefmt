@@ -34,24 +34,24 @@ Its main features are:
 
 -   **Providing a unified CLI and output**
     -   You don’t need to remember which formatters are necessary for each project.
-        Once you specify the formatters in the config file, you can trigger all of them with one command and get a
+    -   Once you specify the formatters in the config file, you can trigger all of them with one command and get a
         standardized output.
 -   **Running all the formatters in parallel**
-    -   A standard script loops over your folders and runs each formatter
-        consequentially. In contrast, `treefmt` runs formatters in parallel. This way, the formatting job takes less time.
+    -   A standard script loops over your folders and runs each formatter sequentially.
+    -   In contrast, `treefmt` runs formatters in parallel. This way, the formatting job takes less time.
 -   **Tracking file changes**
-    -   When formatters are run in a script, they process all the files they encounter, no matter
-        whether the code has changed. This unnecessary work can be eliminated if only the changed files are formatted.
-        `treefmt` caches the changed files and marks them for re-formatting.
+    -   When formatters are run in a script, they process all the files they encounter, regardless of whether or not
+        they have changed.
+    -   `treefmt` tracks file changes, and only attempts to format files which have changed.
 
-To reformat the whole source tree, just type `treefmt` in any folder. This is a fast and simple formatting solution.
+> To reformat the whole source tree, just type `treefmt` in any folder. This is a fast and simple formatting solution.
 
 ## Installation
 
 You can install `treefmt` by downloading the binary. Find the binaries for different architectures [here](https://github.com/numtide/treefmt.go/releases).
-Otherwise, you can install the package from source code — either with [Go](https://go.dev/), or with the help of [nix](https://github.com/NixOS/nix).
+Otherwise, you can install the package from source code — either with [Go], or with the help of [nix].
 
-We describe the installation process in detail in the [docs](https://numtide.github.io/treefmt.go/).
+We describe the installation process in detail in the [docs].
 
 ## Usage
 
@@ -90,7 +90,7 @@ options = ["<formatter-option-1>"...]
 includes = ["<glob>"]
 ```
 
-For example, if you want to use [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt) on your Nix project and rustfmt on your Rust project, then
+For example, if you want to use [nixpkgs-fmt] on your Nix project and rustfmt on your Rust project, then
 `treefmt.toml` will look as follows:
 
 ```toml
@@ -106,7 +106,7 @@ includes = ["*.rs"]
 
 Before specifying the formatter in the config, make sure it’s installed.
 
-To find and share existing formatter recipes, take a look at the [docs](https://numtide.github.io/treefmt.go/).
+To find and share existing formatter recipes, take a look at the [docs].
 
 If you are a Nix user, you might also be interested in [treefmt-nix](https://github.com/numtide/treefmt.go-nix) to use Nix to configure and bring in
 formatters.
@@ -117,7 +117,7 @@ formatters.
 
 For instance, you can go for:
 
--   [clang-format](https://clang.llvm.org/docs/ClangFormat.html) for C/C++/Java/JavaScript/JSON/Objective-C/Protobuf/C#
+-   [clang-format] for C/C++/Java/JavaScript/JSON/Objective-C/Protobuf/C#
 -   gofmt for Golang
 -   Prettier for JavaScript/HTML/CSS
 
@@ -142,6 +142,29 @@ This project is still pretty new. Down the line we also want to add support for:
 All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/contributing.md)
 guidelines for more information.
 
+## Moving from Rust To Go
+
+You may be familiar with [Version 1], which is written in [Rust]. So, why re-write it in [Go]?
+
+Ultimately, `treefmt` is spending most of it's time shelling out calls to the underlying formatters. This process is
+just as fast/performant in [Go] as it is in [Rust].
+
+The remaining tasks are processing some cli args and parsing a config file. Do we really need something as _heavy duty_
+as [Rust] for that?
+
+Despite all this, you can make good, sane arguments for continuing with [Version 1] in [Rust] instead of a re-write.
+So here's a _bad argument_.
+
+[Brian] wanted to improve performance by moving away from a [Toml] cache file, introduce pipelines for applying multiple
+formatters against the same file set, and add an extensible approach for how `treefmt` walks file systems. He knows [Go]
+much better than [Rust].
+
+[zimbatm] thought it was a good idea too.
+
+So here we are :shrug:.
+
+![Just Use Go](./docs/public/just-use-go.png)
+
 ## Commercial support
 
 Looking for help or customization?
@@ -153,3 +176,14 @@ Source projects: <https://numtide.com/contact>
 
 Unless explicitly stated otherwise, any contribution intentionally submitted for inclusion will be licensed under the
 [MIT license](LICENSE.md) without any additional terms or conditions.
+
+[Brian]: https://github.com/brianmcgee
+[zimbatm]: https://github.com/zimbatm
+[Version 1]: https://github.com/numtide/treefmt
+[Rust]: https://www.rust-lang.org/
+[Go]: https://go.dev/
+[Toml]: https://toml.io/en/
+[docs]: https://numtide.github.io/treefmt.go/
+[nix]: https://github.com/NixOS/nix
+[nixpkgs-fmt]: https://github.com/nix-community/nixpkgs-fmt
+[clang-format]: https://clang.llvm.org/docs/ClangFormat.html
