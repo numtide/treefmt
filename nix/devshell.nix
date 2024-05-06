@@ -25,6 +25,7 @@
           # golang
           go
           delve
+          pprof
           graphviz
         ]
         ++

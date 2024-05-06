@@ -24,6 +24,8 @@ type Format struct {
 
 	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree."`
 	Stdin bool     `help:"Format the context passed in via stdin"`
+
+	CpuProfile string `optional:"" help:"file into which a cpu profile will be written"`
 }
 
 func ConfigureLogging() {
