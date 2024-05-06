@@ -4,8 +4,6 @@ on:
     push:
         branches:
             - main
-            - staging
-            - trying
     pull_request:
     workflow_dispatch:
 
@@ -43,6 +41,7 @@ jobs:
         needs: build
         runs-on: ubuntu-latest
         name: deploy
+        if: github.ref == 'refs/heads/main'
         steps:
             - name: Deploy to GitHub Pages
               id: deployment
