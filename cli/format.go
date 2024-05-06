@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"syscall"
 
@@ -39,6 +40,25 @@ var (
 )
 
 func (f *Format) Run() (err error) {
+	// cpu profiling
+	if Cli.CpuProfile != "" {
+		// it is not recommended to go over 500 hz, but anything less wasn't producing meaningful samples
+		runtime.SetCPUProfileRate(500)
+
+		cpuProfile, err := os.Create(Cli.CpuProfile)
+		if err != nil {
+			return fmt.Errorf("failed to open file for writing cpu profile: %w", err)
+		} else if err = pprof.StartCPUProfile(cpuProfile); err != nil {
+			return fmt.Errorf("failed to start cpu profile: %w", err)
+		}
+		defer func() {
+			pprof.StopCPUProfile()
+			if err := cpuProfile.Close(); err != nil {
+				log.Errorf("failed to close cpu profile: %v", err)
+			}
+		}()
+	}
+
 	// create a prefixed logger
 	l := log.WithPrefix("format")
 

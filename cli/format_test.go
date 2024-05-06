@@ -21,6 +21,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCpuProfile(t *testing.T) {
+	as := require.New(t)
+	tempDir := test.TempExamples(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--cpu-profile", "cpu.pprof")
+	as.NoError(err)
+	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
+	file, err := os.Stat(filepath.Join(tempDir, "cpu.pprof"))
+	as.NoError(err)
+	as.False(file.Size() == 0)
+}
+
 func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 
