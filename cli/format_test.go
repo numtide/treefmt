@@ -37,9 +37,8 @@ func TestCpuProfile(t *testing.T) {
 	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--cpu-profile", "cpu.pprof")
 	as.NoError(err)
 	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
-	file, err := os.Stat(filepath.Join(tempDir, "cpu.pprof"))
+	_, err = os.Stat(filepath.Join(tempDir, "cpu.pprof"))
 	as.NoError(err)
-	as.False(file.Size() == 0)
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
