@@ -16,6 +16,7 @@
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows ="devshell/flake-utils";
     };
     nix-filter.url = "github:numtide/nix-filter";
     flake-compat.url = "github:nix-community/flake-compat";
