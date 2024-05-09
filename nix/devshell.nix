@@ -4,10 +4,13 @@
   ];
 
   config.perSystem = {
+    lib,
     pkgs,
     config,
     ...
-  }: {
+  }: let
+    inherit (pkgs.stdenv) isLinux isDarwin;
+  in {
     config.devshells.default = {
       env = [
         {
@@ -20,17 +23,24 @@
         }
       ];
 
-      packages = with pkgs;
-        [
+      packages = lib.mkMerge [
+        (with pkgs; [
           # golang
           go
           delve
           pprof
           graphviz
-        ]
-        ++
+        ])
+        # platform dependent CGO dependencies
+        (lib.mkIf isLinux [
+          pkgs.gcc
+        ])
+        (lib.mkIf isDarwin [
+          pkgs.darwin.cctools
+        ])
         # include formatters for development and testing
-        (import ./formatters.nix pkgs);
+        (import ./formatters.nix pkgs)
+      ];
 
       commands = [
         {
