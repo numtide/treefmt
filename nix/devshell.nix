@@ -27,6 +27,7 @@
         (with pkgs; [
           # golang
           go
+          goreleaser
           delve
           pprof
           graphviz

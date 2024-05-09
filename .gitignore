@@ -15,3 +15,6 @@ repl-result-*
 node_modules
 docs/.vitepress/cache
 docs/.vitepress/dist
+
+# goreleaser
+dist/
