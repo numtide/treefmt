@@ -1,0 +1,24 @@
+name: Go
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+                go: ["1.22"]
+        runs-on: ${{ matrix.os }}
+
+        name: Build (Go ${{ matrix.go }}, OS ${{ matrix.os }})
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-go@v5
+              with:
+                  go-version: ${{ matrix.go }}
+            - name: go test -race -bench='.+' -v ./...
+              run: go test -race -bench='.+' -v ./...
