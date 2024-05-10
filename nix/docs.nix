@@ -9,7 +9,7 @@ _: {
       inherit (self'.packages.default) version;
 
       src = ../docs;
-      npmDepsHash = "sha256-J9qTWueOcSBq7qRec6YdTuWI2VlVQ0q6AynDLovf6s0=";
+      npmDepsHash = "sha256-vHxJHuhvQJ0P4wS1Hd2BIfPMSptnLhuHGLXCO+P5iFs=";
 
       # we have to use a custom build phase because vitepress is doing something funky with the ttty
       buildPhase = ''

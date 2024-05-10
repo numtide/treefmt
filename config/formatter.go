@@ -1,7 +1,7 @@
 package config
 
 type Formatter struct {
-	// Command is the command invoke when applying this Formatter.
+	// Command is the command to invoke when applying this Formatter.
 	Command string
 	// Options are an optional list of args to be passed to Command.
 	Options []string

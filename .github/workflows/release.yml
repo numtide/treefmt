@@ -1,30 +1,29 @@
 name: goreleaser
 
 on:
-  pull_request:
-  push:
-    # run only against tags
-    tags:
-      - "v*"
+    push:
+        # run only against tags
+        tags:
+            - "v*"
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  goreleaser:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.22.x
-      - name: Run goreleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    goreleaser:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Setup Go
+              uses: actions/setup-go@v4
+              with:
+                  go-version: 1.22.x
+            - name: Run goreleaser
+              uses: goreleaser/goreleaser-action@v4
+              with:
+                  args: release --clean
+              env:
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
