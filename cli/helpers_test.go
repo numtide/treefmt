@@ -74,10 +74,10 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 
 func assertStats(t *testing.T, as *require.Assertions, traversed int32, emitted int32, matched int32, formatted int32) {
 	t.Helper()
-	as.Equal(traversed, stats.Value(stats.Traversed))
-	as.Equal(emitted, stats.Value(stats.Emitted))
-	as.Equal(matched, stats.Value(stats.Matched))
-	as.Equal(formatted, stats.Value(stats.Formatted))
+	as.Equal(traversed, stats.Value(stats.Traversed), "stats.traversed")
+	as.Equal(emitted, stats.Value(stats.Emitted), "stats.emitted")
+	as.Equal(matched, stats.Value(stats.Matched), "stats.matched")
+	as.Equal(formatted, stats.Value(stats.Formatted), "stats.formatted")
 }
 
 func assertFormatted(t *testing.T, as *require.Assertions, output []byte, count int) {

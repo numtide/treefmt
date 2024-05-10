@@ -87,7 +87,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) 
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
 		}
-		return fmt.Errorf("formatter %s failed to apply: %w", f.name, err)
+		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
 	}
 
 	//

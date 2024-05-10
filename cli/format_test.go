@@ -65,44 +65,58 @@ func TestAllowMissingFormatter(t *testing.T) {
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
-	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/treefmt.toml"
-
-	test.WriteConfig(t, configPath, config2.Config{
+	cfg := config2.Config{
 		Formatters: map[string]*config2.Formatter{
 			"elm": {
 				Command:  "touch",
+				Options:  []string{"-m"},
 				Includes: []string{"*.elm"},
 			},
 			"nix": {
 				Command:  "touch",
+				Options:  []string{"-m"},
 				Includes: []string{"*.nix"},
 			},
 			"ruby": {
 				Command:  "touch",
+				Options:  []string{"-m"},
 				Includes: []string{"*.rb"},
 			},
 		},
-	})
+	}
 
+	var tempDir, configPath string
+
+	// we reset the temp dir between successive runs as it appears that touching the file and modifying the mtime can
+	// is not granular enough between assertions in quick succession
+	setup := func() {
+		tempDir = test.TempExamples(t)
+		configPath = tempDir + "/treefmt.toml"
+		test.WriteConfig(t, configPath, cfg)
+	}
+
+	setup()
 	_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 3, 3)
 
+	setup()
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 2, 2)
 
+	setup()
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 2, 2)
 
+	setup()
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 1, 1)
 
 	// test bad names
-
+	setup()
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 

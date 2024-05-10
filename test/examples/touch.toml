@@ -1,3 +1,5 @@
 [formatter.echo]
 command = "touch"
+# only change mtime
+options = ["-m"]
 includes = [ "*.*" ]
