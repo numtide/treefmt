@@ -1,4 +1,8 @@
-{inputs, ...}: {
+{
+  self,
+  inputs,
+  ...
+}: {
   imports = [
     inputs.flake-parts.flakeModules.easyOverlay
   ];
@@ -13,7 +17,9 @@
     packages = rec {
       treefmt = inputs'.gomod2nix.legacyPackages.buildGoApplication rec {
         pname = "treefmt";
-        version = "2.0.0+dev";
+        # there's no good way of tying in the version to a git tag or branch
+        # so for simplicity's sake we set the version as the commit revision hash
+        version = self.shortRev or self.dirtyShortRev;
 
         # ensure we are using the same version of go to build with
         inherit (pkgs) go;
@@ -35,6 +41,8 @@
           };
 
         modules = ../gomod2nix.toml;
+
+        CGO_ENABLED = 1;
 
         ldflags = [
           "-s"
