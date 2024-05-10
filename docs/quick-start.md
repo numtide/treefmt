@@ -4,15 +4,14 @@ outline: none
 
 # Quick start
 
-To run `treefmt` in your project, please follow these steps:
+To run `treefmt` in your project, follow these steps:
 
 1. [Install] `treefmt`.
-2. Install any formatters you wish to use with `treefmt`.
+2. Ensure any formatters you wish to use are also installed e.g. `gofmt`
 3. Run `treefmt --init` to generate a basic configuration file `treefmt.toml`.
-4. Edit the configuration, adding formatters as desired. See [here] for more info on how to configure a formatter.
-5. Run `treefmt` with the needed flags and options. You can check the supported options by executing `treefmt --help`.
+4. Edit `treefmt.toml`, [configuring] formatters as desired.
+5. Run `treefmt` with the needed [flags & options].
 
-In the following sections we will guide you through installing and configuring `treefmt` in detail.
-
-[install]: installation.md
-[here]: formatter-spec.md
+[install]: install
+[configuring]: configure
+[flags & options]: usage

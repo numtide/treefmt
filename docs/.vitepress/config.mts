@@ -23,10 +23,11 @@ export default defineConfig({
 
     sidebar: [
       { text: 'Quick Start', link: '/quick-start' },
-      { text: 'Installation', link: '/installation' },
-      { text: 'Overview', link: '/overview' },
-      { text: 'Usage', link: '/usage' },
-      { text: 'Formatter Specification', link: '/formatter-spec' },
+      { text: 'Install Treefmt', link: '/install' },
+      { text: 'Configure Treefmt', link: '/configure' },
+      { text: 'Run Treefmt', link: '/usage' },
+      { text: 'Motivation', link: '/about' },
+      { text: 'Formatter Spec', link: '/formatter-spec' },
       { text: 'Contributing', link: '/contributing' },
       { text: 'FAQ', link: '/faq' },
     ],

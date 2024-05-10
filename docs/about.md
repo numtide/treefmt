@@ -69,7 +69,7 @@ The tool can be invoked manually or integrated into your CI. There's currently n
 -   **IDE integration:** Most of developers are used to formatting a file upon save in the IDE. So far, you can't use `treefmt` for this purpose, but we're working on it 😀
 -   **Pre-commit hook:** It's good to have your code checked for adherence to the project's standards before commit. `treefmt` pre-commit hook won't let you commit if you have formatting issues.
 
-As a next step, learn how to [install] and [use] `treefmt`.
+As a next step, learn how to [install] and [run] `treefmt`.
 
-[install]: installation.md
-[use]: usage.md
+[install]: install
+[run]: usage
