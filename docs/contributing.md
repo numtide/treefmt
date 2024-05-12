@@ -12,14 +12,14 @@ The `treefmt` binaries and this user guide are licensed under the [MIT license](
 
 ## Before you contribute
 
-Here you can take a look at the [existing issues](https://github.com/numtide/treefmt-go/issues). Feel free to contribute, but make sure you have a
+Here you can take a look at the [existing issues](https://github.com/numtide/treefmt/issues). Feel free to contribute, but make sure you have a
 [GitHub account](https://github.com/join) first :slightly_smiling_face:.
 
 If you're new to open source, please read GitHub's guide on [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/). It's a quick read,
 and it's a great way to introduce yourself to how things work behind the scenes in open-source projects.
 
 Before sending a pull request, make sure that you've read all the guidelines. If you don't understand something, please
-[state your question clearly in an issue](https://github.com/numtide/treefmt-go/issues/new) or ask the community on the [treefmt matrix server](https://matrix.to/#/#treefmt:numtide.com).
+[state your question clearly in an issue](https://github.com/numtide/treefmt/issues/new) or ask the community on the [treefmt matrix server](https://matrix.to/#/#treefmt:numtide.com).
 
 ## Creating an issue
 

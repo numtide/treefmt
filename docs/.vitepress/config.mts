@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: '/treefmt-go/',
+  base: '/treefmt/',
 
   title: "Treefmt",
   description: "one CLI to format your repo",
@@ -33,11 +33,11 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/numtide/treefmt-go' }
+      { icon: 'github', link: 'https://github.com/numtide/treefmt' }
     ],
 
     footer: {
-      message: 'Released under the <a href="https://https://github.com/numtide/treefmt-go/src/branch/main/LICENSE.md">MIT License</a>.',
+      message: 'Released under the <a href="https://https://github.com/numtide/treefmt/src/branch/main/LICENSE.md">MIT License</a>.',
       copyright: "Copyright © 2024-present Treefmt Contributors"
     }
   }

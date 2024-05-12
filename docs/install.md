@@ -11,7 +11,7 @@ There are two ways to install `treefmt`:
 
 ## Download a binary file
 
-You can download the latest `treefmt` binaries [here](https://github.com/numtide/treefmt-go/releases).
+You can download the latest `treefmt` binaries [here](https://github.com/numtide/treefmt/releases).
 
 ## Build from source
 

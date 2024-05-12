@@ -48,7 +48,7 @@ To reformat the whole source tree, just type `treefmt` in any folder. This is a 
 
 ## Installation
 
-You can install `treefmt` by downloading the binary. Find the binaries for different architectures [here](https://github.com/numtide/treefmt-go/releases).
+You can install `treefmt` by downloading the binary. Find the binaries for different architectures [here](https://github.com/numtide/treefmt/releases).
 Otherwise, you can install the package from source code — either with [Go], or with the help of [nix].
 
 We describe the installation process in detail in the [docs].
@@ -76,7 +76,7 @@ To explore the tool’s flags and options, type:
 $ treefmt --help
 ```
 
-Additionally, there's a wrapper called [`treefmt-nix`](https://github.com/numtide/treefmt-go-nix) for using `treefmt` with [`nix`](https://github.com/NixOS/nix).
+Additionally, there's a wrapper called [`treefmt-nix`](https://github.com/numtide/treefmt-nix) for using `treefmt` with [`nix`](https://github.com/NixOS/nix).
 
 ## Configuration
 
@@ -108,12 +108,12 @@ Before specifying the formatter in the config, make sure it’s installed.
 
 To find and share existing formatter recipes, take a look at the [docs].
 
-If you are a Nix user, you might also be interested in [treefmt-nix](https://github.com/numtide/treefmt-go-nix) to use Nix to configure and bring in
+If you are a Nix user, you might also be interested in [treefmt-nix](https://github.com/numtide/treefmt-nix) to use Nix to configure and bring in
 formatters.
 
 ## Compatibility
 
-`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt-go/blob/main/docs/formatters-spec.md).
+`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/formatter-spec.md).
 
 For instance, you can go for:
 
@@ -121,7 +121,7 @@ For instance, you can go for:
 -   gofmt for Golang
 -   Prettier for JavaScript/HTML/CSS
 
-Find the full list of supported formatters [here](https://numtide.github.io/treefmt-go/formatters).
+Find the full list of supported formatters [here](https://numtide.github.io/treefmt/configure.html#supported-formatters).
 
 ## Upcoming features
 
@@ -183,7 +183,7 @@ Unless explicitly stated otherwise, any contribution intentionally submitted for
 [Rust]: https://www.rust-lang.org/
 [Go]: https://go.dev/
 [Toml]: https://toml.io/en/
-[docs]: https://numtide.github.io/treefmt-go/
+[docs]: https://numtide.github.io/treefmt/
 [nix]: https://github.com/NixOS/nix
 [nixpkgs-fmt]: https://github.com/nix-community/nixpkgs-fmt
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html

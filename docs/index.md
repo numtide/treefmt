@@ -14,5 +14,5 @@ hero:
           link: /quick-start
         - theme: alt
           text: More Info
-          link: /overview
+          link: /about
 ---
