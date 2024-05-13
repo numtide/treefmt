@@ -179,7 +179,7 @@ Unless explicitly stated otherwise, any contribution intentionally submitted for
 
 [Brian]: https://github.com/brianmcgee
 [zimbatm]: https://github.com/zimbatm
-[Version 1]: https://github.com/numtide/treefmt/tree/archive-rust
+[Version 1]: https://github.com/numtide/treefmt/tree/v1
 [Rust]: https://www.rust-lang.org/
 [Go]: https://go.dev/
 [Toml]: https://toml.io/en/
