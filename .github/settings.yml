@@ -2,13 +2,13 @@ repository:
     # See https://developer.github.com/v3/repos/#edit for all available settings.
 
     # The name of the repository. Changing this will rename the repository
-    name: treefmt-go
+    name: treefmt
 
     # A short description of the repository that will show up on GitHub
     description: one CLI to format your repo
 
     # A URL with more information about the repository
-    homepage: "https://numtide.github.io/treefmt-go/"
+    homepage: "https://numtide.github.io/treefmt/"
 
     # A comma-separated list of topics to set on the repository
     topics: "cli, formatter, unifies"
