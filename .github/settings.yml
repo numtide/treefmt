@@ -8,7 +8,7 @@ repository:
     description: one CLI to format your repo
 
     # A URL with more information about the repository
-    homepage: "https://numtide.github.io/treefmt/"
+    homepage: "https://treefmt.com"
 
     # A comma-separated list of topics to set on the repository
     topics: "cli, formatter, unifies"

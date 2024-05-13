@@ -8,7 +8,7 @@ This file contains instructions that will help you make a contribution.
 
 ## Licensing
 
-The `treefmt` binaries and this user guide are licensed under the [MIT license](https://numtide.github.io/treefmt/LICENSE.html).
+The `treefmt` binaries and this user guide are licensed under the [MIT license](https://github.com/numtide/treefmt/blob/main/LICENSE).
 
 ## Before you contribute
 

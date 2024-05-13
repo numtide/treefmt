@@ -121,7 +121,7 @@ For instance, you can go for:
 -   gofmt for Golang
 -   Prettier for JavaScript/HTML/CSS
 
-Find the full list of supported formatters [here](https://numtide.github.io/treefmt/configure.html#supported-formatters).
+Find the full list of supported formatters [here](https://treefmt.com/configure.html#supported-formatters).
 
 ## Upcoming features
 
@@ -183,7 +183,7 @@ Unless explicitly stated otherwise, any contribution intentionally submitted for
 [Rust]: https://www.rust-lang.org/
 [Go]: https://go.dev/
 [Toml]: https://toml.io/en/
-[docs]: https://numtide.github.io/treefmt/
+[docs]: https://treefmt.com
 [nix]: https://github.com/NixOS/nix
 [nixpkgs-fmt]: https://github.com/nix-community/nixpkgs-fmt
 [clang-format]: https://clang.llvm.org/docs/ClangFormat.html
