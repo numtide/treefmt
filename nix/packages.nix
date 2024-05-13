@@ -19,7 +19,8 @@
         pname = "treefmt";
         # there's no good way of tying in the version to a git tag or branch
         # so for simplicity's sake we set the version as the commit revision hash
-        version = self.shortRev or self.dirtyShortRev;
+        # we remove the `-dirty` suffix to avoid a lot of unnecessary rebuilds in local dev
+        version = lib.removeSuffix "-dirty" (self.shortRev or self.dirtyShortRev);
 
         # ensure we are using the same version of go to build with
         inherit (pkgs) go;
