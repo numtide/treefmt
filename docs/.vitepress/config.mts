@@ -38,7 +38,7 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the <a href="https://https://github.com/numtide/treefmt/src/branch/main/LICENSE.md">MIT License</a>.',
-      copyright: "Copyright © 2024-present Treefmt Contributors"
+      copyright: "Copyright © Numtide & Contributors"
     }
   }
 })
