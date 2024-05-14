@@ -15,7 +15,7 @@ type Format struct {
 	ClearCache            bool               `short:"c" help:"Reset the evaluation cache. Use in case the cache is not precise enough."`
 	ConfigFile            string             `type:"existingfile" default:"./treefmt.toml" help:"The config file to use."`
 	FailOnChange          bool               `help:"Exit with error if any changes were made. Useful for CI."`
-	Formatters            []string           `help:"Specify formatters to apply. Defaults to all formatters."`
+	Formatters            []string           `short:"f" help:"Specify formatters to apply. Defaults to all formatters."`
 	TreeRoot              string             `type:"existingdir" default:"." help:"The root directory from which treefmt will start walking the filesystem."`
 	Walk                  walk.Type          `enum:"auto,git,filesystem" default:"auto" help:"The method used to traverse the files within --tree-root. Currently supports 'auto', 'git' or 'filesystem'."`
 	Verbosity             int                `name:"verbose" short:"v" type:"counter" default:"0" env:"LOG_LEVEL" help:"Set the verbosity of logs e.g. -vv."`
