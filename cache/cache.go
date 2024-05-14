@@ -89,14 +89,23 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 				return fmt.Errorf("failed to retrieve cache entry for formatter %v: %w", name, err)
 			}
 
-			clean = clean || entry == nil || !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
-			logger.Debug(
-				"checking if formatter has changed",
-				"name", name,
-				"clean", clean,
-				"entry", entry,
-				"stat", stat,
-			)
+			isNew := entry == nil
+			hasChanged := entry != nil && !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
+
+			if isNew {
+				logger.Debugf("formatter '%s' is new", name)
+			} else if hasChanged {
+				logger.Debug("formatter '%s' has changed",
+					name,
+					"size", stat.Size(),
+					"modTime", stat.ModTime(),
+					"cachedSize", entry.Size,
+					"cachedModTime", entry.Modified,
+				)
+			}
+
+			// update overall clean flag
+			clean = clean || isNew || hasChanged
 
 			// record formatters info
 			entry = &Entry{
