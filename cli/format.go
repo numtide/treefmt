@@ -372,20 +372,24 @@ func applyFormatters(ctx context.Context) func() error {
 
 		// iterate the files channel, checking if any pipeline wants it, and attempting to apply if so.
 		for file := range filesCh {
-			var matched bool
+			var matches []string
+
 			for key, pipeline := range pipelines {
 				if !pipeline.Wants(file) {
 					continue
 				}
-				matched = true
+				matches = append(matches, key)
 				tryApply(key, file)
 			}
-			if matched {
-				stats.Add(stats.Matched, 1)
-			} else {
+			switch len(matches) {
+			case 0:
 				log.Debugf("no match found: %s", file.Path)
 				// no match, so we send it direct to the processed channel
 				processedCh <- file
+			case 1:
+				stats.Add(stats.Matched, 1)
+			default:
+				return fmt.Errorf("path '%s' matched multiple formatters/pipelines %v", file.Path, matches)
 			}
 		}
 
