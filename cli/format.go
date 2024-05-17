@@ -57,12 +57,12 @@ func (f *Format) Run() (err error) {
 	}
 
 	// create a prefixed logger
-	l := log.WithPrefix("format")
+	log.SetPrefix("format")
 
 	// ensure cache is closed on return
 	defer func() {
 		if err := cache.Close(); err != nil {
-			l.Errorf("failed to close cache: %v", err)
+			log.Errorf("failed to close cache: %v", err)
 		}
 	}()
 
@@ -87,7 +87,7 @@ func (f *Format) Run() (err error) {
 		formatterCfg := cfg.Formatters[name]
 		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
-			l.Debugf("formatter not found: %v", name)
+			log.Debugf("formatter not found: %v", name)
 			continue
 		} else if err != nil {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
@@ -383,6 +383,7 @@ func applyFormatters(ctx context.Context) func() error {
 			if matched {
 				stats.Add(stats.Matched, 1)
 			} else {
+				log.Debugf("no match found: %s", file.Path)
 				// no match, so we send it direct to the processed channel
 				processedCh <- file
 			}
