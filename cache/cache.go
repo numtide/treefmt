@@ -191,7 +191,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 	start := time.Now()
 
 	defer func() {
-		logger.Infof("finished generating change set in %v", time.Since(start))
+		logger.Debugf("finished generating change set in %v", time.Since(start))
 	}()
 
 	var tx *bolt.Tx
@@ -272,7 +272,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 func Update(files []*walk.File) error {
 	start := time.Now()
 	defer func() {
-		logger.Infof("finished processing %v paths in %v", len(files), time.Since(start))
+		logger.Debugf("finished processing %v paths in %v", len(files), time.Since(start))
 	}()
 
 	if len(files) == 0 {
