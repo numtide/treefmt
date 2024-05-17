@@ -89,14 +89,23 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 				return fmt.Errorf("failed to retrieve cache entry for formatter %v: %w", name, err)
 			}
 
-			clean = clean || entry == nil || !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
-			logger.Debug(
-				"checking if formatter has changed",
-				"name", name,
-				"clean", clean,
-				"entry", entry,
-				"stat", stat,
-			)
+			isNew := entry == nil
+			hasChanged := entry != nil && !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
+
+			if isNew {
+				logger.Debugf("formatter '%s' is new", name)
+			} else if hasChanged {
+				logger.Debug("formatter '%s' has changed",
+					name,
+					"size", stat.Size(),
+					"modTime", stat.ModTime(),
+					"cachedSize", entry.Size,
+					"cachedModTime", entry.Modified,
+				)
+			}
+
+			// update overall clean flag
+			clean = clean || isNew || hasChanged
 
 			// record formatters info
 			entry = &Entry{
@@ -182,7 +191,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 	start := time.Now()
 
 	defer func() {
-		logger.Infof("finished generating change set in %v", time.Since(start))
+		logger.Debugf("finished generating change set in %v", time.Since(start))
 	}()
 
 	var tx *bolt.Tx
@@ -263,7 +272,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 func Update(files []*walk.File) error {
 	start := time.Now()
 	defer func() {
-		logger.Infof("finished processing %v paths in %v", len(files), time.Since(start))
+		logger.Debugf("finished processing %v paths in %v", len(files), time.Since(start))
 	}()
 
 	if len(files) == 0 {
