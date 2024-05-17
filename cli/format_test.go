@@ -106,7 +106,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 	assertStats(t, as, 31, 31, 2, 2)
 
 	setup()
-	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "ruby,nix")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "ruby,nix")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 2, 2)
 

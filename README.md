@@ -21,8 +21,7 @@ seems trivial at first sight — you can set up the required language formatter 
 However, contributing to multiple projects requires more effort: you must change your formatter configurations each
 time you switch between projects or call them manually.
 
-Formatting requires less effort if a universal formatter for multiple languages, which is also project-specific, is in
-place.
+Formatting requires less effort with a universal formatter that supports multiple languages but is still project-specific.
 
 ## About treefmt
 
