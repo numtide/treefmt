@@ -80,7 +80,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) 
 	}
 
 	// execute the command
-	cmd := exec.CommandContext(ctx, f.config.Command, args...)
+	cmd := exec.CommandContext(ctx, f.executable, args...)
 	cmd.Dir = f.workingDir
 
 	if out, err := cmd.CombinedOutput(); err != nil {
