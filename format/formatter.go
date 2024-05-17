@@ -83,6 +83,9 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) 
 	cmd := exec.CommandContext(ctx, f.executable, args...)
 	cmd.Dir = f.workingDir
 
+	// log out the command being executed
+	f.log.Debugf("executing: %s", cmd.String())
+
 	if out, err := cmd.CombinedOutput(); err != nil {
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
