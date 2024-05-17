@@ -48,6 +48,10 @@ github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399 h1:eMj
 github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399/go.mod h1:1OCfN199q1Jm3HZlxleg+Dw/mwps2Wbk9frAWm+4FII=
 github.com/go-git/go-git/v5 v5.12.0 h1:7Md+ndsjrzZxbddRDZjF14qK+NN56sy6wkqaVrjZtys=
 github.com/go-git/go-git/v5 v5.12.0/go.mod h1:FTM9VKtnI2m65hNI/TenDDDnUf2Q9FHnXYjuz9i5OEY=
+github.com/go-git/go-git/v5 v5.12.1-0.20240409060936-cd6633c3c665 h1:+M6D6MplKwRqmw8b41MArUGFsGTnl24+/S40I0yrhKs=
+github.com/go-git/go-git/v5 v5.12.1-0.20240409060936-cd6633c3c665/go.mod h1:QZbSbsaXQD7v0yvddAhVE2UfW5wGmeqHQ0UnOSr6JYQ=
+github.com/go-git/go-git/v5 v5.12.1-0.20240516215126-9cc340a7fc5c h1:Pyuh3Y6kb/+k7yl5nLN6pcQ+7isiJ1PnBj3QSUH1hbQ=
+github.com/go-git/go-git/v5 v5.12.1-0.20240516215126-9cc340a7fc5c/go.mod h1:Tzg+feu/PVazFrRFtWHxfvErT+p+Zo3Yg0nzEhJdxW4=
 github.com/go-logfmt/logfmt v0.6.0 h1:wGYYu3uicYdqXVgoYbvnkrPVXkuLM1p1ifugDMEdRi4=
 github.com/go-logfmt/logfmt v0.6.0/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
