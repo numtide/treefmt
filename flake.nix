@@ -17,8 +17,7 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     treefmt-nix = {
-      # todo switch back to numtide/treefmt-nix once merged
-      url = "github:brianmcgee/treefmt-nix/feat/pipelines";
+      url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     devshell = {
