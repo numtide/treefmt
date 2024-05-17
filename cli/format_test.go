@@ -196,6 +196,37 @@ func TestIncludesAndExcludes(t *testing.T) {
 	assertStats(t, as, 31, 31, 2, 0)
 }
 
+func TestMatchingMultiplePipelines(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/multiple.toml"
+
+	cfg := config2.Config{
+		Formatters: map[string]*config2.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+			"touch": {
+				Command:  "touch",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, cfg)
+	_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	as.ErrorContains(err, "matched multiple formatters/pipelines")
+	as.ErrorContains(err, "echo")
+	as.ErrorContains(err, "touch")
+
+	// run with only one formatter
+	test.WriteConfig(t, configPath, cfg)
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "echo")
+	as.NoError(err)
+}
+
 func TestCache(t *testing.T) {
 	as := require.New(t)
 
