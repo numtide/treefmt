@@ -4,7 +4,7 @@ layout: home
 
 hero:
     name: "Treefmt"
-    text: "One CLI to format your repo"
+    tagline: Code formatting multiplexer
     image:
         src: /treefmt.gif
         alt: Treefmt
@@ -15,4 +15,15 @@ hero:
         - theme: alt
           text: More Info
           link: /about
+
+features:
+    - icon: ⚡
+      title: Fast
+      details: Run all code formatters in parallel
+    - icon: ⛁
+      title: Cached
+      details: Only format files that have changed
+    - icon: ☷
+      title: Unified
+      details: Compatible with at least 74 code formatters
 ---
