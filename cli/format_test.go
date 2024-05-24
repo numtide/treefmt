@@ -196,37 +196,6 @@ func TestIncludesAndExcludes(t *testing.T) {
 	assertStats(t, as, 31, 31, 2, 0)
 }
 
-func TestMatchingMultiplePipelines(t *testing.T) {
-	as := require.New(t)
-
-	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/multiple.toml"
-
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
-			"echo": {
-				Command:  "echo",
-				Includes: []string{"*"},
-			},
-			"touch": {
-				Command:  "touch",
-				Includes: []string{"*"},
-			},
-		},
-	}
-
-	test.WriteConfig(t, configPath, cfg)
-	_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorContains(err, "matched multiple formatters/pipelines")
-	as.ErrorContains(err, "echo")
-	as.ErrorContains(err, "touch")
-
-	// run with only one formatter
-	test.WriteConfig(t, configPath, cfg)
-	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "echo")
-	as.NoError(err)
-}
-
 func TestCache(t *testing.T) {
 	as := require.New(t)
 
@@ -604,25 +573,23 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 
 	test.WriteConfig(t, configPath, config2.Config{
 		Formatters: map[string]*config2.Formatter{
-			// a and b should execute in lexicographical order as they have default priority 0, with c last since it has
-			// priority 1
+			// a and b have no priority set, which means they default to 0 and should execute first
+			// a and b should execute in lexicographical order
+			// c should execute first since it has a priority of 1
 			"fmt-a": {
 				Command:  "test-fmt",
 				Options:  []string{"fmt-a"},
 				Includes: []string{"*.py"},
-				Pipeline: "foo",
 			},
 			"fmt-b": {
 				Command:  "test-fmt",
 				Options:  []string{"fmt-b"},
 				Includes: []string{"*.py"},
-				Pipeline: "foo",
 			},
 			"fmt-c": {
 				Command:  "test-fmt",
 				Options:  []string{"fmt-c"},
 				Includes: []string{"*.py"},
-				Pipeline: "foo",
 				Priority: 1,
 			},
 		},

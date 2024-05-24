@@ -59,7 +59,6 @@ func TestReadConfigFile(t *testing.T) {
 	as.Nil(alejandra.Options)
 	as.Equal([]string{"*.nix"}, alejandra.Includes)
 	as.Equal([]string{"examples/nix/sources.nix"}, alejandra.Excludes)
-	as.Equal("nix", alejandra.Pipeline)
 	as.Equal(1, alejandra.Priority)
 
 	// deadnix
@@ -69,7 +68,6 @@ func TestReadConfigFile(t *testing.T) {
 	as.Nil(deadnix.Options)
 	as.Equal([]string{"*.nix"}, deadnix.Includes)
 	as.Nil(deadnix.Excludes)
-	as.Equal("nix", deadnix.Pipeline)
 	as.Equal(2, deadnix.Priority)
 
 	// ruby

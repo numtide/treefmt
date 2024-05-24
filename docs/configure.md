@@ -23,19 +23,19 @@ includes = ["*.go"]
 command = "black"
 includes = ["*.py"]
 
+# use the priority field to control the order of execution
+
 # run shellcheck first
 [formatter.shellcheck]
 command = "shellcheck"
 includes = ["*.sh"]
-pipeline = "sh"
-priority = 0
+priority = 0    # default is 0, but we set it here for clarity
 
 # shfmt second
 [formatter.shfmt]
 command = "shfmt"
 options = ["-s", "-w"]
 includes = ["*.sh"]
-pipeline = "sh"
 priority = 1
 ```
 
@@ -49,13 +49,21 @@ priority = 1
 -   `options` - an optional list of args to be passed to `command`.
 -   `includes` - a list of glob patterns used to determine whether the formatter should be applied against a given path.
 -   `excludes` - an optional list of glob patterns used to exclude certain files from this formatter.
--   `pipeline` - an optional key used to group related formatters together, ensuring they are executed sequentially
-    against a given path.
--   `priority` - indicates the order of execution when this formatter is operating as part of a pipeline. Greater
-    precedence is given to lower numbers, with the default being `0`.
+-   `priority` - influences the order of execution. Greater precedence is given to lower numbers, with the default being `0`.
 
-> When two or more formatters in a pipeline have the same priority, they are executed in lexicographical order to
-> ensure deterministic behaviour over multiple executions.
+## Same file, multiple formatters?
+
+For each file, `treefmt` determines a list of formatters based on the configured `includes` / `excludes` rules. This list is
+then sorted, first by priority (lower the value, higher the precedence) and secondly by formatter name (lexicographically).
+
+The resultant sequence of formatters is used to create a batch key, and similarly matched files get added to that batch
+until it is full, at which point the files are passed to each formatter in turn.
+
+This means that `treefmt` **guarantees only one formatter will be operating on a given file at any point in time**.
+Another consequence is that formatting is deterministic for a given file and a given `treefmt` configuration.
+
+By setting the priority fields appropriately, you can control the order in which those formatters are applied for any
+files they _both happen to match on_.
 
 ## Supported Formatters
 
