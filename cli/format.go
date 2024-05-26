@@ -30,11 +30,11 @@ const (
 )
 
 var (
-	globalExcludes []glob.Glob
-	formatters     map[string]*format.Formatter
-	pipelines      map[string]*format.Pipeline
-	filesCh        chan *walk.File
-	processedCh    chan *walk.File
+	excludes   []glob.Glob
+	formatters map[string]*format.Formatter
+
+	filesCh     chan *walk.File
+	processedCh chan *walk.File
 
 	ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 )
@@ -73,21 +73,18 @@ func (f *Format) Run() (err error) {
 	}
 
 	// compile global exclude globs
-	if globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
+	if excludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
 		return fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
-	// initialise pipelines
-	pipelines = make(map[string]*format.Pipeline)
+	// initialise formatters
 	formatters = make(map[string]*format.Formatter)
 
-	// iterate the formatters in lexicographical order
-	for _, name := range cfg.Names {
-		// init formatter
-		formatterCfg := cfg.Formatters[name]
-		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, globalExcludes)
+	for name, formatterCfg := range cfg.Formatters {
+		formatter, err := format.NewFormatter(name, Cli.TreeRoot, formatterCfg, excludes)
+
 		if errors.Is(err, format.ErrCommandNotFound) && Cli.AllowMissingFormatter {
-			log.Debugf("formatter not found: %v", name)
+			log.Debugf("formatter command not found: %v", name)
 			continue
 		} else if err != nil {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
@@ -95,23 +92,6 @@ func (f *Format) Run() (err error) {
 
 		// store formatter by name
 		formatters[name] = formatter
-
-		// If no pipeline is configured, we add the formatter to a nominal pipeline of size 1 with the key being the
-		// formatter's name. If a pipeline is configured, we add the formatter to a pipeline keyed by
-		// 'p:<pipeline_name>' in which it is sorted by priority.
-		if formatterCfg.Pipeline == "" {
-			pipeline := format.Pipeline{}
-			pipeline.Add(formatter)
-			pipelines[name] = &pipeline
-		} else {
-			key := fmt.Sprintf("p:%s", formatterCfg.Pipeline)
-			pipeline, ok := pipelines[key]
-			if !ok {
-				pipeline = &format.Pipeline{}
-				pipelines[key] = pipeline
-			}
-			pipeline.Add(formatter)
-		}
 	}
 
 	// open the cache
@@ -304,37 +284,43 @@ func walkFilesystem(ctx context.Context) func() error {
 func applyFormatters(ctx context.Context) func() error {
 	// create our own errgroup for concurrent formatting tasks
 	fg, ctx := errgroup.WithContext(ctx)
+	// simple optimization to avoid too many concurrent formatting tasks
+	// we can queue them up faster than the formatters can process them, this paces things a bit
+	fg.SetLimit(runtime.NumCPU())
 
-	// pre-initialise batches keyed by pipeline
-	batches := make(map[string][]*walk.File)
-	for key := range pipelines {
-		batches[key] = make([]*walk.File, 0, BatchSize)
-	}
+	// track batches of formatting task based on their batch keys, which are determined by the unique sequence of
+	// formatters which should be applied to their respective files
+	batches := make(map[string][]*format.Task)
 
-	// for a given pipeline key, add the provided file to the current batch and trigger a format if the batch size has
-	// been reached
-	tryApply := func(key string, file *walk.File) {
-		// append to batch
-		batches[key] = append(batches[key], file)
-
-		// check if the batch is full
+	apply := func(key string, flush bool) {
+		// lookup the batch and exit early if it's empty
 		batch := batches[key]
-		if len(batch) == BatchSize {
-			// get the pipeline
-			pipeline := pipelines[key]
+		if len(batch) == 0 {
+			return
+		}
 
-			// copy the batch
-			files := make([]*walk.File, len(batch))
-			copy(files, batch)
+		// process the batch if it's full, or we've been asked to flush partial batches
+		if flush || len(batch) == BatchSize {
 
-			// apply to the pipeline
+			// copy the batch as we re-use it for the next batch
+			tasks := make([]*format.Task, len(batch))
+			copy(tasks, batch)
+
+			// asynchronously apply the sequence formatters to the batch
 			fg.Go(func() error {
-				if err := pipeline.Apply(ctx, files); err != nil {
-					return err
+				// iterate the formatters, applying them in sequence to the batch of tasks
+				// we get the formatters list from the first task since they have all the same formatters list
+				for _, f := range tasks[0].Formatters {
+					if err := f.Apply(ctx, tasks); err != nil {
+						return err
+					}
 				}
-				for _, path := range files {
-					processedCh <- path
+
+				// pass each file to the processed channel
+				for _, task := range tasks {
+					processedCh <- task.File
 				}
+
 				return nil
 			})
 
@@ -343,25 +329,12 @@ func applyFormatters(ctx context.Context) func() error {
 		}
 	}
 
-	// format any partial batches
-	flushBatches := func() {
-		for key, pipeline := range pipelines {
-
-			batch := batches[key]
-			pipeline := pipeline // capture for closure
-
-			if len(batch) > 0 {
-				fg.Go(func() error {
-					if err := pipeline.Apply(ctx, batch); err != nil {
-						return fmt.Errorf("%s failure: %w", key, err)
-					}
-					for _, path := range batch {
-						processedCh <- path
-					}
-					return nil
-				})
-			}
-		}
+	tryApply := func(task *format.Task) {
+		// append to batch
+		key := task.BatchKey
+		batches[key] = append(batches[key], task)
+		// try to apply
+		apply(key, false)
 	}
 
 	return func() error {
@@ -370,35 +343,38 @@ func applyFormatters(ctx context.Context) func() error {
 			close(processedCh)
 		}()
 
-		// iterate the files channel, checking if any pipeline wants it, and attempting to apply if so.
+		// iterate the files channel
 		for file := range filesCh {
-			var matches []string
 
-			for key, pipeline := range pipelines {
-				if !pipeline.Wants(file) {
-					continue
+			// determine a list of formatters that are interested in file
+			var matches []*format.Formatter
+			for _, formatter := range formatters {
+				if formatter.Wants(file) {
+					matches = append(matches, formatter)
 				}
-				matches = append(matches, key)
-				tryApply(key, file)
 			}
-			switch len(matches) {
-			case 0:
-				log.Debugf("no match found: %s", file.Path)
+
+			if len(matches) == 0 {
 				// no match, so we send it direct to the processed channel
+				log.Debugf("no match found: %s", file.Path)
 				processedCh <- file
-			case 1:
+			} else {
+				// record the match
 				stats.Add(stats.Matched, 1)
-			default:
-				return fmt.Errorf("path '%s' matched multiple formatters/pipelines %v", file.Path, matches)
+				// create a new format task, add it to a batch based on its batch key and try to apply if the batch is full
+				task := format.NewTask(file, matches)
+				tryApply(&task)
 			}
 		}
 
 		// flush any partial batches which remain
-		flushBatches()
+		for key := range batches {
+			apply(key, true)
+		}
 
 		// wait for all outstanding formatting tasks to complete
 		if err := fg.Wait(); err != nil {
-			return fmt.Errorf("pipeline processing failure: %w", err)
+			return fmt.Errorf("formatting failure: %w", err)
 		}
 		return nil
 	}

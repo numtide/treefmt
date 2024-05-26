@@ -40,43 +40,28 @@ func (f *Formatter) Executable() string {
 	return f.executable
 }
 
-func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) error {
+func (f *Formatter) Name() string {
+	return f.name
+}
+
+func (f *Formatter) Priority() int {
+	return f.config.Priority
+}
+
+func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 	start := time.Now()
 
 	// construct args, starting with config
 	args := f.config.Options
 
-	// If filter is true it indicates we are executing as part of a pipeline.
-	// In such a scenario each formatter must sub filter the paths provided as different formatters might want different
-	// files in a pipeline.
-	if filter {
-		// reset the batch
-		f.batch = f.batch[:0]
+	// exit early if nothing to process
+	if len(tasks) == 0 {
+		return nil
+	}
 
-		// filter paths
-		for _, file := range files {
-			if f.Wants(file) {
-				f.batch = append(f.batch, file.RelPath)
-			}
-		}
-
-		// exit early if nothing to process
-		if len(f.batch) == 0 {
-			return nil
-		}
-
-		// append paths to the args
-		args = append(args, f.batch...)
-	} else {
-		// exit early if nothing to process
-		if len(files) == 0 {
-			return nil
-		}
-
-		// append paths to the args
-		for _, file := range files {
-			args = append(args, file.RelPath)
-		}
+	// append paths to the args
+	for _, task := range tasks {
+		args = append(args, task.File.RelPath)
 	}
 
 	// execute the command
@@ -95,7 +80,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File, filter bool) 
 
 	//
 
-	f.log.Infof("%v files processed in %v", len(files), time.Now().Sub(start))
+	f.log.Infof("%v files processed in %v", len(tasks), time.Now().Sub(start))
 
 	return nil
 }
@@ -136,10 +121,10 @@ func NewFormatter(
 	f.executable = executable
 
 	// initialise internal state
-	if cfg.Pipeline == "" {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
+	if cfg.Priority > 0 {
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%d]", name, cfg.Priority))
 	} else {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%s]", cfg.Pipeline, name))
+		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
 	}
 
 	f.includes, err = CompileGlobs(cfg.Includes)

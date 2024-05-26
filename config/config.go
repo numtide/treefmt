@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -13,7 +12,6 @@ type Config struct {
 		// Excludes is an optional list of glob patterns used to exclude certain files from all formatters.
 		Excludes []string
 	}
-	Names      []string              `toml:"-"`
 	Formatters map[string]*Formatter `toml:"formatter"`
 }
 
@@ -39,13 +37,6 @@ func ReadFile(path string, names []string) (cfg *Config, err error) {
 		// updated formatters
 		cfg.Formatters = filtered
 	}
-
-	// sort the formatter names so that, as we construct pipelines, we add formatters in a determinstic fashion. This
-	// ensures a deterministic order even when all priority values are the same e.g. 0
-	for name := range cfg.Formatters {
-		cfg.Names = append(cfg.Names, name)
-	}
-	sort.Strings(cfg.Names)
 
 	return
 }

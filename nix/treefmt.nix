@@ -24,17 +24,14 @@
 
       settings.formatter = {
         deadnix = {
-          pipeline = "nix";
           priority = 1;
         };
 
         statix = {
-          pipeline = "nix";
           priority = 2;
         };
 
         alejandra = {
-          pipeline = "nix";
           priority = 3;
         };
 

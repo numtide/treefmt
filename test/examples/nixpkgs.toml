@@ -4,11 +4,9 @@
 command = "deadnix"
 options = ["--edit"]
 includes = ["*.nix"]
-pipeline = "nix"
 priority = 1
 
 [formatter.nixpkgs-fmt]
 command = "nixpkgs-fmt"
 includes = ["*.nix"]
-pipeline = "nix"
 priority = 2
