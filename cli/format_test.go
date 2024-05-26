@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	config2 "git.numtide.com/numtide/treefmt/config"
+	"git.numtide.com/numtide/treefmt/config"
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/test"
 
@@ -47,8 +47,8 @@ func TestAllowMissingFormatter(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	test.WriteConfig(t, configPath, config.Config{
+		Formatters: map[string]*config.Formatter{
 			"foo-fmt": {
 				Command: "foo-fmt",
 			},
@@ -65,8 +65,8 @@ func TestAllowMissingFormatter(t *testing.T) {
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"elm": {
 				Command:  "touch",
 				Options:  []string{"-m"},
@@ -131,8 +131,8 @@ func TestIncludesAndExcludes(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -203,8 +203,8 @@ func TestCache(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -261,8 +261,8 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	configPath := tempDir + "/treefmt.toml"
 
 	// test without any excludes
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -286,8 +286,8 @@ func TestFailOnChange(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"touch": {
 				Command:  "touch",
 				Includes: []string{"*"},
@@ -322,8 +322,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as.NoError(os.Setenv("PATH", binPath+":"+os.Getenv("PATH")))
 
 	// start with 2 formatters
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"python": {
 				Command:  "black",
 				Includes: []string{"*.py"},
@@ -367,7 +367,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, 31, 0, 0, 0)
 
 	// add go formatter
-	cfg.Formatters["go"] = &config2.Formatter{
+	cfg.Formatters["go"] = &config.Formatter{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
@@ -417,8 +417,8 @@ func TestGitWorktree(t *testing.T) {
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
 	// basic config
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -484,8 +484,8 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(os.Chdir(tempDir))
 
 	// basic config
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -528,8 +528,8 @@ func TestStdIn(t *testing.T) {
 	as.NoError(os.Chdir(tempDir))
 
 	// basic config
-	cfg := config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -571,8 +571,8 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config2.Config{
-		Formatters: map[string]*config2.Formatter{
+	test.WriteConfig(t, configPath, config.Config{
+		Formatters: map[string]*config.Formatter{
 			// a and b have no priority set, which means they default to 0 and should execute first
 			// a and b should execute in lexicographical order
 			// c should execute first since it has a priority of 1
