@@ -26,6 +26,7 @@ Flags:
   -v, --verbose                         Set the verbosity of logs e.g. -vv ($LOG_LEVEL).
   -V, --version                         Print version.
   -i, --init                            Create a new treefmt.toml.
+  -u, --on-unmatched=warn               Log paths that did not match any formatters at the specified log level. Possible values are debug,info,warn,error,fatal.
       --stdin                           Format the context passed in via stdin.
       --cpu-profile=STRING              The file into which a cpu profile will be written.
 ```
@@ -95,9 +96,17 @@ while `-vv` will also show `[DEBUG]` messages.
 
 Create a new `treefmt.toml`.
 
+### `-u --on-unmatched`
+
+Log paths that did not match any formatters at the specified log level. Possible values are debug,info,warn,error,fatal.
+
 ### `--stdin`
 
-Format the content passed in via stdin.
+Format the context passed in via stdin.
+
+### `--cpu-profile`
+
+The file into which a cpu profile will be written.
 
 ### `-V, --version`
 

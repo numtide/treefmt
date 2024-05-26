@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -20,6 +21,63 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestOnUnmatched(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+
+	paths := []string{
+		"go/go.mod",
+		"haskell/haskell.cabal",
+		"haskell/treefmt.toml",
+		"html/scripts/.gitkeep",
+		"nixpkgs.toml",
+		"python/requirements.txt",
+		"rust/Cargo.toml",
+		"touch.toml",
+		"treefmt.toml",
+	}
+
+	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
+	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s/%s", tempDir, paths[0]))
+
+	checkOutput := func(level string, output []byte) {
+		for _, p := range paths {
+			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s/%s", level, tempDir, p))
+		}
+	}
+
+	// default is warn
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c")
+	as.NoError(err)
+	checkOutput("WARN", out)
+
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "--on-unmatched", "warn")
+	as.NoError(err)
+	checkOutput("WARN", out)
+
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-u", "error")
+	as.NoError(err)
+	checkOutput("ERRO", out)
+
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-v", "--on-unmatched", "info")
+	as.NoError(err)
+	checkOutput("INFO", out)
+
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv", "-u", "debug")
+	as.NoError(err)
+	checkOutput("DEBU", out)
+}
 
 func TestCpuProfile(t *testing.T) {
 	as := require.New(t)
