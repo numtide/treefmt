@@ -568,6 +568,15 @@ go/main.go
 func TestDeterministicOrderingInPipeline(t *testing.T) {
 	as := require.New(t)
 
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
@@ -595,7 +604,7 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 		},
 	})
 
-	_, err := cmd(t, "-C", tempDir)
+	_, err = cmd(t, "-C", tempDir)
 	as.NoError(err)
 
 	matcher := regexp.MustCompile("^fmt-(.*)")
