@@ -23,9 +23,10 @@ builds:
           - linux
           - darwin
 
-# marks the release as pre-release
+# marks the release as draft
 # this is to prevent noise until we have a stable 2.x
-prerelease: true
+release:
+    draft: true
 
 changelog:
     sort: asc
