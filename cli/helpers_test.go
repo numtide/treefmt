@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/charmbracelet/log"
+
 	"git.numtide.com/numtide/treefmt/stats"
 
 	"git.numtide.com/numtide/treefmt/test"
@@ -33,7 +35,7 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 
 	// create a new kong context
-	p := newKong(t, &Cli)
+	p := newKong(t, &Cli, Options...)
 	ctx, err := p.Parse(args)
 	if err != nil {
 		return nil, err
@@ -49,6 +51,8 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	// swap them temporarily
 	os.Stdout = tempOut
 	os.Stderr = tempOut
+
+	log.SetOutput(tempOut)
 
 	// run the command
 	if err = ctx.Run(); err != nil {
@@ -68,6 +72,7 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	// swap outputs back
 	os.Stdout = stdout
 	os.Stderr = stderr
+	log.SetOutput(stderr)
 
 	return out, nil
 }

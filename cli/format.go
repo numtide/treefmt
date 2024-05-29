@@ -40,6 +40,9 @@ var (
 )
 
 func (f *Format) Run() (err error) {
+	// set log level and other options
+	configureLogging()
+
 	// cpu profiling
 	if Cli.CpuProfile != "" {
 		cpuProfile, err := os.Create(Cli.CpuProfile)
@@ -355,8 +358,10 @@ func applyFormatters(ctx context.Context) func() error {
 			}
 
 			if len(matches) == 0 {
-				// no match, so we send it direct to the processed channel
-				log.Debugf("no match found: %s", file.Path)
+				if Cli.OnUnmatched == log.FatalLevel {
+					return fmt.Errorf("no formatter for path: %s", file.Path)
+				}
+				log.Logf(Cli.OnUnmatched, "no formatter for path: %s", file.Path)
 				processedCh <- file
 			} else {
 				// record the match
