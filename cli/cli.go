@@ -22,7 +22,7 @@ type Format struct {
 	Version               bool               `name:"version" short:"V" help:"Print version."`
 	Init                  bool               `name:"init" short:"i" help:"Create a new treefmt.toml."`
 
-	OnUnmatched log.Level `name:"on-unmatched" short:"u" default:"warn" help:"Log paths that did not match any formatters at the specified log level. Possible values are debug,info,warn,error,fatal."`
+	OnUnmatched log.Level `name:"on-unmatched" short:"u" default:"warn" help:"Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are <debug|info|warn|error|fatal>."`
 
 	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree."`
 	Stdin bool     `help:"Format the context passed in via stdin."`
