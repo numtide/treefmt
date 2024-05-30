@@ -81,24 +81,21 @@ func (f *Format) Run() (err error) {
 		}
 	}
 
-	// search for the project root unless specified
+	// default the tree root to the directory containing the config file
 	if Cli.TreeRoot == "" {
-		// use the location of the treefmt.toml file by default
-		dir := filepath.Dir(Cli.ConfigFile)
+		Cli.TreeRoot = filepath.Dir(Cli.ConfigFile)
+	}
 
-		// search using the --tree-root-file if specified
-		if Cli.TreeRootFile != "" {
-			pwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			_, dir, err = findUp(pwd, Cli.TreeRootFile)
-			if err != nil {
-				return err
-			}
+	// search the tree root using the --tree-root-file if specified
+	if Cli.TreeRootFile != "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
 		}
-
-		Cli.TreeRoot = dir
+		_, Cli.TreeRoot, err = findUp(pwd, Cli.TreeRootFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Debugf("config-file=%s tree-root=%s", Cli.ConfigFile, Cli.TreeRoot)
