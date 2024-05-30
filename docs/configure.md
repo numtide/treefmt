@@ -41,14 +41,14 @@ priority = 1
 
 ## Global Options
 
--   `excludes` - an optional list of glob patters used to exclude certain files from all formatters.
+-   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from all formatters.
 
 ## Formatter Options
 
 -   `command` - the command to invoke when applying the formatter.
 -   `options` - an optional list of args to be passed to `command`.
--   `includes` - a list of glob patterns used to determine whether the formatter should be applied against a given path.
--   `excludes` - an optional list of glob patterns used to exclude certain files from this formatter.
+-   `includes` - a list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
+-   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from this formatter.
 -   `priority` - influences the order of execution. Greater precedence is given to lower numbers, with the default being `0`.
 
 ## Same file, multiple formatters?
@@ -64,6 +64,16 @@ Another consequence is that formatting is deterministic for a given file and a g
 
 By setting the priority fields appropriately, you can control the order in which those formatters are applied for any
 files they _both happen to match on_.
+
+## Glob patterns format
+
+This is a variant of the Unix glob pattern. It supports all the usual
+selectors such as `*` and `?`.
+
+### Examples
+
+-   `*.go` - match all files in the project that end with a ".go" file extension.
+-   `vendor/*` - match all files under the vendor folder, recursively.
 
 ## Supported Formatters
 
