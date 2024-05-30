@@ -81,7 +81,7 @@ Any formatter that follows the [spec] is supported out of the box.
 
 Already 60+ formatters are supported.
 
-To find example usage, take a look at <https://github.com/numtide/treefmt-nix/tree/main/examples>.
+To find examples, take a look at <https://github.com/numtide/treefmt-nix/tree/main/examples>.
 
 If you are a Nix users, you might also like <https://github.com/numtide/treefmt-nix> that uses Nix to pull the right formatter package as well and integrates both together in a seamless fashion.
 
