@@ -69,6 +69,37 @@ func (f *Format) Run() (err error) {
 		}
 	}()
 
+	// find the config file unless specified
+	if Cli.ConfigFile == "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		Cli.ConfigFile, _, err = findUp(pwd, "treefmt.toml")
+		if err != nil {
+			return err
+		}
+	}
+
+	// default the tree root to the directory containing the config file
+	if Cli.TreeRoot == "" {
+		Cli.TreeRoot = filepath.Dir(Cli.ConfigFile)
+	}
+
+	// search the tree root using the --tree-root-file if specified
+	if Cli.TreeRootFile != "" {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		_, Cli.TreeRoot, err = findUp(pwd, Cli.TreeRootFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Debugf("config-file=%s tree-root=%s", Cli.ConfigFile, Cli.TreeRoot)
+
 	// read config
 	cfg, err := config.ReadFile(Cli.ConfigFile, Cli.Formatters)
 	if err != nil {
@@ -383,4 +414,57 @@ func applyFormatters(ctx context.Context) func() error {
 		}
 		return nil
 	}
+}
+
+func findUp(searchDir string, fileName string) (path string, dir string, err error) {
+	for _, dir := range eachDir(searchDir) {
+		path := filepath.Join(dir, fileName)
+		if fileExists(path) {
+			return path, dir, nil
+		}
+	}
+	return "", "", fmt.Errorf("could not find %s in %s", fileName, searchDir)
+}
+
+func eachDir(path string) (paths []string) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return
+	}
+
+	paths = []string{path}
+
+	if path == "/" {
+		return
+	}
+
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == os.PathSeparator {
+			path = path[:i]
+			if path == "" {
+				path = "/"
+			}
+			paths = append(paths, path)
+		}
+	}
+
+	return
+}
+
+func fileExists(path string) bool {
+	// Some broken filesystems like SSHFS return file information on stat() but
+	// then cannot open the file. So we use os.Open.
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	// Next, check that the file is a regular file.
+	fi, err := f.Stat()
+	if err != nil {
+		return false
+	}
+
+	return fi.Mode().IsRegular()
 }
