@@ -22,11 +22,11 @@ export default defineConfig({
     ],
 
     sidebar: [
+      { text: 'Motivation', link: '/about' },
       { text: 'Quick Start', link: '/quick-start' },
       { text: 'Install Treefmt', link: '/install' },
       { text: 'Configure Treefmt', link: '/configure' },
       { text: 'Run Treefmt', link: '/usage' },
-      { text: 'Motivation', link: '/about' },
       { text: 'Formatter Spec', link: '/formatter-spec' },
       { text: 'Contributing', link: '/contributing' },
       { text: 'FAQ', link: '/faq' },

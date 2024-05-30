@@ -41,14 +41,14 @@ priority = 1
 
 ## Global Options
 
--   `excludes` - an optional list of glob patters used to exclude certain files from all formatters.
+-   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from all formatters.
 
 ## Formatter Options
 
 -   `command` - the command to invoke when applying the formatter.
 -   `options` - an optional list of args to be passed to `command`.
--   `includes` - a list of glob patterns used to determine whether the formatter should be applied against a given path.
--   `excludes` - an optional list of glob patterns used to exclude certain files from this formatter.
+-   `includes` - a list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
+-   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from this formatter.
 -   `priority` - influences the order of execution. Greater precedence is given to lower numbers, with the default being `0`.
 
 ## Same file, multiple formatters?
@@ -65,145 +65,24 @@ Another consequence is that formatting is deterministic for a given file and a g
 By setting the priority fields appropriately, you can control the order in which those formatters are applied for any
 files they _both happen to match on_.
 
+## Glob patterns format
+
+This is a variant of the Unix glob pattern. It supports all the usual
+selectors such as `*` and `?`.
+
+### Examples
+
+-   `*.go` - match all files in the project that end with a ".go" file extension.
+-   `vendor/*` - match all files under the vendor folder, recursively.
+
 ## Supported Formatters
 
-Here is a list of all the formatters we tested. Feel free to send a PR to add other ones!
+Any formatter that follows the [spec] is supported out of the box.
 
-### [prettier](https://prettier.io/)
+Already 60+ formatters are supported.
 
-An opinionated code formatter that supports many languages.
+To find examples, take a look at <https://github.com/numtide/treefmt-nix/tree/main/examples>.
 
-```toml
-command = "prettier"
-options = ["--write"]
-includes = [
-    "*.css",
-    "*.html",
-    "*.js",
-    "*.json",
-    "*.jsx",
-    "*.md",
-    "*.mdx",
-    "*.scss",
-    "*.ts",
-    "*.yaml",
-]
-```
+If you are a Nix user, you might also like <https://github.com/numtide/treefmt-nix>, which uses Nix to pull in the right formatter package and seamlessly integrates both together.
 
-### [Black](https://github.com/psf/black)
-
-A python formatter.
-
-```toml
-command = "black"
-includes = ["*.py"]
-```
-
-### [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
-
-A tool to format C/C++/Java/JavaScript/Objective-C/Protobuf/C# code.
-
-```toml
-command = "clang-format"
-options = [ "-i" ]
-includes = [ "*.c", "*.cpp", "*.cc", "*.h", "*.hpp" ]
-```
-
-Note: This example focuses on C/C++ but can be modified to use with other languages.
-
-### Elm
-
-```toml
-command = "elm-format"
-options = ["--yes"]
-includes = ["*.elm"]
-```
-
-### Go
-
-```toml
-command = "gofmt"
-options = ["-w"]
-includes = ["*.go"]
-```
-
-### [Ormolu](https://github.com/tweag/ormolu)
-
-Haskell formatter. Make sure to use ormolu 0.1.4.0+ as older versions don't
-adhere to the spec.
-
-```toml
-command = "ormolu"
-options = [
-    "--ghc-opt", "-XBangPatterns",
-    "--ghc-opt", "-XPatternSynonyms",
-    "--ghc-opt", "-XTypeApplications",
-    "--mode", "inplace",
-    "--check-idempotence",
-]
-includes = ["*.hs"]
-```
-
-### [stylish-haskell](https://github.com/jaspervdj/stylish-haskell)
-
-Another Haskell formatter.
-
-```toml
-command = "stylish-haskell"
-options = [ "--inplace" ]
-includes = [ "*.hs" ]
-```
-
-### [nixpkgs-fmt](https://github.com/nix-community/nixpkgs-fmt)
-
-Nix code formatter.
-
-```toml
-command = "nixpkgs-fmt"
-includes = ["*.nix"]
-```
-
-### rustfmt
-
-```toml
-command = "rustfmt"
-options = ["--edition", "2018"]
-includes = ["*.rs"]
-```
-
-### [rufo](https://github.com/ruby-formatter/rufo)
-
-Rufo is an opinionated ruby formatter. By default it exits with status 3 on
-file change so we have to pass the `-x` option.
-
-```toml
-command = "rufo"
-options = ["-x"]
-includes = ["*.rb"]
-```
-
-### cargo fmt
-
-`cargo fmt` is not supported as it doesn't follow the spec. It doesn't allow
-to pass arbitrary files to be formatted, which treefmt relies on. Use `rustfmt`
-instead (which is what `cargo fmt` uses under the hood).
-
-### [shfmt](https://github.com/mvdan/sh)
-
-A shell code formatter.
-
-```toml
-command = "shfmt"
-options = [
-  "-i",
-  "2",  # indent 2
-  "-s",  # simplify the code
-  "-w",  # write back to the file
-]
-includes = ["*.sh"]
-```
-
-### terraform
-
-terraform fmt only supports formatting one file at the time. See
-https://github.com/hashicorp/terraform/pull/28191
+[spec]: formatter-spec
