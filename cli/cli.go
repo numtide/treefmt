@@ -17,7 +17,7 @@ type Format struct {
 	FailOnChange          bool               `help:"Exit with error if any changes were made. Useful for CI."`
 	Formatters            []string           `short:"f" help:"Specify formatters to apply. Defaults to all formatters."`
 	TreeRoot              string             `type:"existingdir" xor:"tree-root" help:"The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file)."`
-	TreeRootFile          string             `type:"path" xor:"tree-root" help:"File to search for to find the project root (if --tree-root is not passed)."`
+	TreeRootFile          string             `type:"string" xor:"tree-root" help:"File to search for to find the project root (if --tree-root is not passed)."`
 	Walk                  walk.Type          `enum:"auto,git,filesystem" default:"auto" help:"The method used to traverse the files within --tree-root. Currently supports 'auto', 'git' or 'filesystem'."`
 	Verbosity             int                `name:"verbose" short:"v" type:"counter" default:"0" env:"LOG_LEVEL" help:"Set the verbosity of logs e.g. -vv."`
 	Version               bool               `name:"version" short:"V" help:"Print version."`
