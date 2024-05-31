@@ -1,6 +1,7 @@
 package test
 
 import (
+	"io"
 	"os"
 	"testing"
 
@@ -29,13 +30,34 @@ func TempExamples(t *testing.T) string {
 	return tempDir
 }
 
-func TempFile(t *testing.T, path string) *os.File {
+func TempFile(t *testing.T, dir string, pattern string, contents *string) *os.File {
 	t.Helper()
-	file, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("failed to create temporary file: %v", err)
+
+	file, err := os.CreateTemp(dir, pattern)
+	require.NoError(t, err, "failed to create temp file")
+
+	if contents == nil {
+		return file
 	}
+
+	_, err = file.WriteString(*contents)
+	require.NoError(t, err, "failed to write contents to temp file")
+	require.NoError(t, file.Close(), "failed to close temp file")
+
+	file, err = os.Open(file.Name())
+	require.NoError(t, err, "failed to open temp file")
+
 	return file
+}
+
+func ReadFile(t *testing.T, path string) []byte {
+	f, err := os.Open(path)
+	require.NoError(t, err, "failed to open file")
+	defer f.Close()
+
+	bytes, err := io.ReadAll(f)
+	require.NoError(t, err, "failed to read file")
+	return bytes
 }
 
 func RecreateSymlink(t *testing.T, path string) error {

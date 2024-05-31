@@ -14,7 +14,7 @@ import (
 
 type gitWalker struct {
 	root  string
-	paths chan string
+	paths []string
 	repo  *git.Repository
 }
 
@@ -41,7 +41,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	// cache in-memory whether a path is present in the git index
 	var cache map[string]bool
 
-	for path := range g.paths {
+	for _, path := range g.paths {
 
 		if path == g.root {
 			// we can just iterate the index entries
@@ -116,7 +116,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewGit(root string, paths chan string) (Walker, error) {
+func NewGit(root string, paths []string) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)

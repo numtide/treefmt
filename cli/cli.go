@@ -25,8 +25,8 @@ type Format struct {
 
 	OnUnmatched log.Level `name:"on-unmatched" short:"u" default:"warn" help:"Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are <debug|info|warn|error|fatal>."`
 
-	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree."`
-	Stdin bool     `help:"Format the context passed in via stdin."`
+	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree." xor:"paths"`
+	Stdin string   `type:"path" optional:"" help:"Format stdin, placing the output into the provided path. Formatters are matched based on the path's file extension." xor:"paths"`
 
 	CpuProfile string `optional:"" help:"The file into which a cpu profile will be written."`
 }

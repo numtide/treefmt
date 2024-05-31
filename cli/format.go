@@ -1,16 +1,15 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"strings"
 	"syscall"
 
 	"git.numtide.com/numtide/treefmt/format"
@@ -221,66 +220,30 @@ func updateCache(ctx context.Context) func() error {
 
 func walkFilesystem(ctx context.Context) func() error {
 	return func() error {
-		eg, ctx := errgroup.WithContext(ctx)
-		pathsCh := make(chan string, BatchSize)
+		// 1. Check if we have been provided with an explicit list of paths to process
+		// 2. If not, check if we have been passed in some content to format via stdin
+		// 3. If not, we process the tree root as normal.
+		paths := Cli.Paths
+		if Cli.Stdin != "" {
 
-		walkPaths := func() error {
-			defer close(pathsCh)
-
-			var idx int
-			for idx < len(Cli.Paths) {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					pathsCh <- Cli.Paths[idx]
-					idx += 1
-				}
+			// read from stdin and place the contents into the provided path before processing
+			if err := os.MkdirAll(filepath.Dir(Cli.Stdin), 0o755); err != nil {
+				return fmt.Errorf("failed to ensure the directory existed for stdin processing: %w", err)
+			} else if file, err := os.Create(Cli.Stdin); err != nil {
+				return fmt.Errorf("failed to open file for stdin processing: %w", err)
+			} else if _, err = io.Copy(file, os.Stdin); err != nil {
+				return fmt.Errorf("failed to read stdin: %w", err)
+			} else if err = file.Close(); err != nil {
+				return fmt.Errorf("failed to close file for stdin processing: %w", err)
 			}
 
-			return nil
-		}
-
-		walkStdin := func() error {
-			defer close(pathsCh)
-
-			// determine the current working directory
-			cwd, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("failed to determine current working directory: %w", err)
-			}
-
-			// read in all the paths
-			scanner := bufio.NewScanner(os.Stdin)
-
-			for scanner.Scan() {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					path := scanner.Text()
-					if !strings.HasPrefix(path, "/") {
-						// append the cwd
-						path = filepath.Join(cwd, path)
-					}
-					pathsCh <- path
-				}
-			}
-			return nil
-		}
-
-		if len(Cli.Paths) > 0 {
-			eg.Go(walkPaths)
-		} else if Cli.Stdin {
-			eg.Go(walkStdin)
-		} else {
-			// no explicit paths to process, so we only need to process root
-			pathsCh <- Cli.TreeRoot
-			close(pathsCh)
+			paths = []string{Cli.Stdin}
+		} else if len(paths) == 0 {
+			paths = []string{Cli.TreeRoot}
 		}
 
 		// create a filesystem walker
-		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, pathsCh)
+		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, paths)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}

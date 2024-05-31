@@ -573,54 +573,52 @@ func TestStdIn(t *testing.T) {
 	// capture current cwd, so we can replace it after the test is finished
 	cwd, err := os.Getwd()
 	as.NoError(err)
-
 	t.Cleanup(func() {
 		// return to the previous working directory
 		as.NoError(os.Chdir(cwd))
 	})
 
 	tempDir := test.TempExamples(t)
-	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
-	// change working directory to temp root
-	as.NoError(os.Chdir(tempDir))
-
-	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
-			"echo": {
-				Command:  "echo",
-				Includes: []string{"*"},
-			},
-		},
-	}
-	test.WriteConfig(t, configPath, cfg)
-
-	// swap out stdin
+	// capture current stdin and replace it on test cleanup
 	prevStdIn := os.Stdin
-	stdin, err := os.CreateTemp("", "stdin")
-	as.NoError(err)
-
-	os.Stdin = stdin
-
 	t.Cleanup(func() {
 		os.Stdin = prevStdIn
-		_ = os.Remove(stdin.Name())
 	})
 
-	go func() {
-		_, err := stdin.WriteString(`treefmt.toml
-elm/elm.json
-go/main.go
-`)
-		as.NoError(err, "failed to write to stdin")
-		as.NoError(stdin.Sync())
-		_, _ = stdin.Seek(0, 0)
-	}()
+	// write a new file
+	contents := `{ foo, ... }: "hello"`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	_, err = cmd(t, "-C", tempDir, "--stdin")
+	outPath := "foo/bar/test.nix"
+	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", outPath)
 	as.NoError(err)
-	assertStats(t, as, 3, 3, 3, 0)
+	assertStats(t, as, 1, 1, 1, 1)
+
+	// the nix formatters should have reduced the example to the following
+	as.Equal(`{ ...}: "hello"
+`, string(test.ReadFile(t, outPath)))
+
+	// overwrite an existing file
+	contents = `
+| col1 | col2 |
+| ---- | ---- |
+| nice | fits |
+| oh no! | it's ugly |
+`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	outPath = "haskell/CHANGELOG.md"
+	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", outPath, "-vv")
+	println(out)
+	as.NoError(err)
+	assertStats(t, as, 1, 1, 1, 1)
+
+	as.Equal(`| col1   | col2      |
+| ------ | --------- |
+| nice   | fits      |
+| oh no! | it's ugly |
+`, string(test.ReadFile(t, outPath)))
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {
