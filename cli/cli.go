@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+
 	"git.numtide.com/numtide/treefmt/walk"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
@@ -33,6 +35,7 @@ type Format struct {
 
 func configureLogging() {
 	log.SetReportTimestamp(false)
+	log.SetOutput(os.Stderr)
 
 	if Cli.Verbosity == 0 {
 		log.SetLevel(log.WarnLevel)

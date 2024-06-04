@@ -1,16 +1,15 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"strings"
 	"syscall"
 
 	"git.numtide.com/numtide/treefmt/format"
@@ -173,6 +172,10 @@ func updateCache(ctx context.Context) func() error {
 
 		// apply a batch
 		processBatch := func() error {
+			if Cli.Stdin {
+				// do nothing
+				return nil
+			}
 			if err := cache.Update(batch); err != nil {
 				return err
 			}
@@ -192,6 +195,24 @@ func updateCache(ctx context.Context) func() error {
 					// channel has been closed, no further files to process
 					break LOOP
 				}
+
+				if Cli.Stdin {
+					// dump file into stdout
+					f, err := os.Open(file.Path)
+					if err != nil {
+						return fmt.Errorf("failed to open %s: %w", file.Path, err)
+					}
+					if _, err = io.Copy(os.Stdout, f); err != nil {
+						return fmt.Errorf("failed to copy %s to stdout: %w", file.Path, err)
+					}
+					if err = os.Remove(f.Name()); err != nil {
+						return fmt.Errorf("failed to remove temp file %s: %w", file.Path, err)
+					}
+
+					stats.Add(stats.Formatted, 1)
+					continue
+				}
+
 				// append to batch and process if we have enough
 				batch = append(batch, file)
 				if len(batch) == BatchSize {
@@ -212,8 +233,10 @@ func updateCache(ctx context.Context) func() error {
 			return ErrFailOnChange
 		}
 
-		// print stats to stdout
-		stats.Print()
+		// print stats to stdout unless we are processing stdin and printing the results to stdout
+		if !Cli.Stdin {
+			stats.Print()
+		}
 
 		return nil
 	}
@@ -223,6 +246,32 @@ func walkFilesystem(ctx context.Context) func() error {
 	return func() error {
 		eg, ctx := errgroup.WithContext(ctx)
 		pathsCh := make(chan string, BatchSize)
+
+		// By default, we use the cli arg, but if the stdin flag has been set we force a filesystem walk
+		// since we will only be processing one file from a temp directory
+		walkerType := Cli.Walk
+
+		if Cli.Stdin {
+			walkerType = walk.Filesystem
+
+			// check we have only received one path arg which we use for the file extension / matching to formatters
+			if len(Cli.Paths) != 1 {
+				return fmt.Errorf("only one path should be specified when using the --stdin flag")
+			}
+
+			// read stdin into a temporary file with the same file extension
+			pattern := fmt.Sprintf("*%s", filepath.Ext(Cli.Paths[0]))
+			file, err := os.CreateTemp("", pattern)
+			if err != nil {
+				return fmt.Errorf("failed to create a temporary file for processing stdin: %w", err)
+			}
+
+			if _, err = io.Copy(file, os.Stdin); err != nil {
+				return fmt.Errorf("failed to copy stdin into a temporary file")
+			}
+
+			Cli.Paths[0] = file.Name()
+		}
 
 		walkPaths := func() error {
 			defer close(pathsCh)
@@ -241,38 +290,8 @@ func walkFilesystem(ctx context.Context) func() error {
 			return nil
 		}
 
-		walkStdin := func() error {
-			defer close(pathsCh)
-
-			// determine the current working directory
-			cwd, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("failed to determine current working directory: %w", err)
-			}
-
-			// read in all the paths
-			scanner := bufio.NewScanner(os.Stdin)
-
-			for scanner.Scan() {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					path := scanner.Text()
-					if !strings.HasPrefix(path, "/") {
-						// append the cwd
-						path = filepath.Join(cwd, path)
-					}
-					pathsCh <- path
-				}
-			}
-			return nil
-		}
-
 		if len(Cli.Paths) > 0 {
 			eg.Go(walkPaths)
-		} else if Cli.Stdin {
-			eg.Go(walkStdin)
 		} else {
 			// no explicit paths to process, so we only need to process root
 			pathsCh <- Cli.TreeRoot
@@ -280,7 +299,7 @@ func walkFilesystem(ctx context.Context) func() error {
 		}
 
 		// create a filesystem walker
-		walker, err := walk.New(Cli.Walk, Cli.TreeRoot, pathsCh)
+		walker, err := walk.New(walkerType, Cli.TreeRoot, pathsCh)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
@@ -288,8 +307,8 @@ func walkFilesystem(ctx context.Context) func() error {
 		// close the files channel when we're done walking the file system
 		defer close(filesCh)
 
-		// if no cache has been configured, we invoke the walker directly
-		if Cli.NoCache {
+		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
+		if Cli.NoCache || Cli.Stdin {
 			return walker.Walk(ctx, func(file *walk.File, err error) error {
 				select {
 				case <-ctx.Done():
