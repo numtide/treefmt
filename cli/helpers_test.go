@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/charmbracelet/log"
@@ -41,7 +42,7 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	}
 
 	tempDir := t.TempDir()
-	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
+	tempOut := test.TempFile(t, filepath.Join(tempDir, "combined_output"))
 
 	// capture standard outputs before swapping them
 	stdout := os.Stdout

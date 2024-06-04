@@ -65,7 +65,7 @@ func TestReadConfigFile(t *testing.T) {
 	deadnix, ok := cfg.Formatters["deadnix"]
 	as.True(ok, "deadnix formatter not found")
 	as.Equal("deadnix", deadnix.Command)
-	as.Equal([]string{"-e"}, deadnix.Options)
+	as.Nil(deadnix.Options)
 	as.Equal([]string{"*.nix"}, deadnix.Includes)
 	as.Nil(deadnix.Excludes)
 	as.Equal(2, deadnix.Priority)

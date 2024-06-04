@@ -7,8 +7,8 @@ import (
 )
 
 type filesystemWalker struct {
-	root  string
-	paths []string
+	root    string
+	pathsCh chan string
 }
 
 func (f filesystemWalker) Root() string {
@@ -34,7 +34,7 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 		return fn(&file, err)
 	}
 
-	for _, path := range f.paths {
+	for path := range f.pathsCh {
 		if err := filepath.Walk(path, walkFn); err != nil {
 			return err
 		}
@@ -43,6 +43,6 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewFilesystem(root string, paths []string) (Walker, error) {
+func NewFilesystem(root string, paths chan string) (Walker, error) {
 	return filesystemWalker{root, paths}, nil
 }
