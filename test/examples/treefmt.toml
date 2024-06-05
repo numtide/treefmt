@@ -35,6 +35,7 @@ priority = 1
 
 [formatter.deadnix]
 command = "deadnix"
+options = ["-e"]
 includes = ["*.nix"]
 priority = 2
 
