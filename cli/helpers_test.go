@@ -34,7 +34,7 @@ func cmd(t *testing.T, args ...string) ([]byte, error) {
 	t.Helper()
 
 	// create a new kong context
-	p := newKong(t, &Cli, Options...)
+	p := newKong(t, New(), NewOptions()...)
 	ctx, err := p.Parse(args)
 	if err != nil {
 		return nil, err

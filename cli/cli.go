@@ -3,12 +3,16 @@ package cli
 import (
 	"os"
 
+	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/walk"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
+	"github.com/gobwas/glob"
 )
 
-var Cli = Format{}
+func New() *Format {
+	return &Format{}
+}
 
 type Format struct {
 	AllowMissingFormatter bool               `default:"false" help:"Do not exit with error if a configured formatter is missing."`
@@ -31,17 +35,23 @@ type Format struct {
 	Stdin bool     `help:"Format the context passed in via stdin."`
 
 	CpuProfile string `optional:"" help:"The file into which a cpu profile will be written."`
+
+	excludes   []glob.Glob
+	formatters map[string]*format.Formatter
+
+	filesCh     chan *walk.File
+	processedCh chan *walk.File
 }
 
-func configureLogging() {
+func (f *Format) configureLogging() {
 	log.SetReportTimestamp(false)
 	log.SetOutput(os.Stderr)
 
-	if Cli.Verbosity == 0 {
+	if f.Verbosity == 0 {
 		log.SetLevel(log.WarnLevel)
-	} else if Cli.Verbosity == 1 {
+	} else if f.Verbosity == 1 {
 		log.SetLevel(log.InfoLevel)
-	} else if Cli.Verbosity > 1 {
+	} else if f.Verbosity > 1 {
 		log.SetLevel(log.DebugLevel)
 	}
 }
