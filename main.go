@@ -35,6 +35,6 @@ func main() {
 		}
 	}
 
-	ctx := kong.Parse(&cli.Cli, cli.Options...)
+	ctx := kong.Parse(cli.New(), cli.NewOptions()...)
 	ctx.FatalIfErrorf(ctx.Run())
 }

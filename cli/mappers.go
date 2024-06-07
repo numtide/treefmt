@@ -8,10 +8,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-var Options []kong.Option
-
-func init() {
-	Options = []kong.Option{
+func NewOptions() []kong.Option {
+	return []kong.Option{
 		kong.TypeMapper(reflect.TypeOf(log.DebugLevel), logLevelDecoder()),
 	}
 }
