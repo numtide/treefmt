@@ -31,8 +31,6 @@ type Formatter struct {
 	// internal compiled versions of Includes and Excludes.
 	includes []glob.Glob
 	excludes []glob.Glob
-
-	batch []string
 }
 
 // Executable returns the path to the executable defined by Command
@@ -80,7 +78,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 	//
 
-	f.log.Infof("%v files processed in %v", len(tasks), time.Now().Sub(start))
+	f.log.Infof("%v files processed in %v", len(tasks), time.Since(start))
 
 	return nil
 }

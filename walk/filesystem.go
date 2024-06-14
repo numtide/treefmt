@@ -28,7 +28,7 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 		return filepath.Rel(f.root, path)
 	}
 
-	walkFn := func(path string, info fs.FileInfo, err error) error {
+	walkFn := func(path string, info fs.FileInfo, _ error) error {
 		if info == nil {
 			return fmt.Errorf("no such file or directory '%s'", path)
 		}

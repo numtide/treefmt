@@ -42,7 +42,7 @@ func Value(t Type) int32 {
 }
 
 func Elapsed() time.Duration {
-	return time.Now().Sub(start)
+	return time.Since(start)
 }
 
 func Print() {

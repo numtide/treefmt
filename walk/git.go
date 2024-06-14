@@ -88,7 +88,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 			continue
 		}
 
-		return filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+		return filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
 			if info.IsDir() {
 				return nil
 			}
