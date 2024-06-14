@@ -26,7 +26,7 @@
         global.excludes = [
           "LICENSE"
           # let's not mess with the test folder
-          "test/**"
+          "test/*"
           # unsupported extensions
           "*.{gif,png,svg,tape,mts,lock,mod,sum,toml,env,envrc,gitignore}"
         ];
