@@ -66,6 +66,10 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 	// execute the command
 	cmd := exec.CommandContext(ctx, f.executable, args...)
+	// replace the default Cancel handler installed by CommandContext because it sends SIGKILL (-9).
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(os.Interrupt)
+	}
 	cmd.Dir = f.workingDir
 
 	// log out the command being executed
