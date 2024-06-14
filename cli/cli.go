@@ -3,11 +3,12 @@ package cli
 import (
 	"os"
 
+	"github.com/gobwas/glob"
+
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/walk"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
-	"github.com/gobwas/glob"
 )
 
 func New() *Format {
@@ -36,8 +37,8 @@ type Format struct {
 
 	CpuProfile string `optional:"" help:"The file into which a cpu profile will be written."`
 
-	excludes   []glob.Glob
-	formatters map[string]*format.Formatter
+	formatters     map[string]*format.Formatter
+	globalExcludes []glob.Glob
 
 	filesCh     chan *walk.File
 	processedCh chan *walk.File

@@ -14,6 +14,8 @@ func TestReadConfigFile(t *testing.T) {
 
 	as.NotNil(cfg)
 
+	as.Equal([]string{"*.toml"}, cfg.Global.Excludes)
+
 	// python
 	python, ok := cfg.Formatters["python"]
 	as.True(ok, "python formatter not found")

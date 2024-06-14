@@ -22,33 +22,32 @@
         statix.enable = true;
       };
 
-      settings.formatter = {
-        deadnix = {
-          priority = 1;
-        };
+      settings = {
+        global.excludes = [
+          "LICENSE"
+          # let's not mess with the test folder
+          "test/**"
+          # unsupported extensions
+          "*.{gif,png,svg,tape,mts,lock,mod,sum,toml,env,envrc,gitignore}"
+        ];
 
-        statix = {
-          priority = 2;
-        };
+        formatter = {
+          deadnix = {
+            priority = 1;
+          };
 
-        alejandra = {
-          priority = 3;
-        };
+          statix = {
+            priority = 2;
+          };
 
-        prettier = {
-          options = ["--tab-width" "4"];
-          includes = [
-            "*.css"
-            "*.html"
-            "*.js"
-            "*.json"
-            "*.jsx"
-            "*.md"
-            "*.mdx"
-            "*.scss"
-            "*.ts"
-            "*.yaml"
-          ];
+          alejandra = {
+            priority = 3;
+          };
+
+          prettier = {
+            options = ["--tab-width" "4"];
+            includes = ["*.{css,html,js,json,jsx,md,mdx,scss,ts,yaml}"];
+          };
         };
       };
     };
