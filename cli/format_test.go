@@ -49,7 +49,7 @@ func TestOnUnmatched(t *testing.T) {
 		// - "haskell/treefmt.toml"
 	}
 
-	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
+	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
 	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
 
 	checkOutput := func(level string, output []byte) {
@@ -57,6 +57,8 @@ func TestOnUnmatched(t *testing.T) {
 			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s", level, p))
 		}
 	}
+
+	var out []byte
 
 	// default is warn
 	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c")
@@ -271,8 +273,13 @@ func TestCache(t *testing.T) {
 		},
 	}
 
+	var (
+		out []byte
+		err error
+	)
+
 	test.WriteConfig(t, configPath, cfg)
-	out, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 31, 0)
 
@@ -281,7 +288,7 @@ func TestCache(t *testing.T) {
 	assertFormatted(t, as, out, 0)
 
 	// clear cache
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 31, 0)
 
@@ -290,7 +297,7 @@ func TestCache(t *testing.T) {
 	assertFormatted(t, as, out, 0)
 
 	// clear cache
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 31, 0)
 
@@ -299,7 +306,7 @@ func TestCache(t *testing.T) {
 	assertFormatted(t, as, out, 0)
 
 	// no cache
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.NoError(err)
 	assertStats(t, as, 31, 31, 31, 0)
 }

@@ -28,6 +28,7 @@
           # golang
           go
           goreleaser
+          golangci-lint
           delve
           pprof
           graphviz
