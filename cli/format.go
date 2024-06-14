@@ -97,7 +97,7 @@ func (f *Format) Run() (err error) {
 	}
 
 	// compile global exclude globs
-	if f.excludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
+	if f.globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
 		return fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
@@ -105,7 +105,7 @@ func (f *Format) Run() (err error) {
 	f.formatters = make(map[string]*format.Formatter)
 
 	for name, formatterCfg := range cfg.Formatters {
-		formatter, err := format.NewFormatter(name, f.TreeRoot, formatterCfg, f.excludes)
+		formatter, err := format.NewFormatter(name, f.TreeRoot, formatterCfg)
 
 		if errors.Is(err, format.ErrCommandNotFound) && f.AllowMissingFormatter {
 			log.Debugf("formatter command not found: %v", name)
@@ -390,7 +390,15 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 		// iterate the files channel
 		for file := range f.filesCh {
 
-			// determine a list of formatters that are interested in file
+			// first check if this file has been globally excluded
+			if format.PathMatches(file.RelPath, f.globalExcludes) {
+				log.Debugf("path matched global excludes: %s", file.RelPath)
+				// mark it as processed and continue to the next
+				f.processedCh <- file
+				continue
+			}
+
+			// check if any formatters are interested in this file
 			var matches []*format.Formatter
 			for _, formatter := range f.formatters {
 				if formatter.Wants(file) {
@@ -398,11 +406,13 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 				}
 			}
 
+			// see if any formatters matched
 			if len(matches) == 0 {
 				if f.OnUnmatched == log.FatalLevel {
-					return fmt.Errorf("no formatter for path: %s", file.Path)
+					return fmt.Errorf("no formatter for path: %s", file.RelPath)
 				}
-				log.Logf(f.OnUnmatched, "no formatter for path: %s", file.Path)
+				log.Logf(f.OnUnmatched, "no formatter for path: %s", file.RelPath)
+				// mark it as processed and continue to the next
 				f.processedCh <- file
 			} else {
 				// record the match

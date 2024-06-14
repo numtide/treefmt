@@ -1,5 +1,8 @@
 # One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
 
+[global]
+excludes = ["*.toml"]
+
 [formatter.python]
 command = "black"
 includes = ["*.py"]

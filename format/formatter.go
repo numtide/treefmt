@@ -100,7 +100,6 @@ func NewFormatter(
 	name string,
 	treeRoot string,
 	cfg *config.Formatter,
-	globalExcludes []glob.Glob,
 ) (*Formatter, error) {
 	var err error
 
@@ -136,7 +135,6 @@ func NewFormatter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
 	}
-	f.excludes = append(f.excludes, globalExcludes...)
 
 	return &f, nil
 }

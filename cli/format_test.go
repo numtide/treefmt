@@ -39,21 +39,22 @@ func TestOnUnmatched(t *testing.T) {
 	paths := []string{
 		"go/go.mod",
 		"haskell/haskell.cabal",
-		"haskell/treefmt.toml",
 		"html/scripts/.gitkeep",
-		"nixpkgs.toml",
 		"python/requirements.txt",
-		"rust/Cargo.toml",
-		"touch.toml",
-		"treefmt.toml",
+		// these should not be reported as they're in the global excludes
+		// - "nixpkgs.toml"
+		// - "touch.toml"
+		// - "treefmt.toml"
+		// - "rust/Cargo.toml"
+		// - "haskell/treefmt.toml"
 	}
 
 	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
-	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s/%s", tempDir, paths[0]))
+	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
 
 	checkOutput := func(level string, output []byte) {
 		for _, p := range paths {
-			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s/%s", level, tempDir, p))
+			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s", level, p))
 		}
 	}
 
