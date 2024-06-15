@@ -325,9 +325,11 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 	}
 }
 
+// applyFormatters
 func (f *Format) applyFormatters(ctx context.Context) func() error {
-	// create our own errgroup for concurrent formatting tasks
-	fg, ctx := errgroup.WithContext(ctx)
+	// create our own errgroup for concurrent formatting tasks.
+	// we don't want a cancel clause, in order to let formatters run up to the end.
+	fg := errgroup.Group{}
 	// simple optimization to avoid too many concurrent formatting tasks
 	// we can queue them up faster than the formatters can process them, this paces things a bit
 	fg.SetLimit(runtime.NumCPU())
