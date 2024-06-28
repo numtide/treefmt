@@ -27,7 +27,7 @@ jobs:
             - name: Build the docs
               id: build
               run: |
-                  nix build .#docs
+                  nix build .#treefmt-docs
                   echo "result=$(readlink ./result)" >> $GITHUB_OUTPUT
             - name: Upload artifact
               uses: actions/upload-pages-artifact@v3
