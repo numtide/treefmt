@@ -37,7 +37,7 @@ in
 
     modules = ./gomod2nix.toml;
 
-    CGO_ENABLED = 1;
+    CGO_ENABLED = 0;
 
     ldflags = [
       "-s"
