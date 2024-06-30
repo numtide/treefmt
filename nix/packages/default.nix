@@ -1,0 +1,1 @@
+{perSystem, ...}: perSystem.self.treefmt

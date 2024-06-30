@@ -2,22 +2,13 @@
   description = "Treefmt: once CLI to format your repo";
 
   nixConfig = {
-    extra-substituters = [
-      "https://numtide.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
-    ];
+    extra-substituters = ["https://numtide.cachix.org"];
+    extra-trusted-public-keys = ["numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="];
   };
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
-    treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
+    blueprint = {
+      url = "github:numtide/blueprint";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     devshell = {
@@ -29,28 +20,37 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "devshell/flake-utils";
     };
-    nix-filter.url = "github:numtide/nix-filter";
     flake-compat.url = "github:nix-community/flake-compat";
+    nix-filter.url = "github:numtide/nix-filter";
     nix-github-actions = {
       url = "github:nix-community/nix-github-actions";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs @ {flake-parts, ...}:
-    flake-parts.lib.mkFlake
-    {
+  outputs = inputs: let
+    inherit (inputs.nixpkgs) lib;
+  in
+    inputs.blueprint {
       inherit inputs;
+      prefix = "nix/";
+      nixpkgs.config = {
+        allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) ["terraform"];
+      };
     }
-    {
-      imports = [
-        ./nix
-      ];
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
+    // {
+      githubActions = inputs.nix-github-actions.lib.mkGithubMatrix {
+        checks =
+          lib.getAttrs [
+            "x86_64-linux"
+            "x86_64-darwin"
+          ]
+          inputs.self.checks;
+      };
     };
 }
