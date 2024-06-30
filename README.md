@@ -122,11 +122,17 @@ For instance, you can go for:
 
 Find the full list of supported formatters [here](https://treefmt.com/configure.html#supported-formatters).
 
+## IDE Integration
+
+`treefmt` currently has support for vscode via an extension:
+
+-   [treefmt-vscode](https://marketplace.visualstudio.com/items?itemName=ibecker.treefmt-vscode) | [GitHub repo](https://github.com/isbecker/treefmt-vscode)
+
 ## Upcoming features
 
 This project is still pretty new. Down the line we also want to add support for:
 
--   IDE integration
+-   More IDE integration
 -   Pre-commit hooks
 
 ## Related projects
