@@ -118,9 +118,11 @@ func (f *Format) Run() (err error) {
 		f.formatters[name] = formatter
 	}
 
-	// open the cache
-	if err = cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
-		return err
+	// open the cache if configured
+	if !f.NoCache {
+		if cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
+			return err
+		}
 	}
 
 	// create an app context and listen for shutdown
@@ -148,7 +150,9 @@ func (f *Format) Run() (err error) {
 	f.processedCh = make(chan *walk.File, cap(f.filesCh))
 
 	// start concurrent processing tasks in reverse order
-	eg.Go(f.updateCache(ctx))
+	if !f.NoCache {
+		eg.Go(f.updateCache(ctx))
+	}
 	eg.Go(f.applyFormatters(ctx))
 	eg.Go(f.walkFilesystem(ctx))
 
