@@ -7,6 +7,7 @@ outline: deep
 The `treefmt.toml` configuration file consists of a mixture of global options and formatter sections:
 
 ```toml
+[global]
 excludes = ["*.md", "*.dat"]
 
 [formatter.elm]
