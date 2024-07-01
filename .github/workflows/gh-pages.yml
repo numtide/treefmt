@@ -6,8 +6,6 @@ on:
             - main
     pull_request:
     workflow_dispatch:
-    release:
-        types: [released]
 
 permissions:
     contents: write
@@ -43,7 +41,6 @@ jobs:
         needs: build
         runs-on: ubuntu-latest
         name: deploy
-        if: github.event_name == 'release' && github.event._action == 'released'
         steps:
             - name: Deploy to GitHub Pages
               id: deployment
