@@ -2,13 +2,13 @@ package config
 
 type Formatter struct {
 	// Command is the command to invoke when applying this Formatter.
-	Command string
+	Command string `toml:"command"`
 	// Options are an optional list of args to be passed to Command.
-	Options []string
+	Options []string `toml:"options,omitempty"`
 	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
-	Includes []string
+	Includes []string `toml:"includes,omitempty"`
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
-	Excludes []string
+	Excludes []string `toml:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
-	Priority int
+	Priority int `toml:"priority,omitempty"`
 }
