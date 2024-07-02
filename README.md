@@ -168,8 +168,6 @@ much better than Rust.
 
 So here we are :shrug:.
 
-![Just Use Go](./docs/public/just-use-go.png)
-
 ## Commercial support
 
 Looking for help or customization?
