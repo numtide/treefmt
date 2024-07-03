@@ -1,0 +1,24 @@
+name: golangci-lint
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.57.2
+          args: --timeout=2m
