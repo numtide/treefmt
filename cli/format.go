@@ -120,8 +120,10 @@ func (f *Format) Run() (err error) {
 
 	// open the cache if configured
 	if !f.NoCache {
-		if cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
-			return err
+		if err = cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
+			// if we can't open the cache, we log a warning and fallback to no cache
+			log.Warnf("failed to open cache: %v", err)
+			f.NoCache = true
 		}
 	}
 
