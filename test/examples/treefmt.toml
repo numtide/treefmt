@@ -1,6 +1,7 @@
 # One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
 
 [global]
+batch_size = 10
 excludes = ["*.toml"]
 
 [formatter.python]

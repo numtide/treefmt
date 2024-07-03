@@ -23,6 +23,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	DefaultBatchSize = 1024
+)
+
 var (
 	ErrFailOnChange     = errors.New("unexpected changes detected, --fail-on-change is enabled")
 	ErrInvalidBatchSize = errors.New("batch size must be >= 1")
@@ -32,6 +36,8 @@ func (f *Format) Run() (err error) {
 	// set log level and other options
 	f.configureLogging()
 
+	// validate the cli batch size
+	// todo move this into kong validation
 	if f.BatchSize < 1 {
 		return ErrInvalidBatchSize
 	}
@@ -97,6 +103,12 @@ func (f *Format) Run() (err error) {
 	cfg, err := config.ReadFile(f.ConfigFile, f.Formatters)
 	if err != nil {
 		return fmt.Errorf("failed to read config file %v: %w", f.ConfigFile, err)
+	}
+
+	// update the batch size only if it has not already been set by the cli arg
+	// cli arg takes precedence over config
+	if f.BatchSize == DefaultBatchSize && cfg.Global.BatchSize != 0 {
+		f.BatchSize = cfg.Global.BatchSize
 	}
 
 	// compile global exclude globs

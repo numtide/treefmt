@@ -9,6 +9,8 @@ import (
 // Config is used to represent the list of configured Formatters.
 type Config struct {
 	Global struct {
+		// BatchSize controls the maximum number of paths to batch before applying them to a sequence of formatters.
+		BatchSize int `toml:"batch_size"`
 		// Excludes is an optional list of glob patterns used to exclude certain files from all formatters.
 		Excludes []string `toml:"excludes"`
 	} `toml:"global"`
