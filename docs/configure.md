@@ -43,6 +43,7 @@ priority = 1
 ## Global Options
 
 -   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from all formatters.
+-   `batch_size` - the maximum number of files each formatter invocation receives. Setting it to a smaller size can be used to increase parallelism. (default: 1024)
 
 ## Formatter Options
 
