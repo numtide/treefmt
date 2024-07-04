@@ -60,6 +60,6 @@ func Print() {
 		Value(Emitted),
 		Value(Matched),
 		Value(Formatted),
-		Elapsed(),
+		Elapsed().Round(time.Millisecond),
 	)
 }
