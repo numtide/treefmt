@@ -9,5 +9,8 @@
         "dev": "vitepress dev",
         "build": "vitepress build",
         "preview": "vitepress preview"
+    },
+    "dependencies": {
+        "vitepress-versioning-plugin": "^1.1.0"
     }
 }
