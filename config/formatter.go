@@ -11,4 +11,6 @@ type Formatter struct {
 	Excludes []string `toml:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
 	Priority int `toml:"priority,omitempty"`
+	// BatchSize controls the maximum number of paths to apply to the formatter in one invocation.
+	BatchSize int `toml:"batch_size"`
 }
