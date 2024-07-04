@@ -49,8 +49,7 @@ func Print() {
 	components := []string{
 		"traversed %d files",
 		"emitted %d files for processing",
-		"matched %d files to formatters",
-		"formatted %d files in %v",
+		"formatted %d files (%d changed) in %v",
 		"",
 	}
 

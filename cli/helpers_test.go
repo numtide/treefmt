@@ -86,5 +86,5 @@ func assertStats(t *testing.T, as *require.Assertions, traversed int32, emitted 
 
 func assertFormatted(t *testing.T, as *require.Assertions, output []byte, count int) {
 	t.Helper()
-	as.Contains(string(output), fmt.Sprintf("formatted %d files", count))
+	as.Contains(string(output), fmt.Sprintf("(%d changed)", count))
 }
