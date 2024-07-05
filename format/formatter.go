@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"git.numtide.com/numtide/treefmt/walk"
 
 	"git.numtide.com/numtide/treefmt/config"
@@ -48,6 +50,48 @@ func (f *Formatter) Priority() int {
 
 func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 	start := time.Now()
+	defer func() {
+		f.log.Infof("%v files processed in %v", len(tasks), time.Since(start))
+	}()
+
+	if f.config.BatchSize == 0 {
+		// apply as one single batch
+		return f.applyBatch(ctx, tasks)
+	}
+
+	// otherwise we create smaller batches and apply them concurrently
+	// todo how to constrain the overall number of 'threads' as we want a separate group here for the eg.Wait()
+	eg := errgroup.Group{}
+
+	var batch []*Task
+	for idx := range tasks {
+		batch = append(batch, tasks[idx])
+		if len(batch) == f.config.BatchSize {
+			// copy the batch as we re-use it for the next batch
+			next := make([]*Task, len(batch))
+			copy(next, batch)
+
+			// fire off a routine to process the next batch
+			eg.Go(func() error {
+				return f.applyBatch(ctx, next)
+			})
+			// reset batch for next iteration
+			batch = batch[:0]
+		}
+	}
+
+	// flush final partial batch
+	if len(batch) > 0 {
+		eg.Go(func() error {
+			return f.applyBatch(ctx, batch)
+		})
+	}
+
+	return eg.Wait()
+}
+
+func (f *Formatter) applyBatch(ctx context.Context, tasks []*Task) error {
+	f.log.Debugf("applying batch, size = %d", len(tasks))
 
 	// construct args, starting with config
 	args := f.config.Options
@@ -79,10 +123,6 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 		}
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
 	}
-
-	//
-
-	f.log.Infof("%v files processed in %v", len(tasks), time.Since(start))
 
 	return nil
 }

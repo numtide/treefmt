@@ -82,6 +82,33 @@ func TestOnUnmatched(t *testing.T) {
 	checkOutput("DEBU", out)
 }
 
+func TestBatchSize(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+
+	// 0 batch size
+	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-b", "0")
+	as.ErrorIs(err, ErrInvalidBatchSize)
+
+	_, err = cmd(t, "-C", tempDir, "-c", "--allow-missing-formatter", "-b", "1")
+	as.NoError(err)
+	assertStats(t, as, 31, 31, 21, 0)
+
+	_, err = cmd(t, "-C", tempDir, "-c", "--allow-missing-formatter", "-b", "100")
+	as.NoError(err)
+	assertStats(t, as, 31, 31, 21, 0)
+}
+
 func TestCpuProfile(t *testing.T) {
 	as := require.New(t)
 	tempDir := test.TempExamples(t)

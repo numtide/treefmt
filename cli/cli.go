@@ -30,12 +30,12 @@ type Format struct {
 	Version               bool               `name:"version" short:"V" help:"Print version."`
 	Init                  bool               `name:"init" short:"i" help:"Create a new treefmt.toml."`
 
+	Stdin       bool      `help:"Format the context passed in via stdin."`
 	OnUnmatched log.Level `name:"on-unmatched" short:"u" default:"warn" help:"Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are <debug|info|warn|error|fatal>."`
+	CpuProfile  string    `optional:"" help:"The file into which a cpu profile will be written."`
+	BatchSize   int       `default:"1024" short:"b" help:"Specify the maximum number of paths to apply to a sequence of formatters."`
 
 	Paths []string `name:"paths" arg:"" type:"path" optional:"" help:"Paths to format. Defaults to formatting the whole tree."`
-	Stdin bool     `help:"Format the context passed in via stdin."`
-
-	CpuProfile string `optional:"" help:"The file into which a cpu profile will be written."`
 
 	formatters     map[string]*format.Formatter
 	globalExcludes []glob.Glob

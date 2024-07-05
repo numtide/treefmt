@@ -14,6 +14,7 @@ func TestReadConfigFile(t *testing.T) {
 
 	as.NotNil(cfg)
 
+	as.Equal(10, cfg.Global.BatchSize)
 	as.Equal([]string{"*.toml"}, cfg.Global.Excludes)
 
 	// python

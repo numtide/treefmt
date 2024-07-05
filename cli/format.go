@@ -24,14 +24,23 @@ import (
 )
 
 const (
-	BatchSize = 1024
+	DefaultBatchSize = 1024
 )
 
-var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
+var (
+	ErrFailOnChange     = errors.New("unexpected changes detected, --fail-on-change is enabled")
+	ErrInvalidBatchSize = errors.New("batch size must be >= 1")
+)
 
 func (f *Format) Run() (err error) {
 	// set log level and other options
 	f.configureLogging()
+
+	// validate the cli batch size
+	// todo move this into kong validation
+	if f.BatchSize < 1 {
+		return ErrInvalidBatchSize
+	}
 
 	// cpu profiling
 	if f.CpuProfile != "" {
@@ -96,6 +105,12 @@ func (f *Format) Run() (err error) {
 		return fmt.Errorf("failed to read config file %v: %w", f.ConfigFile, err)
 	}
 
+	// update the batch size only if it has not already been set by the cli arg
+	// cli arg takes precedence over config
+	if f.BatchSize == DefaultBatchSize && cfg.Global.BatchSize != 0 {
+		f.BatchSize = cfg.Global.BatchSize
+	}
+
 	// compile global exclude globs
 	if f.globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
 		return fmt.Errorf("failed to compile global excludes: %w", err)
@@ -146,7 +161,7 @@ func (f *Format) Run() (err error) {
 
 	// create a channel for files needing to be processed
 	// we use a multiple of batch size here as a rudimentary concurrency optimization based on the host machine
-	f.filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
+	f.filesCh = make(chan *walk.File, f.BatchSize*runtime.NumCPU())
 
 	// create a channel for files that have been processed
 	f.processedCh = make(chan *walk.File, cap(f.filesCh))
@@ -165,7 +180,7 @@ func (f *Format) Run() (err error) {
 func (f *Format) updateCache(ctx context.Context) func() error {
 	return func() error {
 		// used to batch updates for more efficient txs
-		batch := make([]*walk.File, 0, BatchSize)
+		batch := make([]*walk.File, 0, f.BatchSize)
 
 		// apply a batch
 		processBatch := func() error {
@@ -212,7 +227,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 
 				// append to batch and process if we have enough
 				batch = append(batch, file)
-				if len(batch) == BatchSize {
+				if len(batch) == f.BatchSize {
 					if err := processBatch(); err != nil {
 						return err
 					}
@@ -242,7 +257,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 func (f *Format) walkFilesystem(ctx context.Context) func() error {
 	return func() error {
 		eg, ctx := errgroup.WithContext(ctx)
-		pathsCh := make(chan string, BatchSize)
+		pathsCh := make(chan string, f.BatchSize)
 
 		// By default, we use the cli arg, but if the stdin flag has been set we force a filesystem walk
 		// since we will only be processing one file from a temp directory
@@ -352,7 +367,7 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 		}
 
 		// process the batch if it's full, or we've been asked to flush partial batches
-		if flush || len(batch) == BatchSize {
+		if flush || len(batch) == f.BatchSize {
 
 			// copy the batch as we re-use it for the next batch
 			tasks := make([]*format.Task, len(batch))
