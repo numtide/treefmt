@@ -364,6 +364,11 @@ func TestFailOnChange(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, err := cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
 	as.ErrorIs(err, ErrFailOnChange)
+
+	// test with no cache
+	test.WriteConfig(t, configPath, cfg)
+	_, err = cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	as.ErrorIs(err, ErrFailOnChange)
 }
 
 func TestBustCacheOnFormatterChange(t *testing.T) {

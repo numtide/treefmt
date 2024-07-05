@@ -283,21 +283,12 @@ func Update(files []*walk.File) error {
 		bucket := tx.Bucket([]byte(pathsBucket))
 
 		for _, f := range files {
-			currentInfo, err := os.Stat(f.Path)
-			if err != nil {
-				return err
-			}
-
-			if !(f.Info.ModTime() == currentInfo.ModTime() && f.Info.Size() == currentInfo.Size()) {
-				stats.Add(stats.Formatted, 1)
-			}
-
 			entry := Entry{
-				Size:     currentInfo.Size(),
-				Modified: currentInfo.ModTime(),
+				Size:     f.Info.Size(),
+				Modified: f.Info.ModTime(),
 			}
 
-			if err = putEntry(bucket, f.RelPath, &entry); err != nil {
+			if err := putEntry(bucket, f.RelPath, &entry); err != nil {
 				return err
 			}
 		}

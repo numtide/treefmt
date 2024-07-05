@@ -82,7 +82,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 	//
 
-	f.log.Infof("%v files processed in %v", len(tasks), time.Since(start))
+	f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
 
 	return nil
 }
