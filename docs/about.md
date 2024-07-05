@@ -46,20 +46,18 @@ instance, take the caching optimization.
 
 It takes about 23 seconds to traverse a project of 40,559 files and no changes without caching:
 
-```
+```console
 traversed 41273 files
 emitted 41273 files for processing
-matched 34311 files to formatters
-formatted 14338 files in 23.679339987s
+formatted 34111 files (14338 changed) in 23.679s
 ```
 
 ...while it takes **239 milliseconds** to traverse the same project with caching:
 
-```
+```console
 traversed 41273 files
 emitted 0 files for processing
-matched 0 files to formatters
-formatted 0 files in 239.024064ms
+formatted 0 files (0 changed) in 239ms
 ```
 
 The tool can be invoked manually or integrated into your CI. There's currently no integration with IDEs, but the feature is coming soon.
