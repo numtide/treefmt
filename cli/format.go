@@ -148,10 +148,10 @@ func (f *Format) Run() (err error) {
 	// we use a multiple of batch size here as a rudimentary concurrency optimization based on the host machine
 	f.filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
 
-	// create a channel for files that have been processed
+	// create a channel for files that have been formatted
 	f.formattedCh = make(chan *walk.File, cap(f.filesCh))
 
-	// create a channel for files that have been formatted
+	// create a channel for files that have been processed
 	f.processedCh = make(chan *walk.File, cap(f.filesCh))
 
 	// start concurrent processing tasks in reverse order
