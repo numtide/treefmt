@@ -399,6 +399,8 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 				if !(file.Info.ModTime() == currentInfo.ModTime() && file.Info.Size() == currentInfo.Size()) {
 					// record the change
 					stats.Add(stats.Formatted, 1)
+					// log the change for diagnostics
+					log.Debugf("file has been changed: %s", file.Path)
 					// update the file info
 					file.Info = currentInfo
 				}
@@ -429,7 +431,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 		// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
 		if f.Stdin || f.NoCache {
 			// do nothing
-			processBatch := func() error { return nil }
+			processBatch = func() error { return nil }
 		}
 
 	LOOP:
