@@ -26,8 +26,6 @@ versions.forEach(version => {
   sidebar[`/${version}/`] = sidebar["/"].map(({ text, link }) => ({ text, link: `/${version}${link}`}))
 })
 
-console.log("sidebar", sidebar)
-
 // https://vitepress.dev/reference/site-config
 export default defineVersionedConfig({
   base: '/',
