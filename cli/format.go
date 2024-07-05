@@ -417,19 +417,19 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 
 		// apply a batch
 		processBatch := func() error {
-			// if we are processing from stdin that means we are outputting to stdout, no caching involved
-			// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
-			if f.Stdin || f.NoCache {
-				// do nothing
-				return nil
-			}
-
 			// pass the batch to the cache for updating
 			if err := cache.Update(batch); err != nil {
 				return err
 			}
 			batch = batch[:0]
 			return nil
+		}
+
+		// if we are processing from stdin that means we are outputting to stdout, no caching involved
+		// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
+		if f.Stdin || f.NoCache {
+			// do nothing
+			processBatch := func() error { return nil }
 		}
 
 	LOOP:
