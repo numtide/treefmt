@@ -144,7 +144,7 @@ This project is still pretty new. Down the line we also want to add support for:
 
 ## Contributing
 
-All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/contributing.md)
+All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](docs/contributing.md)
 guidelines for more information.
 
 ## Moving from Rust To Go
