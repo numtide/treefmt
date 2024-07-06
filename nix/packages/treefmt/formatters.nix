@@ -16,6 +16,8 @@ with pkgs; [
   statix
   deadnix
   terraform
+  dos2unix
+  yamlfmt
   # util for unit testing
   (pkgs.writeShellApplication {
     name = "test-fmt";

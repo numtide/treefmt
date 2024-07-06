@@ -91,5 +91,14 @@ command = "terraform"
 options = ["fmt"]
 includes = ["*.tf"]
 
+[formatter.dos2unix]
+command = "dos2unix"
+includes = ["*.yaml"]
+options = ["--keepdate"]
+
+[formatter.yamlfmt]
+command = "yamlfmt"
+includes = ["*.yaml"]
+
 [formatter.foo-fmt]
 command = "foo-fmt"

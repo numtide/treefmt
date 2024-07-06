@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
+	"time"
 )
 
 type Type string
@@ -18,6 +20,29 @@ type File struct {
 	Path    string
 	RelPath string
 	Info    fs.FileInfo
+}
+
+func (f File) HasChanged() (bool, fs.FileInfo, error) {
+	// get the file's current state
+	current, err := os.Stat(f.Path)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to stat %s: %w", f.Path, err)
+	}
+
+	// check the size first
+	if f.Info.Size() != current.Size() {
+		return true, current, nil
+	}
+
+	// POSIX specifies EPOCH time for Mod time, but some filesystems give more precision.
+	// Some formatters mess with the mod time (e.g., dos2unix) but not to the same precision,
+	// triggering false positives.
+	// We truncate everything below a second.
+	if f.Info.ModTime().Truncate(time.Second) != current.ModTime().Truncate(time.Second) {
+		return true, current, nil
+	}
+
+	return false, nil, nil
 }
 
 func (f File) String() string {

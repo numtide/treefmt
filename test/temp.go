@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	"git.numtide.com/numtide/treefmt/config"
 
@@ -27,6 +28,11 @@ func WriteConfig(t *testing.T, path string, cfg config.Config) {
 func TempExamples(t *testing.T) string {
 	tempDir := t.TempDir()
 	require.NoError(t, cp.Copy("../test/examples", tempDir), "failed to copy test data to temp dir")
+
+	// we have second precision mod time tracking, so we wait a second before returning, so we don't trigger false
+	//positives for things like fail on change
+	time.Sleep(time.Second)
+
 	return tempDir
 }
 
