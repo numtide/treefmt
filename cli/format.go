@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"syscall"
+	"time"
 
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/stats"
@@ -389,20 +390,26 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 					return nil
 				}
 
-				// look up current file info
-				currentInfo, err := os.Stat(file.Path)
+				// check if the file has changed
+				changed, newInfo, err := file.HasChanged()
 				if err != nil {
-					return fmt.Errorf("failed to stat processed file: %w", err)
+					return err
 				}
 
-				// check if the file has changed
-				if !(file.Info.ModTime() == currentInfo.ModTime() && file.Info.Size() == currentInfo.Size()) {
+				if changed {
 					// record the change
 					stats.Add(stats.Formatted, 1)
 					// log the change for diagnostics
-					log.Debugf("file has been changed: %s", file.Path)
+					log.Debug(
+						"file has changed",
+						"path", file.Path,
+						"prev_size", file.Info.Size(),
+						"current_size", newInfo.Size(),
+						"prev_mod_time", file.Info.ModTime().Truncate(time.Second),
+						"current_mod_time", newInfo.ModTime().Truncate(time.Second),
+					)
 					// update the file info
-					file.Info = currentInfo
+					file.Info = newInfo
 				}
 
 				// mark as processed
