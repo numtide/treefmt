@@ -12,7 +12,7 @@ import (
 	"git.numtide.com/numtide/treefmt/stats"
 
 	"git.numtide.com/numtide/treefmt/format"
-	"git.numtide.com/numtide/treefmt/walk"
+	"git.numtide.com/numtide/treefmt/walker"
 
 	"github.com/charmbracelet/log"
 
@@ -187,7 +187,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
-func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.File) error {
+func ChangeSet(ctx context.Context, wk walker.Walker, filesCh chan<- *walker.File) error {
 	start := time.Now()
 
 	defer func() {
@@ -205,7 +205,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 		}
 	}()
 
-	return walker.Walk(ctx, func(file *walk.File, err error) error {
+	return wk.Walk(ctx, func(file *walker.File, err error) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -264,7 +264,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 }
 
 // Update is used to record updated cache information for the specified list of paths.
-func Update(files []*walk.File) error {
+func Update(files []*walker.File) error {
 	start := time.Now()
 	defer func() {
 		logger.Debugf("finished processing %v paths in %v", len(files), time.Since(start))

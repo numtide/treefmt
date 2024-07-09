@@ -18,7 +18,7 @@ import (
 
 	"git.numtide.com/numtide/treefmt/cache"
 	"git.numtide.com/numtide/treefmt/config"
-	"git.numtide.com/numtide/treefmt/walk"
+	"git.numtide.com/numtide/treefmt/walker"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"
@@ -147,13 +147,13 @@ func (f *Format) Run() (err error) {
 
 	// create a channel for files needing to be processed
 	// we use a multiple of batch size here as a rudimentary concurrency optimization based on the host machine
-	f.filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
+	f.fileCh = make(chan *walker.File, BatchSize*runtime.NumCPU())
 
 	// create a channel for files that have been formatted
-	f.formattedCh = make(chan *walk.File, cap(f.filesCh))
+	f.formattedCh = make(chan *walker.File, cap(f.fileCh))
 
 	// create a channel for files that have been processed
-	f.processedCh = make(chan *walk.File, cap(f.filesCh))
+	f.processedCh = make(chan *walker.File, cap(f.fileCh))
 
 	// start concurrent processing tasks in reverse order
 	eg.Go(f.updateCache(ctx))
@@ -168,14 +168,14 @@ func (f *Format) Run() (err error) {
 func (f *Format) walkFilesystem(ctx context.Context) func() error {
 	return func() error {
 		eg, ctx := errgroup.WithContext(ctx)
-		pathsCh := make(chan string, BatchSize)
+		pathCh := make(chan string, BatchSize)
 
 		// By default, we use the cli arg, but if the stdin flag has been set we force a filesystem walk
 		// since we will only be processing one file from a temp directory
 		walkerType := f.Walk
 
 		if f.Stdin {
-			walkerType = walk.Filesystem
+			walkerType = walker.Filesystem
 
 			// check we have only received one path arg which we use for the file extension / matching to formatters
 			if len(f.Paths) != 1 {
@@ -197,7 +197,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 		}
 
 		walkPaths := func() error {
-			defer close(pathsCh)
+			defer close(pathCh)
 
 			var idx int
 			for idx < len(f.Paths) {
@@ -205,7 +205,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					pathsCh <- f.Paths[idx]
+					pathCh <- f.Paths[idx]
 					idx += 1
 				}
 			}
@@ -217,29 +217,29 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 			eg.Go(walkPaths)
 		} else {
 			// no explicit paths to process, so we only need to process root
-			pathsCh <- f.TreeRoot
-			close(pathsCh)
+			pathCh <- f.TreeRoot
+			close(pathCh)
 		}
 
 		// create a filesystem walker
-		walker, err := walk.New(walkerType, f.TreeRoot, pathsCh)
+		wk, err := walker.New(walkerType, f.TreeRoot, f.NoCache, pathCh)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
 
-		// close the files channel when we're done walking the file system
-		defer close(f.filesCh)
+		// close the file channel when we're done walking the file system
+		defer close(f.fileCh)
 
 		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
 		if f.NoCache || f.Stdin {
-			return walker.Walk(ctx, func(file *walk.File, err error) error {
+			return wk.Walk(ctx, func(file *walker.File, err error) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
 					stats.Add(stats.Traversed, 1)
 					stats.Add(stats.Emitted, 1)
-					f.filesCh <- file
+					f.fileCh <- file
 					return nil
 				}
 			})
@@ -247,7 +247,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 
 		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
 		// they have been added/changed since the last invocation
-		if err = cache.ChangeSet(ctx, walker, f.filesCh); err != nil {
+		if err = cache.ChangeSet(ctx, wk, f.fileCh); err != nil {
 			return fmt.Errorf("failed to generate change set: %w", err)
 		}
 		return nil
@@ -319,7 +319,7 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 		}()
 
 		// iterate the files channel
-		for file := range f.filesCh {
+		for file := range f.fileCh {
 
 			// first check if this file has been globally excluded
 			if format.PathMatches(file.RelPath, f.globalExcludes) {
@@ -419,7 +419,7 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 func (f *Format) updateCache(ctx context.Context) func() error {
 	return func() error {
 		// used to batch updates for more efficient txs
-		batch := make([]*walk.File, 0, BatchSize)
+		batch := make([]*walker.File, 0, BatchSize)
 
 		// apply a batch
 		processBatch := func() error {

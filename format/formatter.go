@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/walk"
+	"git.numtide.com/numtide/treefmt/walker"
 
 	"git.numtide.com/numtide/treefmt/config"
 
@@ -89,7 +89,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 // Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
-func (f *Formatter) Wants(file *walk.File) bool {
+func (f *Formatter) Wants(file *walker.File) bool {
 	match := !PathMatches(file.RelPath, f.excludes) && PathMatches(file.RelPath, f.includes)
 	if match {
 		f.log.Debugf("match: %v", file)
