@@ -20,11 +20,11 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 	relPathOffset := len(f.root) + 1
 
 	relPathFn := func(path string) (string, error) {
-		// quick optimisation for the majority of use cases
-		// todo check that root is a prefix in path?
-		if len(path) >= relPathOffset {
+		// quick optimization for the majority of use cases
+		if len(path) >= relPathOffset && path[:len(f.root)] == f.root {
 			return path[relPathOffset:], nil
 		}
+		// fallback to proper relative path resolution
 		return filepath.Rel(f.root, path)
 	}
 
