@@ -50,9 +50,13 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					path := filepath.Join(g.root, entry.Name)
+					// we only want regular files, not directories or symlinks
+					if !entry.Mode.IsRegular() {
+						continue
+					}
 
 					// stat the file
+					path := filepath.Join(g.root, entry.Name)
 					info, err := os.Lstat(path)
 
 					file := File{

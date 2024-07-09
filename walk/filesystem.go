@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 )
 
@@ -30,6 +31,11 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 	walkFn := func(path string, info fs.FileInfo, _ error) error {
 		if info == nil {
 			return fmt.Errorf("no such file or directory '%s'", path)
+		}
+
+		// ignore directories and symlinks
+		if info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink {
+			return nil
 		}
 
 		relPath, err := f.relPath(path)
