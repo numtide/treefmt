@@ -237,12 +237,9 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					// ignore symlinks and directories
-					if !(file.Info.IsDir() || file.Info.Mode()&os.ModeSymlink == os.ModeSymlink) {
-						stats.Add(stats.Traversed, 1)
-						stats.Add(stats.Emitted, 1)
-						f.filesCh <- file
-					}
+					stats.Add(stats.Traversed, 1)
+					stats.Add(stats.Emitted, 1)
+					f.filesCh <- file
 					return nil
 				}
 			})

@@ -13,26 +13,26 @@ import (
 )
 
 type gitWalker struct {
-	root  string
-	paths chan string
-	repo  *git.Repository
+	root          string
+	paths         chan string
+	repo          *git.Repository
+	relPathOffset int
 }
 
-func (g *gitWalker) Root() string {
+func (g gitWalker) Root() string {
 	return g.root
 }
 
-func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
-	// for quick relative paths
-	relPathOffset := len(g.root) + 1
-
-	relPathFn := func(path string) (relPath string) {
-		if len(path) >= relPathOffset {
-			relPath = path[relPathOffset:]
-		}
-		return
+func (g gitWalker) relPath(path string) (string, error) {
+	// quick optimization for the majority of use cases
+	if len(path) >= g.relPathOffset && path[:len(g.root)] == g.root {
+		return path[g.relPathOffset:], nil
 	}
+	// fallback to proper relative path resolution
+	return filepath.Rel(g.root, path)
+}
 
+func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	idx, err := g.repo.Storer.Index()
 	if err != nil {
 		return fmt.Errorf("failed to open git index: %w", err)
@@ -50,14 +50,28 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					path := filepath.Join(g.root, entry.Name)
+					// we only want regular files, not directories or symlinks
+					if !entry.Mode.IsRegular() {
+						continue
+					}
 
 					// stat the file
+					path := filepath.Join(g.root, entry.Name)
+
 					info, err := os.Lstat(path)
+					if err != nil {
+						return fmt.Errorf("failed to stat %s: %w", path, err)
+					}
+
+					// determine a relative path
+					relPath, err := g.relPath(path)
+					if err != nil {
+						return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+					}
 
 					file := File{
 						Path:    path,
-						RelPath: relPathFn(path),
+						RelPath: relPath,
 						Info:    info,
 					}
 
@@ -93,9 +107,9 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				return nil
 			}
 
-			relPath, err := filepath.Rel(g.root, path)
+			relPath, err := g.relPath(path)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
 			}
 
 			if _, ok := cache[relPath]; !ok {
@@ -105,7 +119,7 @@ func (g *gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 
 			file := File{
 				Path:    path,
-				RelPath: relPathFn(path),
+				RelPath: relPath,
 				Info:    info,
 			}
 
@@ -121,5 +135,10 @@ func NewGit(root string, paths chan string) (Walker, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)
 	}
-	return &gitWalker{root, paths, repo}, nil
+	return &gitWalker{
+		root:          root,
+		paths:         paths,
+		repo:          repo,
+		relPathOffset: len(root) + 1,
+	}, nil
 }
