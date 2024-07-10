@@ -218,11 +218,6 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 			}
 		}
 
-		// ignore symlinks
-		if file.Info.Mode()&os.ModeSymlink == os.ModeSymlink {
-			return nil
-		}
-
 		// open a new read tx if there isn't one in progress
 		// we have to periodically open a new read tx to prevent writes from being blocked
 		if tx == nil {
