@@ -5,6 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"git.numtide.com/numtide/treefmt/cache"
+	"git.numtide.com/numtide/treefmt/stats"
+
 	"git.numtide.com/numtide/treefmt/test"
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +58,12 @@ func TestFilesystemWalker_Walk(t *testing.T) {
 
 	as := require.New(t)
 
-	walker, err := NewFilesystem(tempDir, paths)
+	stats.Init()
+
+	c, err := cache.Open(t.TempDir(), false)
+	as.NoError(err, "failed to open cache")
+
+	walker, err := NewFilesystem(tempDir, c, paths)
 	as.NoError(err)
 
 	idx := 0

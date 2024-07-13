@@ -3,6 +3,7 @@ package walker
 import (
 	"context"
 	"fmt"
+	"git.numtide.com/numtide/treefmt/cache"
 	"io/fs"
 	"os"
 	"time"
@@ -54,26 +55,33 @@ type WalkFunc func(file *File, err error) error
 type Walker interface {
 	Root() string
 	Walk(ctx context.Context, fn WalkFunc) error
+	UpdatePaths(batch []*File) error
 }
 
-func New(walkerType Type, root string, noCache bool, pathsCh chan string) (Walker, error) {
+func New(
+	walkerType Type,
+	root string,
+	cache *cache.Cache,
+	pathsCh chan string,
+) (Walker, error) {
+
 	switch walkerType {
 	case Git:
-		return NewGit(root, noCache, pathsCh)
+		return NewGit(root, cache, pathsCh)
 	case Auto:
-		return Detect(root, noCache, pathsCh)
+		return Detect(root, cache, pathsCh)
 	case Filesystem:
-		return NewFilesystem(root, pathsCh)
+		return NewFilesystem(root, cache, pathsCh)
 	default:
 		return nil, fmt.Errorf("unknown walker type: %v", walkerType)
 	}
 }
 
-func Detect(root string, noCache bool, pathsCh chan string) (Walker, error) {
+func Detect(root string, cache *cache.Cache, pathsCh chan string) (Walker, error) {
 	// for now, we keep it simple and try git first, filesystem second
-	w, err := NewGit(root, noCache, pathsCh)
+	w, err := NewGit(root, cache, pathsCh)
 	if err == nil {
 		return w, err
 	}
-	return NewFilesystem(root, pathsCh)
+	return NewFilesystem(root, cache, pathsCh)
 }

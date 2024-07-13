@@ -3,6 +3,8 @@ package walker
 import (
 	"context"
 	"fmt"
+	"git.numtide.com/numtide/treefmt/cache"
+	"git.numtide.com/numtide/treefmt/stats"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,6 +24,11 @@ type gitWalker struct {
 
 	noCache       bool
 	relPathOffset int
+}
+
+func (g gitWalker) UpdatePaths(_ []*File) error {
+	// nothing to do, git is doing all the tracking
+	return nil
 }
 
 func (g gitWalker) Root() string {
@@ -44,7 +51,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	}
 
 	// cache in-memory whether a path is present in the git index
-	var cache map[string]*index.Entry
+	var indexCache map[string]*index.Entry
 
 	// by default, we only emit files if they have changes when compared with the git index
 	emitFile := func(entry *index.Entry, info os.FileInfo) bool {
@@ -98,6 +105,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 						Info:    info,
 					}
 
+					stats.Add(stats.Traversed, 1)
 					if err = fn(&file, err); err != nil {
 						return err
 					}
@@ -107,10 +115,10 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 		}
 
 		// otherwise we ensure the git index entries are cached and then check if the path is in the git index
-		if cache == nil {
-			cache = make(map[string]*index.Entry)
+		if indexCache == nil {
+			indexCache = make(map[string]*index.Entry)
 			for _, entry := range idx.Entries {
-				cache[entry.Name] = entry
+				indexCache[entry.Name] = entry
 			}
 		}
 
@@ -119,7 +127,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 			return fmt.Errorf("failed to find relative path for %v: %w", path, err)
 		}
 
-		_, ok := cache[relPath]
+		_, ok := indexCache[relPath]
 		if !(path == g.root || ok) {
 			log.Debugf("path %v not found in git index, skipping", path)
 			continue
@@ -136,7 +144,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
 			}
 
-			if entry, ok := cache[relPath]; !ok {
+			if entry, ok := indexCache[relPath]; !ok {
 				log.Debugf("path %v not found in git index, skipping", path)
 				return nil
 			} else if !emitFile(entry, info) {
@@ -150,6 +158,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				Info:    info,
 			}
 
+			stats.Add(stats.Traversed, 1)
 			return fn(&file, err)
 		})
 	}
@@ -159,18 +168,24 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 
 func NewGit(
 	root string,
-	noCache bool,
+	cache *cache.Cache,
 	paths chan string,
 ) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)
 	}
+
+	// immediately close the cache as we have no need for it
+	if err = cache.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close cache: %w", err)
+	}
+
 	return &gitWalker{
 		root:          root,
 		paths:         paths,
 		repo:          repo,
-		noCache:       noCache,
+		noCache:       cache.Temporary,
 		relPathOffset: len(root) + 1,
 	}, nil
 }

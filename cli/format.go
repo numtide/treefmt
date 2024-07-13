@@ -13,10 +13,11 @@ import (
 	"syscall"
 	"time"
 
+	"git.numtide.com/numtide/treefmt/cache"
+
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/stats"
 
-	"git.numtide.com/numtide/treefmt/cache"
 	"git.numtide.com/numtide/treefmt/config"
 	"git.numtide.com/numtide/treefmt/walker"
 
@@ -52,13 +53,6 @@ func (f *Format) Run() (err error) {
 
 	// create a prefixed logger
 	log.SetPrefix("format")
-
-	// ensure cache is closed on return
-	defer func() {
-		if err := cache.Close(); err != nil {
-			log.Errorf("failed to close cache: %v", err)
-		}
-	}()
 
 	// find the config file unless specified
 	if f.ConfigFile == "" {
@@ -119,12 +113,37 @@ func (f *Format) Run() (err error) {
 		f.formatters[name] = formatter
 	}
 
-	// open the cache if configured
-	if !f.NoCache {
-		if err = cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
-			// if we can't open the cache, we log a warning and fallback to no cache
-			log.Warnf("failed to open cache: %v", err)
-			f.NoCache = true
+	// initialise the cache
+	f.cache, err = cache.Open(f.TreeRoot, f.NoCache)
+	if err != nil {
+		return fmt.Errorf("failed to open cache: %w", err)
+	}
+
+	// ensure the cache is closed on shutdown
+	defer func() {
+		if err := f.cache.Close(); err != nil {
+			log.Errorf("failed to close cache: %v", err)
+		}
+		log.Debug("successfully closed cache")
+	}()
+
+	// check if the formatters set has changed in any meaningful way
+	if err = format.CheckFormatters(f.cache, f.formatters); err != nil {
+		return fmt.Errorf("failed to check formatters: %w", err)
+	}
+	log.Debugf("formatters check complete")
+
+	// clear out the paths bucket if desired before starting
+	if f.ClearCache {
+		err = f.cache.Update(func(tx *cache.Tx) error {
+			paths, err := tx.Paths()
+			if err != nil {
+				return err
+			}
+			return paths.DeleteAll()
+		})
+		if err != nil {
+			return fmt.Errorf("failed to clear paths from cache: %w", err)
 		}
 	}
 
@@ -222,7 +241,8 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 		}
 
 		// create a filesystem walker
-		wk, err := walker.New(walkerType, f.TreeRoot, f.NoCache, pathCh)
+		var err error
+		f.walker, err = walker.New(walkerType, f.TreeRoot, f.cache, pathCh)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
@@ -230,27 +250,17 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 		// close the file channel when we're done walking the file system
 		defer close(f.fileCh)
 
-		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
-		if f.NoCache || f.Stdin {
-			return wk.Walk(ctx, func(file *walker.File, err error) error {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					stats.Add(stats.Traversed, 1)
-					stats.Add(stats.Emitted, 1)
-					f.fileCh <- file
-					return nil
-				}
-			})
-		}
-
-		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
-		// they have been added/changed since the last invocation
-		if err = cache.ChangeSet(ctx, wk, f.fileCh); err != nil {
-			return fmt.Errorf("failed to generate change set: %w", err)
-		}
-		return nil
+		//
+		return f.walker.Walk(ctx, func(file *walker.File, err error) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				stats.Add(stats.Emitted, 1)
+				f.fileCh <- file
+				return nil
+			}
+		})
 	}
 }
 
@@ -423,17 +433,17 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 
 		// apply a batch
 		processBatch := func() error {
-			// pass the batch to the cache for updating
-			if err := cache.Update(batch); err != nil {
+			// let the walker record updated path info
+			if err := f.walker.UpdatePaths(batch); err != nil {
 				return err
 			}
+			// reset the batch
 			batch = batch[:0]
 			return nil
 		}
 
 		// if we are processing from stdin that means we are outputting to stdout, no caching involved
-		// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
-		if f.Stdin || f.NoCache {
+		if f.Stdin {
 			// do nothing
 			processBatch = func() error { return nil }
 		}

@@ -412,7 +412,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	}
 
 	test.WriteConfig(t, configPath, cfg)
-	args := []string{"--config-file", configPath, "--tree-root", tempDir}
+	args := []string{"--config-file", configPath, "--tree-root", tempDir, "-vv"}
 	_, err := cmd(t, args...)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 3, 0)
@@ -425,8 +425,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, 32, 32, 3, 0)
 
 	// check cache is working
-	_, err = cmd(t, args...)
-	as.NoError(err)
+	out, err := cmd(t, args...)
+	as.NoError(err, string(out))
 	assertStats(t, as, 32, 0, 0, 0)
 
 	// tweak mod time of python formatter

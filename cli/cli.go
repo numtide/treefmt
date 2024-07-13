@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"git.numtide.com/numtide/treefmt/cache"
 	"os"
 
 	"github.com/gobwas/glob"
@@ -41,6 +42,9 @@ type Format struct {
 	formatters     map[string]*format.Formatter
 	globalExcludes []glob.Glob
 
+	cache *cache.Cache
+
+	walker      walker.Walker
 	fileCh      chan *walker.File
 	formattedCh chan *walker.File
 	processedCh chan *walker.File
