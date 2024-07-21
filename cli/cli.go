@@ -20,7 +20,7 @@ type Format struct {
 	WorkingDirectory      kong.ChangeDirFlag `default:"." short:"C" help:"Run as if treefmt was started in the specified working directory instead of the current working directory."`
 	NoCache               bool               `help:"Ignore the evaluation cache entirely. Useful for CI."`
 	ClearCache            bool               `short:"c" help:"Reset the evaluation cache. Use in case the cache is not precise enough."`
-	ConfigFile            string             `type:"existingfile" help:"Load the config file from the given path (defaults to searching upwards for treefmt.toml)."`
+	ConfigFile            string             `type:"existingfile" help:"Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml)."`
 	FailOnChange          bool               `help:"Exit with error if any changes were made. Useful for CI."`
 	Formatters            []string           `short:"f" help:"Specify formatters to apply. Defaults to all formatters."`
 	TreeRoot              string             `type:"existingdir" xor:"tree-root" env:"PRJ_ROOT" help:"The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file)."`
