@@ -66,7 +66,7 @@ func (f *Format) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		f.ConfigFile, _, err = findUp(pwd, "treefmt.toml")
+		f.ConfigFile, _, err = findUp(pwd, "treefmt.toml", ".treefmt.toml")
 		if err != nil {
 			return err
 		}
@@ -496,14 +496,16 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 	}
 }
 
-func findUp(searchDir string, fileName string) (path string, dir string, err error) {
+func findUp(searchDir string, fileNames ...string) (path string, dir string, err error) {
 	for _, dir := range eachDir(searchDir) {
-		path := filepath.Join(dir, fileName)
-		if fileExists(path) {
-			return path, dir, nil
+		for _, f := range fileNames {
+			path := filepath.Join(dir, f)
+			if fileExists(path) {
+				return path, dir, nil
+			}
 		}
 	}
-	return "", "", fmt.Errorf("could not find %s in %s", fileName, searchDir)
+	return "", "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
 }
 
 func eachDir(path string) (paths []string) {
