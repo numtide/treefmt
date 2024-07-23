@@ -27,6 +27,10 @@ type Bucket[V any] struct {
 	bucket *bolt.Bucket
 }
 
+func (b *Bucket[V]) Size() int {
+	return b.bucket.Stats().KeyN
+}
+
 func (b *Bucket[V]) Get(key string) (*V, error) {
 	bytes := b.bucket.Get([]byte(key))
 	if bytes == nil {
