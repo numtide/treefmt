@@ -1,4 +1,4 @@
-# One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
+# One CLI to format the code tree - https://github.com/numtide/treefmt
 
 [formatter.deadnix]
 command = "deadnix"
