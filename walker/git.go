@@ -1,11 +1,16 @@
-package walk
+package walker
 
 import (
 	"context"
 	"fmt"
+	"git.numtide.com/numtide/treefmt/cache"
+	"git.numtide.com/numtide/treefmt/stats"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/go-git/go-git/v5/plumbing/format/index"
 
 	"github.com/charmbracelet/log"
 
@@ -13,10 +18,17 @@ import (
 )
 
 type gitWalker struct {
-	root          string
-	paths         chan string
-	repo          *git.Repository
+	root  string
+	paths chan string
+	repo  *git.Repository
+
+	noCache       bool
 	relPathOffset int
+}
+
+func (g gitWalker) UpdatePaths(_ []*File) error {
+	// nothing to do, git is doing all the tracking
+	return nil
 }
 
 func (g gitWalker) Root() string {
@@ -39,7 +51,20 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	}
 
 	// cache in-memory whether a path is present in the git index
-	var cache map[string]bool
+	var indexCache map[string]*index.Entry
+
+	// by default, we only emit files if they have changes when compared with the git index
+	emitFile := func(entry *index.Entry, info os.FileInfo) bool {
+		// mod time comparison is done with EPOCH (second) precision as per the POSIX spec
+		return entry.ModifiedAt.Truncate(time.Second) != info.ModTime().Truncate(time.Second)
+	}
+
+	if g.noCache {
+		// emit all files in the index
+		emitFile = func(entry *index.Entry, info os.FileInfo) bool {
+			return true
+		}
+	}
 
 	for path := range g.paths {
 
@@ -63,6 +88,11 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 						return fmt.Errorf("failed to stat %s: %w", path, err)
 					}
 
+					// skip processing if the file hasn't changed
+					if !emitFile(entry, info) {
+						continue
+					}
+
 					// determine a relative path
 					relPath, err := g.relPath(path)
 					if err != nil {
@@ -75,6 +105,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 						Info:    info,
 					}
 
+					stats.Add(stats.Traversed, 1)
 					if err = fn(&file, err); err != nil {
 						return err
 					}
@@ -83,11 +114,11 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 			continue
 		}
 
-		// otherwise we ensure the git index entries are cached and then check if they are in the git index
-		if cache == nil {
-			cache = make(map[string]bool)
+		// otherwise we ensure the git index entries are cached and then check if the path is in the git index
+		if indexCache == nil {
+			indexCache = make(map[string]*index.Entry)
 			for _, entry := range idx.Entries {
-				cache[entry.Name] = true
+				indexCache[entry.Name] = entry
 			}
 		}
 
@@ -96,14 +127,15 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 			return fmt.Errorf("failed to find relative path for %v: %w", path, err)
 		}
 
-		_, ok := cache[relPath]
+		_, ok := indexCache[relPath]
 		if !(path == g.root || ok) {
 			log.Debugf("path %v not found in git index, skipping", path)
 			continue
 		}
 
 		return filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
-			if info.IsDir() {
+			// ignore directories and symlinks
+			if info.IsDir() || info.Mode()&os.ModeSymlink == os.ModeSymlink {
 				return nil
 			}
 
@@ -112,8 +144,11 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
 			}
 
-			if _, ok := cache[relPath]; !ok {
+			if entry, ok := indexCache[relPath]; !ok {
 				log.Debugf("path %v not found in git index, skipping", path)
+				return nil
+			} else if !emitFile(entry, info) {
+				log.Debugf("path %v has not changed, skipping", path)
 				return nil
 			}
 
@@ -123,6 +158,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				Info:    info,
 			}
 
+			stats.Add(stats.Traversed, 1)
 			return fn(&file, err)
 		})
 	}
@@ -130,15 +166,26 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewGit(root string, paths chan string) (Walker, error) {
+func NewGit(
+	root string,
+	cache *cache.Cache,
+	paths chan string,
+) (Walker, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)
 	}
+
+	// immediately close the cache as we have no need for it
+	if err = cache.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close cache: %w", err)
+	}
+
 	return &gitWalker{
 		root:          root,
 		paths:         paths,
 		repo:          repo,
+		noCache:       cache.Temporary,
 		relPathOffset: len(root) + 1,
 	}, nil
 }

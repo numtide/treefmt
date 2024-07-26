@@ -155,11 +155,11 @@ module Bundler
     end
 
     def cache
-      bundle_path.join("cache/bundler")
+      bundle_path.join("caching/bundler")
     end
 
     def user_cache
-      user_bundle_path.join("cache")
+      user_bundle_path.join("caching")
     end
 
     def root

@@ -4,16 +4,16 @@ import (
 	"cmp"
 	"slices"
 
-	"git.numtide.com/numtide/treefmt/walk"
+	"git.numtide.com/numtide/treefmt/walker"
 )
 
 type Task struct {
-	File       *walk.File
+	File       *walker.File
 	Formatters []*Formatter
 	BatchKey   string
 }
 
-func NewTask(file *walk.File, formatters []*Formatter) Task {
+func NewTask(file *walker.File, formatters []*Formatter) Task {
 	// sort by priority in ascending order
 	slices.SortFunc(formatters, func(a, b *Formatter) int {
 		priorityA := a.Priority()
