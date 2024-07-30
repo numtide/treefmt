@@ -287,7 +287,10 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 				// we get the formatters list from the first task since they have all the same formatters list
 				for _, f := range tasks[0].Formatters {
 					if err := f.Apply(ctx, tasks); err != nil {
-						return err
+						// we ignore the error (f.Apply will log out if it fails) and continue to apply the next formatter
+						// this matches the behaviour of v1 and allows a user to see multiple errors with
+						// different formatters in one go instead of failing on the first error
+						continue
 					}
 				}
 
