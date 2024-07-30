@@ -75,15 +75,14 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 	f.log.Debugf("executing: %s", cmd.String())
 
 	if out, err := cmd.CombinedOutput(); err != nil {
+		f.log.Errorf("failed to apply with options '%v': %s", f.config.Options, err)
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
 		}
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
+	} else {
+		f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
 	}
-
-	//
-
-	f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
 
 	return nil
 }

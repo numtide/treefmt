@@ -11,6 +11,7 @@ type Task struct {
 	File       *walk.File
 	Formatters []*Formatter
 	BatchKey   string
+	Errors     []error
 }
 
 func NewTask(file *walk.File, formatters []*Formatter) Task {

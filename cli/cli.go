@@ -43,8 +43,8 @@ type Format struct {
 	globalExcludes []glob.Glob
 
 	filesCh     chan *walk.File
-	formattedCh chan *walk.File
-	processedCh chan *walk.File
+	formattedCh chan *format.Task
+	processedCh chan *format.Task
 }
 
 func (f *Format) configureLogging() {
