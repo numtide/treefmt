@@ -37,6 +37,8 @@ type Format struct {
 
 	CpuProfile string `optional:"" help:"The file into which a cpu profile will be written."`
 
+	Ci bool `help:"Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case."`
+
 	formatters     map[string]*format.Formatter
 	globalExcludes []glob.Glob
 
