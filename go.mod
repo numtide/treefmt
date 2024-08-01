@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.5.0
 	github.com/alecthomas/kong v0.9.0
 	github.com/charmbracelet/log v0.4.0
-	github.com/go-git/go-billy/v5 v5.5.1-0.20240427054813-8453aa90c6ec
+	github.com/go-git/go-billy/v5 v5.5.1-0.20240731070511-69f6dc8f1196
 	github.com/go-git/go-git/v5 v5.12.1-0.20240731163826-61f8d68aae95
 	github.com/gobwas/glob v0.2.3
 	github.com/otiai10/copy v1.14.0
@@ -45,7 +45,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
