@@ -66,6 +66,8 @@ github.com/go-git/go-git/v5 v5.12.1-0.20240731163826-61f8d68aae95 h1:Xav1aw0GLom
 github.com/go-git/go-git/v5 v5.12.1-0.20240731163826-61f8d68aae95/go.mod h1:9k8F3y4EUeg6gRdFC5FViBbOyItULujgJfAKnNpmnSU=
 github.com/go-git/go-git/v5 v5.12.1-0.20240805143739-b430952cb089 h1:W5r7xXAvVpMnYErx02GLoI2+uypBRLNT6yt30Q3XX30=
 github.com/go-git/go-git/v5 v5.12.1-0.20240805143739-b430952cb089/go.mod h1:Z+J95ZwbtvhoUeKzWcCF+kwPgXXFNZYe5ipgrZ3j59U=
+github.com/go-git/go-git/v5 v5.12.1-0.20240806163019-db559f123697 h1:PjdaGbIQ6b3o8fH0dWZPsqKLwZWqVjIoyvXoQ4Y/Crw=
+github.com/go-git/go-git/v5 v5.12.1-0.20240806163019-db559f123697/go.mod h1:Z+J95ZwbtvhoUeKzWcCF+kwPgXXFNZYe5ipgrZ3j59U=
 github.com/go-logfmt/logfmt v0.6.0 h1:wGYYu3uicYdqXVgoYbvnkrPVXkuLM1p1ifugDMEdRi4=
 github.com/go-logfmt/logfmt v0.6.0/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
