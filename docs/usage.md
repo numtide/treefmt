@@ -31,6 +31,7 @@ Flags:
                                      <debug|info|warn|error|fatal>.
       --stdin                        Format the context passed in via stdin.
       --cpu-profile=STRING           The file into which a cpu profile will be written.
+      --ci                           Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case.
 ```
 
 ## Arguments
@@ -112,13 +113,22 @@ Format the context passed in via stdin.
 
 The file into which a cpu profile will be written.
 
+### `--ci`
+
+Runs treefmt in a CI mode which does the following:
+
+-   ensures `INFO` level logging at a minimum
+-   enables `--no-cache` and `--fail-on-change`
+-   introduces a small startup delay so we do not start processing until the second after the process started, thereby
+    ensuring the accuracy of our change detection based on second-level `modtime`.
+
 ### `-V, --version`
 
 Print version.
 
 ## CI integration
 
-Typically, you would use `treefmt` in CI with the `--fail-on-change` and `--no-cache flags`.
+Typically, you would use `treefmt` in CI with the `--ci` flag.
 
 You can configure a `treefmt` job in a GitHub pipeline for Ubuntu with `nix-shell` like this:
 
@@ -141,5 +151,5 @@ jobs:
                   name: nix-community
                   authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
             - name: treefmt
-              run: nix-shell -p treefmt --run "treefmt --fail-on-change --no-cache"
+              run: nix-shell -p treefmt --run "treefmt --ci"
 ```

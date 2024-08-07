@@ -34,6 +34,37 @@ func (f *Format) Run() (err error) {
 	// set log level and other options
 	f.configureLogging()
 
+	// ci mode
+	if f.Ci {
+		f.NoCache = true
+		f.FailOnChange = true
+
+		// ensure INFO level
+		if f.Verbosity < 1 {
+			f.Verbosity = 1
+		}
+		// reconfigure logging
+		f.configureLogging()
+
+		log.Info("ci mode enabled")
+
+		startAfter := time.Now().
+			// truncate to second precision
+			Truncate(time.Second).
+			// add one second
+			Add(1 * time.Second).
+			// a little extra to ensure we don't start until the next second
+			Add(10 * time.Millisecond)
+
+		log.Debugf("waiting until %v before continuing", startAfter)
+
+		// Wait until we tick over into the next second before processing to ensure our EPOCH level modtime comparisons
+		// for change detection are accurate.
+		// This can fail in CI between checkout and running treefmt if everything happens too quickly.
+		// For humans, the second level precision should not be a problem as they are unlikely to run treefmt in sub-second succession.
+		<-time.After(time.Until(startAfter))
+	}
+
 	// cpu profiling
 	if f.CpuProfile != "" {
 		cpuProfile, err := os.Create(f.CpuProfile)
