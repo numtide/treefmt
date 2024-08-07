@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.5.0
 	github.com/alecthomas/kong v0.9.0
 	github.com/charmbracelet/log v0.4.0
-	github.com/go-git/go-billy/v5 v5.5.1-0.20240731070511-69f6dc8f1196
+	github.com/go-git/go-billy/v5 v5.5.1-0.20240805213603-fac749f7395a
 	github.com/go-git/go-git/v5 v5.12.1-0.20240805143739-b430952cb089
 	github.com/gobwas/glob v0.2.3
 	github.com/otiai10/copy v1.14.0
