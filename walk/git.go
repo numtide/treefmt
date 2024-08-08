@@ -13,6 +13,7 @@ import (
 )
 
 type gitWalker struct {
+	log           *log.Logger
 	root          string
 	paths         chan string
 	repo          *git.Repository
@@ -59,7 +60,11 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 					path := filepath.Join(g.root, entry.Name)
 
 					info, err := os.Lstat(path)
-					if err != nil {
+					if os.IsNotExist(err) {
+						// the underlying file might have been removed without the change being staged yet
+						g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
+						continue
+					} else if err != nil {
 						return fmt.Errorf("failed to stat %s: %w", path, err)
 					}
 
@@ -136,6 +141,7 @@ func NewGit(root string, paths chan string) (Walker, error) {
 		return nil, fmt.Errorf("failed to open git repo: %w", err)
 	}
 	return &gitWalker{
+		log:           log.WithPrefix("walker[git]"),
 		root:          root,
 		paths:         paths,
 		repo:          repo,

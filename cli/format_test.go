@@ -530,14 +530,18 @@ func TestGitWorktree(t *testing.T) {
 	as.NoError(err)
 	run(32, 32, 32, 0)
 
-	// remove python directory
+	// remove python directory from the worktree
 	as.NoError(wt.RemoveGlob("python/*"))
 	run(28, 28, 28, 0)
+
+	// remove nixpkgs.toml from the filesystem but leave it in the index
+	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
+	run(27, 27, 27, 0)
 
 	// walk with filesystem instead of git
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	assertStats(t, as, 61, 61, 61, 0)
+	assertStats(t, as, 60, 60, 60, 0)
 }
 
 func TestPathsArg(t *testing.T) {
