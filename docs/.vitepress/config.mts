@@ -20,7 +20,7 @@ const sidebar = {
 }
 
 // static version list, KISS
-const versions = ["v2.0.1", "v2.0.2"]
+const versions = ["v2.0.1", "v2.0.2", "v2.0.3"]
 
 versions.forEach(version => {
   sidebar[`/${version}/`] = sidebar["/"].map(({ text, link }) => ({ text, link: `/${version}${link}`}))
