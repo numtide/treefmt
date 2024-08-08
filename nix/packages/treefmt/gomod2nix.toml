@@ -47,8 +47,8 @@ schema = 3
     version = "v5.5.1-0.20240805213603-fac749f7395a"
     hash = "sha256-FZuDN3ULeBO83dMQGRMwghZckv2nJ2ZgXOcPH9ww/48="
   [mod."github.com/go-git/go-git/v5"]
-    version = "v5.12.1-0.20240805143739-b430952cb089"
-    hash = "sha256-7Nv2kwYrclAfQvoMys5efcUPQR2G46emw3BC5T0kZQY="
+    version = "v5.12.1-0.20240807144107-c594bae8d75d"
+    hash = "sha256-IkcAa64c4vw31Fg1wOjRD7CkmIM2LPUBGElUSVs8ExM="
   [mod."github.com/go-logfmt/logfmt"]
     version = "v0.6.0"
     hash = "sha256-RtIG2qARd5sT10WQ7F3LR8YJhS8exs+KiuUiVf75bWg="
@@ -113,14 +113,14 @@ schema = 3
     version = "v1.3.10"
     hash = "sha256-uEnz6jmmgT+hlwdZ8ns5NCJSbZcB4i123FF2cn2CbQA="
   [mod."golang.org/x/crypto"]
-    version = "v0.25.0"
-    hash = "sha256-traLAylqoBwGIh0Z1fuEhNjbGgQBItgVjtZYdYr0zzQ="
+    version = "v0.26.0"
+    hash = "sha256-Iicrsb65fCmjfPILKoSLyBZMwe2VUcoTF5SpYTCQEuk="
   [mod."golang.org/x/exp"]
     version = "v0.0.0-20240719175910-8a7402abbf56"
     hash = "sha256-mHEPy0vbd/pFwq5ZAEKaehCeYVQLEFDGnXAoVgkCLPo="
   [mod."golang.org/x/net"]
-    version = "v0.27.0"
-    hash = "sha256-GrlN5isYeEVrPZVAHK0MDQatttbnyfSPoWJHj0xqhjk="
+    version = "v0.28.0"
+    hash = "sha256-WdH/mgsX/CB+CiYtXEwJAXHN8FgtW2YhFcWwrrHNBLo="
   [mod."golang.org/x/sync"]
     version = "v0.8.0"
     hash = "sha256-usvF0z7gq1vsX58p4orX+8WHlv52pdXgaueXlwj2Wss="
