@@ -56,6 +56,11 @@ perSystem.devshell.mkShell {
       command = "cd $PRJ_ROOT/docs && npm ci && npm run preview";
     }
     {
+      name = "gomod2nix:update";
+      help = "update gomod2nix.toml";
+      command = "gomod2nix --dir $PRJ_ROOT --outdir $PRJ_ROOT/nix/packages/treefmt";
+    }
+    {
       help = "generate terminal gifs";
       package = pkgs.writeShellApplication {
         name = "vhs";
