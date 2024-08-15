@@ -427,13 +427,20 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 				if changed {
 					// record the change
 					stats.Add(stats.Formatted, 1)
-					// log the change for diagnostics
-					log.Debug(
+
+					logMethod := log.Debug
+					if f.FailOnChange {
+						// surface the changed file more obviously
+						logMethod = log.Error
+					}
+
+					// log the change
+					logMethod(
 						"file has changed",
-						"path", file.Path,
+						"path", file.RelPath,
 						"prev_size", file.Info.Size(),
-						"current_size", newInfo.Size(),
 						"prev_mod_time", file.Info.ModTime().Truncate(time.Second),
+						"current_size", newInfo.Size(),
 						"current_mod_time", newInfo.ModTime().Truncate(time.Second),
 					)
 					// update the file info
