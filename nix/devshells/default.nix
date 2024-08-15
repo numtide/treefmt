@@ -25,7 +25,7 @@ perSystem.devshell.mkShell {
       nodejs
     ])
     # include formatters for development and testing
-    (import ./packages/treefmt/formatters.nix pkgs)
+    (import ../packages/treefmt/formatters.nix pkgs)
   ];
 
   commands = [
@@ -46,11 +46,6 @@ perSystem.devshell.mkShell {
       command = "cd $PRJ_ROOT/docs && npm ci && npm run preview";
     }
     {
-      name = "gomod2nix:update";
-      help = "update gomod2nix.toml";
-      command = "gomod2nix --dir $PRJ_ROOT --outdir $PRJ_ROOT/nix/packages/treefmt";
-    }
-    {
       help = "generate terminal gifs";
       package = pkgs.writeShellApplication {
         name = "vhs";
@@ -60,7 +55,7 @@ perSystem.devshell.mkShell {
             pkgs.rsync
             pkgs.vhs
           ]
-          ++ (import ./packages/treefmt/formatters.nix pkgs);
+          ++ (import ../packages/treefmt/formatters.nix pkgs);
         text = ''vhs "$@"'';
       };
     }

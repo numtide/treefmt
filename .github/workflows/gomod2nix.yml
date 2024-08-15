@@ -20,11 +20,10 @@ jobs:
                   nix_path: nixpkgs=channel:nixos-unstable
             - name: Update gomod2nix.toml
               run: |
-                  nix develop --command bash -c "gomod2nix:update"
-                  git add .
+                  nix develop .#renovate --command bash -c "gomod2nix:update"                  
                   # git push if we have a diff
                   if [[ -n $(git diff) ]]; then
-                    git add default.nix
+                    git add nix/packages/treefmt/treefmt.toml
                     git config --global user.email "<29139614+renovate[bot]@users.noreply.github.com>"
                     git config --global user.name "renovate[bot]"
                     git commit -m "chore: update gomod2nix.toml"
