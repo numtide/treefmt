@@ -30,16 +30,6 @@ perSystem.devshell.mkShell {
 
   commands = [
     {package = perSystem.gomod2nix.default;}
-    # This custom command is needed to prevent a conflict between --tree-root and --tree-root-file.
-    # treefmt-nix sets --tree-root-file whilst treefmt defaults --tree-root from $PRJ_ROOT, which is set by numtide/devshell.
-    {
-      name = "fmt";
-      help = "runs `nix fmt` but unsets $PRJ_ROOT first";
-      package = pkgs.writeShellScriptBin "fmt" ''
-        unset PRJ_ROOT
-        nix fmt -- "$@"
-      '';
-    }
     {
       name = "docs:dev";
       help = "serve docs for local development";
