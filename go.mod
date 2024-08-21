@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kong v0.9.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/go-git/go-billy/v5 v5.5.1-0.20240819193939-9b484184bdcc
-	github.com/go-git/go-git/v5 v5.12.1-0.20240821090644-6d583524d3e1
+	github.com/go-git/go-git/v5 v5.12.1-0.20240821195137-5c762aefcd8d
 	github.com/gobwas/glob v0.2.3
 	github.com/otiai10/copy v1.14.0
 	github.com/stretchr/testify v1.9.0
