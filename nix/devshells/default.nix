@@ -9,6 +9,10 @@ perSystem.devshell.mkShell {
       name = "GOROOT";
       value = pkgs.go + "/share/go";
     }
+    {
+      name = "CGO_ENABLED";
+      value = 0;
+    }
   ];
 
   packages = pkgs.lib.mkMerge [
