@@ -47,8 +47,8 @@ schema = 3
     version = "v5.5.1-0.20240819193939-9b484184bdcc"
     hash = "sha256-SJr4U7nX7Tn1xGYw3pqUtKqqWedaAW4NJ5BNUJCDbYQ="
   [mod."github.com/go-git/go-git/v5"]
-    version = "v5.12.1-0.20240809133458-4fd9979d5c29"
-    hash = "sha256-0FT2yIcatU9B05CM4DKvsM7VwcjdeP/yV6jV9x2RsEI="
+    version = "v5.12.1-0.20240821090644-6d583524d3e1"
+    hash = "sha256-KZMotrpfw6eyJ5m1ySF8WBusD3mAb8AwPzcb6dZIjl0="
   [mod."github.com/go-logfmt/logfmt"]
     version = "v0.6.0"
     hash = "sha256-RtIG2qARd5sT10WQ7F3LR8YJhS8exs+KiuUiVf75bWg="
