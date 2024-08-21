@@ -116,7 +116,7 @@ func TestReadConfigFile(t *testing.T) {
 	as.Equal([]string{"*.sh"}, shellcheck.Includes)
 	as.Nil(shellcheck.Excludes)
 
-	//shfmt
+	// shfmt
 	shfmt, ok := cfg.Formatters["shfmt"]
 	as.True(ok, "shfmt formatter not found")
 	as.Equal("shfmt", shfmt.Command)
