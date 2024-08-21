@@ -13,7 +13,7 @@ require (
 	github.com/otiai10/copy v1.14.0
 	github.com/stretchr/testify v1.9.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	go.etcd.io/bbolt v1.3.10
+	go.etcd.io/bbolt v1.3.11
 	golang.org/x/sync v0.8.0
 )
 
