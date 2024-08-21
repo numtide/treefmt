@@ -3,55 +3,40 @@
   perSystem,
   ...
 }:
-perSystem.devshell.mkShell {
-  env = [
-    {
-      name = "GOROOT";
-      value = pkgs.go + "/share/go";
-    }
-    {
-      name = "CGO_ENABLED";
-      value = 0;
-    }
-  ];
+perSystem.self.treefmt.overrideAttrs (old: {
+  GOROOT = "${old.go}/share/go";
 
-  packages = pkgs.lib.mkMerge [
-    (with pkgs; [
-      # golang
-      go
-      goreleaser
-      golangci-lint
-      delve
-      pprof
-      graphviz
+  shellHook = ''
+    # this is only needed for hermetic builds
+    unset GO_NO_VENDOR_CHECKS GOSUMDB GOPROXY GOFLAGS
+  '';
 
-      # docs
-      nodejs
-    ])
+  nativeBuildInputs =
+    old.nativeBuildInputs
+    ++ [
+      pkgs.goreleaser
+      pkgs.golangci-lint
+      pkgs.delve
+      pkgs.pprof
+      pkgs.graphviz
+      pkgs.nodejs
+    ]
+    ++
     # include formatters for development and testing
     (import ../packages/treefmt/formatters.nix pkgs)
-  ];
-
-  commands = [
-    {package = perSystem.gomod2nix.default;}
-    {
-      name = "docs:dev";
-      help = "serve docs for local development";
-      command = "cd $PRJ_ROOT/docs && npm ci && npm run dev";
-    }
-    {
-      name = "docs:build";
-      help = "create a production build of docs";
-      command = "cd $PRJ_ROOT/docs && npm ci && npm run build";
-    }
-    {
-      name = "docs:preview";
-      help = "preview a production build of docs";
-      command = "cd $PRJ_ROOT/docs && npm ci && npm run preview";
-    }
-    {
-      help = "generate terminal gifs";
-      package = pkgs.writeShellApplication {
+    # docs related helpers
+    ++ (let
+      docs = command:
+        pkgs.writeShellApplication {
+          name = "docs:${command}";
+          runtimeInputs = [pkgs.nodejs];
+          text = ''cd "''${DIRENV_DIR:1}/docs" && npm ci && npm run ${command}'';
+        };
+    in [
+      (docs "dev")
+      (docs "build")
+      (docs "preview")
+      (pkgs.writeShellApplication {
         name = "vhs";
         runtimeInputs =
           [
@@ -61,7 +46,6 @@ perSystem.devshell.mkShell {
           ]
           ++ (import ../packages/treefmt/formatters.nix pkgs);
         text = ''vhs "$@"'';
-      };
-    }
-  ];
-}
+      })
+    ]);
+})
