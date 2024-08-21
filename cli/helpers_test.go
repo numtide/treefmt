@@ -83,8 +83,3 @@ func assertStats(t *testing.T, as *require.Assertions, traversed int32, emitted 
 	as.Equal(matched, stats.Value(stats.Matched), "stats.matched")
 	as.Equal(formatted, stats.Value(stats.Formatted), "stats.formatted")
 }
-
-func assertFormatted(t *testing.T, as *require.Assertions, output []byte, count int) {
-	t.Helper()
-	as.Contains(string(output), fmt.Sprintf("(%d changed)", count))
-}
