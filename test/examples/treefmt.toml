@@ -69,20 +69,16 @@ command = "rustfmt"
 options = ["--edition", "2018"]
 includes = ["*.rs"]
 
-[formatter.shell]
-command = "/bin/sh"
-options = [
-    "-euc",
-    """
-# First lint all the scripts
-shellcheck "$@"
-
-# Then format them
-shfmt -i 2 -s -w "$@"
-    """,
-    "--", # bash swallows the second argument when using -c
-]
+[formatter.shellcheck]
+command = "shellcheck"
 includes = ["*.sh"]
+priority = 1
+
+[formatter.shfmt]
+command = "shfmt"
+options = ["-i", "2", "-s", "-w"]
+includes = ["*.sh"]
+priority = 2
 
 [formatter.terraform]
 # Careful, only terraform 1.3.0 or later accept a list of files.
