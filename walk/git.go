@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/filemode"
 )
 
 type gitWalker struct {
@@ -52,7 +53,7 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 					return ctx.Err()
 				default:
 					// we only want regular files, not directories or symlinks
-					if !entry.Mode.IsRegular() {
+					if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
 						continue
 					}
 

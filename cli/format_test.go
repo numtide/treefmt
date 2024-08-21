@@ -274,37 +274,34 @@ func TestCache(t *testing.T) {
 		},
 	}
 
-	var (
-		out []byte
-		err error
-	)
+	var err error
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 32, 0, 0, 0)
 
 	// clear cache
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 32, 0, 0, 0)
 
 	// clear cache
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
-	out, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertFormatted(t, as, out, 0)
+	assertStats(t, as, 32, 0, 0, 0)
 
 	// no cache
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
@@ -516,10 +513,10 @@ func TestGitWorktree(t *testing.T) {
 	wt, err := repo.Worktree()
 	as.NoError(err, "failed to get git worktree")
 
-	run := func(traversed int, emitted int, matched int, formatted int) {
-		out, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	run := func(traversed int32, emitted int32, matched int32, formatted int32) {
+		_, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
-		assertFormatted(t, as, out, formatted)
+		assertStats(t, as, traversed, emitted, matched, formatted)
 	}
 
 	// run before adding anything to the worktree
@@ -532,11 +529,11 @@ func TestGitWorktree(t *testing.T) {
 
 	// remove python directory from the worktree
 	as.NoError(wt.RemoveGlob("python/*"))
-	run(28, 28, 28, 0)
+	run(29, 29, 29, 0)
 
 	// remove nixpkgs.toml from the filesystem but leave it in the index
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
-	run(27, 27, 27, 0)
+	run(28, 28, 28, 0)
 
 	// walk with filesystem instead of git
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")

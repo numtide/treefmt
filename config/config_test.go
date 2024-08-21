@@ -107,22 +107,23 @@ func TestReadConfigFile(t *testing.T) {
 	as.Equal([]string{"*.rs"}, rust.Includes)
 	as.Nil(rust.Excludes)
 
-	// shell
-	shell, ok := cfg.Formatters["shell"]
-	as.True(ok, "shell formatter not found")
-	as.Equal("/bin/sh", shell.Command)
-	as.Equal([]string{
-		"-euc",
-		`# First lint all the scripts
-shellcheck "$@"
+	// shellcheck
+	shellcheck, ok := cfg.Formatters["shellcheck"]
+	as.True(ok, "shellcheck formatter not found")
+	as.Equal("shellcheck", shellcheck.Command)
+	as.Equal(1, shellcheck.Priority)
+	as.Nil(shellcheck.Options)
+	as.Equal([]string{"*.sh"}, shellcheck.Includes)
+	as.Nil(shellcheck.Excludes)
 
-# Then format them
-shfmt -i 2 -s -w "$@"
-    `,
-		"--",
-	}, shell.Options)
-	as.Equal([]string{"*.sh"}, shell.Includes)
-	as.Nil(shell.Excludes)
+	//shfmt
+	shfmt, ok := cfg.Formatters["shfmt"]
+	as.True(ok, "shfmt formatter not found")
+	as.Equal("shfmt", shfmt.Command)
+	as.Equal(2, shfmt.Priority)
+	as.Equal(shfmt.Options, []string{"-i", "2", "-s", "-w"})
+	as.Equal([]string{"*.sh"}, shfmt.Includes)
+	as.Nil(shfmt.Excludes)
 
 	// terraform
 	terraform, ok := cfg.Formatters["terraform"]
