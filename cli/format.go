@@ -15,6 +15,7 @@ import (
 
 	"git.numtide.com/numtide/treefmt/format"
 	"git.numtide.com/numtide/treefmt/stats"
+	"mvdan.cc/sh/v3/expand"
 
 	"git.numtide.com/numtide/treefmt/cache"
 	"git.numtide.com/numtide/treefmt/config"
@@ -136,8 +137,10 @@ func (f *Format) Run() (err error) {
 	// initialise formatters
 	f.formatters = make(map[string]*format.Formatter)
 
+	env := expand.ListEnviron(os.Environ()...)
+
 	for name, formatterCfg := range cfg.Formatters {
-		formatter, err := format.NewFormatter(name, f.TreeRoot, formatterCfg)
+		formatter, err := format.NewFormatter(name, f.TreeRoot, env, formatterCfg)
 
 		if errors.Is(err, format.ErrCommandNotFound) && f.AllowMissingFormatter {
 			log.Debugf("formatter command not found: %v", name)

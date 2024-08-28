@@ -718,6 +718,13 @@ func TestRunInSubdir(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
+	// Also test that formatters are resolved relative to the treefmt root
+	echoPath, err := exec.LookPath("echo")
+	as.NoError(err)
+	echoRel := path.Join(tempDir, "echo")
+	err = os.Symlink(echoPath, echoRel)
+	as.NoError(err)
+
 	// change working directory to sub directory
 	as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
 
@@ -725,7 +732,7 @@ func TestRunInSubdir(t *testing.T) {
 	cfg := config.Config{
 		Formatters: map[string]*config.Formatter{
 			"echo": {
-				Command:  "echo",
+				Command:  "./echo",
 				Includes: []string{"*"},
 			},
 		},
