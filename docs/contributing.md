@@ -30,6 +30,15 @@ If you need to create an issue, make sure to clearly describe it, including:
 
 The cache database is stored in a `.db` file in the `~/.cache/treefmt/eval-cache` directory.
 
+## Updating go.mod/go.sum/gomod2nix.toml
+
+Whenever the go.mod or go.sum file changes, the Nix tooling also needs an
+updated `nix/packages/treefmt/gomod2nix.toml`.
+
+To sync it up, run `nix develop .#renovate -c gomod2nix:update`.
+
+
+
 ## Making changes
 
 If you want to introduce changes to the project, please follow these steps:
