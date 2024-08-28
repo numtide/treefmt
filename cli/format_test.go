@@ -571,17 +571,17 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	_, err = cmd(t, "-C", tempDir)
+	_, err = cmd(t)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
 	// specify some explicit paths
-	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, 2, 2, 2, 0)
 
 	// specify a bad path
-	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
+	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
 	as.ErrorContains(err, "no such file or directory")
 }
 
