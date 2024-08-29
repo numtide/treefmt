@@ -8,12 +8,13 @@ import (
 	"os/exec"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/walk"
-
 	"git.numtide.com/numtide/treefmt/config"
+	"git.numtide.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
+	"mvdan.cc/sh/v3/expand"
+	"mvdan.cc/sh/v3/interp"
 )
 
 // ErrCommandNotFound is returned when the Command for a Formatter is not available.
@@ -101,6 +102,7 @@ func (f *Formatter) Wants(file *walk.File) bool {
 func NewFormatter(
 	name string,
 	treeRoot string,
+	env expand.Environ,
 	cfg *config.Formatter,
 ) (*Formatter, error) {
 	var err error
@@ -113,11 +115,9 @@ func NewFormatter(
 	f.workingDir = treeRoot
 
 	// test if the formatter is available
-	executable, err := exec.LookPath(cfg.Command)
-	if errors.Is(err, exec.ErrNotFound) {
+	executable, err := interp.LookPathDir(treeRoot, env, cfg.Command)
+	if err != nil {
 		return nil, ErrCommandNotFound
-	} else if err != nil {
-		return nil, err
 	}
 	f.executable = executable
 

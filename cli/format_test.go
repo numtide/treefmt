@@ -571,17 +571,17 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	_, err = cmd(t, "-C", tempDir)
+	_, err = cmd(t)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
 	// specify some explicit paths
-	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, 2, 2, 2, 0)
 
 	// specify a bad path
-	_, err = cmd(t, "-C", tempDir, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
+	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
 	as.ErrorContains(err, "no such file or directory")
 }
 
@@ -701,4 +701,51 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 			idx += 1
 		}
 	}
+}
+
+func TestRunInSubdir(t *testing.T) {
+	as := require.New(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	// Also test that formatters are resolved relative to the treefmt root
+	echoPath, err := exec.LookPath("echo")
+	as.NoError(err)
+	echoRel := path.Join(tempDir, "echo")
+	err = os.Symlink(echoPath, echoRel)
+	as.NoError(err)
+
+	// change working directory to sub directory
+	as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
+
+	// basic config
+	cfg := config.Config{
+		Formatters: map[string]*config.Formatter{
+			"echo": {
+				Command:  "./echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, cfg)
+
+	// without any path args, should reformat the whole tree
+	_, err = cmd(t)
+	as.NoError(err)
+	assertStats(t, as, 32, 32, 32, 0)
+
+	// specify some explicit paths, relative to the elm/ sub-folder
+	_, err = cmd(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
+	as.NoError(err)
+	assertStats(t, as, 2, 2, 2, 0)
 }
