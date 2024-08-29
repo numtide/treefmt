@@ -44,8 +44,8 @@ schema = 3
     version = "v1.5.1-0.20230307220236-3a3c6141e376"
     hash = "sha256-f4k0gSYuo0/q3WOoTxl2eFaj7WZpdz29ih6CKc8Ude8="
   [mod."github.com/go-git/go-billy/v5"]
-    version = "v5.5.1-0.20240819193939-9b484184bdcc"
-    hash = "sha256-SJr4U7nX7Tn1xGYw3pqUtKqqWedaAW4NJ5BNUJCDbYQ="
+    version = "v5.5.1-0.20240828070317-59c50b000c7a"
+    hash = "sha256-WHtaSPZCYctieXsXqmwXaDQm6br1BpNTi7SkfvIn4lc="
   [mod."github.com/go-git/go-git/v5"]
     version = "v5.12.1-0.20240821195137-5c762aefcd8d"
     hash = "sha256-8AjwWZZg6h/2xoGEHcqNAymwv/cx98AO1exEXUKlLwg="
