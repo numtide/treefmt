@@ -15,7 +15,7 @@ with pkgs; [
   shfmt
   statix
   deadnix
-  terraform
+  opentofu
   dos2unix
   yamlfmt
   # util for unit testing

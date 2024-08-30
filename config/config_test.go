@@ -125,13 +125,13 @@ func TestReadConfigFile(t *testing.T) {
 	as.Equal([]string{"*.sh"}, shfmt.Includes)
 	as.Nil(shfmt.Excludes)
 
-	// terraform
-	terraform, ok := cfg.Formatters["terraform"]
-	as.True(ok, "terraform formatter not found")
-	as.Equal("terraform", terraform.Command)
-	as.Equal([]string{"fmt"}, terraform.Options)
-	as.Equal([]string{"*.tf"}, terraform.Includes)
-	as.Nil(terraform.Excludes)
+	// opentofu
+	opentofu, ok := cfg.Formatters["opentofu"]
+	as.True(ok, "opentofu formatter not found")
+	as.Equal("tofu", opentofu.Command)
+	as.Equal([]string{"fmt"}, opentofu.Options)
+	as.Equal([]string{"*.tf"}, opentofu.Includes)
+	as.Nil(opentofu.Excludes)
 
 	// missing
 	foo, ok := cfg.Formatters["foo-fmt"]

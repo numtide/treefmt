@@ -24,14 +24,9 @@
     };
   };
 
-  outputs = inputs: let
-    inherit (inputs.nixpkgs) lib;
-  in
+  outputs = inputs:
     inputs.blueprint {
       inherit inputs;
       prefix = "nix/";
-      nixpkgs.config = {
-        allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) ["terraform"];
-      };
     };
 }
