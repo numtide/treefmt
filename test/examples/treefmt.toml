@@ -80,10 +80,8 @@ options = ["-i", "2", "-s", "-w"]
 includes = ["*.sh"]
 priority = 2
 
-[formatter.terraform]
-# Careful, only terraform 1.3.0 or later accept a list of files.
-# see https://github.com/numtide/treefmt/issues/97
-command = "terraform"
+[formatter.opentofu]
+command = "tofu"
 options = ["fmt"]
 includes = ["*.tf"]
 
