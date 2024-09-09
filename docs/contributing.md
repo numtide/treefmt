@@ -37,8 +37,6 @@ updated `nix/packages/treefmt/gomod2nix.toml`.
 
 To sync it up, run `nix develop .#renovate -c gomod2nix:update`.
 
-
-
 ## Making changes
 
 If you want to introduce changes to the project, please follow these steps:

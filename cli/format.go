@@ -184,10 +184,10 @@ func (f *Format) Run() (err error) {
 	f.filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
 
 	// create a channel for files that have been formatted
-	f.formattedCh = make(chan *walk.File, cap(f.filesCh))
+	f.formattedCh = make(chan *format.Task, cap(f.filesCh))
 
 	// create a channel for files that have been processed
-	f.processedCh = make(chan *walk.File, cap(f.filesCh))
+	f.processedCh = make(chan *format.Task, cap(f.filesCh))
 
 	// start concurrent processing tasks in reverse order
 	eg.Go(f.updateCache(ctx))
@@ -317,17 +317,21 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 
 			// asynchronously apply the sequence formatters to the batch
 			fg.Go(func() error {
-				// iterate the formatters, applying them in sequence to the batch of tasks
-				// we get the formatters list from the first task since they have all the same formatters list
-				for _, f := range tasks[0].Formatters {
-					if err := f.Apply(ctx, tasks); err != nil {
-						return err
+				// Iterate the formatters, applying them in sequence to the batch of tasks.
+				// We get the formatter list from the first task since they have all the same formatters list.
+				formatters := tasks[0].Formatters
+
+				var formatErrors []error
+				for idx := range formatters {
+					if err := formatters[idx].Apply(ctx, tasks); err != nil {
+						formatErrors = append(formatErrors, err)
 					}
 				}
 
 				// pass each file to the formatted channel
 				for _, task := range tasks {
-					f.formattedCh <- task.File
+					task.Errors = formatErrors
+					f.formattedCh <- task
 				}
 
 				return nil
@@ -359,7 +363,9 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 			if format.PathMatches(file.RelPath, f.globalExcludes) {
 				log.Debugf("path matched global excludes: %s", file.RelPath)
 				// mark it as processed and continue to the next
-				f.formattedCh <- file
+				f.formattedCh <- &format.Task{
+					File: file,
+				}
 				continue
 			}
 
@@ -378,7 +384,9 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 				}
 				log.Logf(f.OnUnmatched, "no formatter for path: %s", file.RelPath)
 				// mark it as processed and continue to the next
-				f.formattedCh <- file
+				f.formattedCh <- &format.Task{
+					File: file,
+				}
 			} else {
 				// record the match
 				stats.Add(stats.Matched, 1)
@@ -414,14 +422,15 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 			// detect ctx cancellation
 			case <-ctx.Done():
 				return ctx.Err()
-			// take the next file that has been processed
-			case file, ok := <-f.formattedCh:
+			// take the next task that has been processed
+			case task, ok := <-f.formattedCh:
 				if !ok {
 					// channel has been closed, no further files to process
 					return nil
 				}
 
 				// check if the file has changed
+				file := task.File
 				changed, newInfo, err := file.HasChanged()
 				if err != nil {
 					return err
@@ -451,7 +460,7 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 				}
 
 				// mark as processed
-				f.processedCh <- file
+				f.processedCh <- task
 			}
 		}
 	}
@@ -460,12 +469,16 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 func (f *Format) updateCache(ctx context.Context) func() error {
 	return func() error {
 		// used to batch updates for more efficient txs
-		batch := make([]*walk.File, 0, BatchSize)
+		batch := make([]*format.Task, 0, BatchSize)
 
 		// apply a batch
 		processBatch := func() error {
 			// pass the batch to the cache for updating
-			if err := cache.Update(batch); err != nil {
+			files := make([]*walk.File, len(batch))
+			for idx := range batch {
+				files[idx] = batch[idx].File
+			}
+			if err := cache.Update(files); err != nil {
 				return err
 			}
 			batch = batch[:0]
@@ -486,11 +499,13 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 			case <-ctx.Done():
 				return ctx.Err()
 			// respond to formatted files
-			case file, ok := <-f.processedCh:
+			case task, ok := <-f.processedCh:
 				if !ok {
 					// channel has been closed, no further files to process
 					break LOOP
 				}
+
+				file := task.File
 
 				if f.Stdin {
 					// dump file into stdout
@@ -508,11 +523,16 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 					continue
 				}
 
-				// append to batch and process if we have enough
-				batch = append(batch, file)
-				if len(batch) == BatchSize {
-					if err := processBatch(); err != nil {
-						return err
+				// Append to batch and process if we have enough.
+				// We do not cache any files that were part of a pipeline in which one or more formatters failed.
+				// This is to ensure those files are re-processed in later invocations after the user has potentially
+				// resolved the issue, e.g. fixed a config problem.
+				if len(task.Errors) == 0 {
+					batch = append(batch, task)
+					if len(batch) == BatchSize {
+						if err := processBatch(); err != nil {
+							return err
+						}
 					}
 				}
 			}
