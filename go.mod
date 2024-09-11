@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adrg/xdg v0.5.0
-	github.com/alecthomas/kong v0.9.0
+	github.com/alecthomas/kong v1.2.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/go-git/go-billy/v5 v5.5.1-0.20240902165505-04d471ab6285
 	github.com/go-git/go-git/v5 v5.12.1-0.20240906142134-9cf0e3ee57dd
