@@ -18,8 +18,8 @@ schema = 3
     version = "v0.5.0"
     hash = "sha256-hYxtRzeFzT+4zbslWSZWmUJf+OBDmCiwL0D/0Ry8Z2I="
   [mod."github.com/alecthomas/kong"]
-    version = "v1.2.0"
-    hash = "sha256-tHrlqo4IpMw0iCnO5uPC8eAPcw2wbin+HgF5CD77IXo="
+    version = "v1.2.1"
+    hash = "sha256-khU0G4vpNuzSdw0FnOTWeCCGu1FWn7ZNn0kFrWBPQJ8="
   [mod."github.com/aymanbagabas/go-osc52/v2"]
     version = "v2.0.1"
     hash = "sha256-6Bp0jBZ6npvsYcKZGHHIUSVSTAMEyieweAX2YAKDjjg="
