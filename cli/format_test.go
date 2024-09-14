@@ -604,11 +604,19 @@ func TestStdIn(t *testing.T) {
 		os.Stdin = prevStdIn
 	})
 
-	//
+	// omit the required filename parameter
 	contents := `{ foo, ... }: "hello"`
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+	// we get an error about the missing filename parameter.
+	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
+	as.EqualError(err, "only one path should be specified when using the --stdin flag")
+	as.Equal("", string(out))
 
-	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
+	// now pass along the filename parameter
+	contents = `{ foo, ... }: "hello"`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
 	as.NoError(err)
 	assertStats(t, as, 1, 1, 1, 1)
 

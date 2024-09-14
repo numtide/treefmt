@@ -201,6 +201,9 @@ func (f *Format) Run() (err error) {
 
 func (f *Format) walkFilesystem(ctx context.Context) func() error {
 	return func() error {
+		// close the files channel when we're done walking the file system
+		defer close(f.filesCh)
+
 		eg, ctx := errgroup.WithContext(ctx)
 		pathsCh := make(chan string, BatchSize)
 
@@ -260,9 +263,6 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
-
-		// close the files channel when we're done walking the file system
-		defer close(f.filesCh)
 
 		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
 		if f.NoCache || f.Stdin {
