@@ -609,7 +609,7 @@ func TestStdIn(t *testing.T) {
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 	// we get an error about the missing filename parameter.
 	out, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
-	as.EqualError(err, "only one path should be specified when using the --stdin flag")
+	as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
 	as.Equal("", string(out))
 
 	// now pass along the filename parameter

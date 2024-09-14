@@ -216,7 +216,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 
 			// check we have only received one path arg which we use for the file extension / matching to formatters
 			if len(f.Paths) != 1 {
-				return fmt.Errorf("only one path should be specified when using the --stdin flag")
+				return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
 			}
 
 			// read stdin into a temporary file with the same file extension
