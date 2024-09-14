@@ -58,7 +58,8 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 		return fmt.Errorf("could not resolve local path for the cache: %w", err)
 	}
 
-	db, err = bolt.Open(path, 0o600, nil)
+	// attempt to open the db, but timeout after 1 second
+	db, err = bolt.Open(path, 0o600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return fmt.Errorf("failed to open cache at %v: %w", path, err)
 	}
