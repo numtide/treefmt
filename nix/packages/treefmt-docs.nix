@@ -10,7 +10,7 @@ pkgs.buildNpmPackage {
   inherit (perSystem.self.treefmt) version;
 
   src = "${flake}/docs";
-  npmDepsHash = "sha256-0WV+aLYmu7/CHpKbffmKfxd8Vd5XAXra+Ht0RZlzOpY=";
+  npmDepsHash = "sha256-1XNyvmZO890RcCCTABVhTmPkYwBDO6ZSGH7Ev/pCs/o=";
 
   # we have to use a custom build phase because vitepress is doing something funky with the ttty
   buildPhase = ''
