@@ -539,6 +539,42 @@ func TestGitWorktree(t *testing.T) {
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
 	assertStats(t, as, 60, 60, 60, 0)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	// format specific sub paths
+	_, err = cmd(t, "-C", tempDir, "-c", "go", "-vv")
+	as.NoError(err)
+	assertStats(t, as, 2, 2, 2, 0)
+
+	_, err = cmd(t, "-C", tempDir, "-c", "go", "haskell")
+	as.NoError(err)
+	assertStats(t, as, 9, 9, 9, 0)
+
+	_, err = cmd(t, "-C", tempDir, "-c", "go", "haskell", "ruby")
+	as.NoError(err)
+	assertStats(t, as, 10, 10, 10, 0)
+
+	// try with a bad path
+	_, err = cmd(t, "-C", tempDir, "-c", "haskell", "foo")
+	as.ErrorContains(err, fmt.Sprintf("stat %s: no such file or directory", filepath.Join(tempDir, "foo")))
+	assertStats(t, as, 0, 0, 0, 0)
+
+	// try with a path not in the git index, e.g. it is skipped
+	_, err = os.Create(filepath.Join(tempDir, "foo.txt"))
+	as.NoError(err)
+	assertStats(t, as, 0, 0, 0, 0)
+
+	_, err = cmd(t, "-C", tempDir, "-c", "foo.txt")
+	as.NoError(err)
+	assertStats(t, as, 0, 0, 0, 0)
 }
 
 func TestPathsArg(t *testing.T) {
@@ -583,6 +619,11 @@ func TestPathsArg(t *testing.T) {
 	// specify a bad path
 	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
 	as.ErrorContains(err, "no such file or directory")
+
+	// specify a path outside the tree root
+	externalPath := filepath.Join(cwd, "go.mod")
+	_, err = cmd(t, "-c", externalPath)
+	as.ErrorContains(err, fmt.Sprintf("%s is outside the tree root %s", externalPath, tempDir))
 }
 
 func TestStdIn(t *testing.T) {
@@ -752,7 +793,7 @@ func TestRunInSubdir(t *testing.T) {
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
 
-	// specify some explicit paths, relative to the elm/ sub-folder
+	// specify some explicit paths, relative to the tree root
 	_, err = cmd(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, 2, 2, 2, 0)
