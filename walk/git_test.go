@@ -1,12 +1,12 @@
 package walk
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileTree(t *testing.T) {
-
 	as := require.New(t)
 
 	node := &fileTree{name: ""}

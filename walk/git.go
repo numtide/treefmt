@@ -3,13 +3,14 @@ package walk
 import (
 	"context"
 	"fmt"
-	"github.com/charmbracelet/log"
-	"github.com/go-git/go-git/v5/plumbing/filemode"
-	"github.com/go-git/go-git/v5/plumbing/format/index"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/format/index"
 
 	"github.com/go-git/go-git/v5"
 )
@@ -95,7 +96,6 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	var cache *fileTree
 
 	for path := range g.paths {
-
 		switch path {
 
 		case g.root:

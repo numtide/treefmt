@@ -19,11 +19,6 @@ func (f filesystemWalker) Root() string {
 }
 
 func (f filesystemWalker) relPath(path string) (string, error) {
-	// quick optimization for the majority of use cases
-	if len(path) >= f.relPathOffset && path[:len(f.root)] == f.root {
-		return path[f.relPathOffset:], nil
-	}
-	// fallback to proper relative path resolution
 	return filepath.Rel(f.root, path)
 }
 
