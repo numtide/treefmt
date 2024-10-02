@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"syscall"
 	"time"
 
@@ -34,6 +35,9 @@ var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change 
 func (f *Format) Run() (err error) {
 	// set log level and other options
 	f.configureLogging()
+
+	// initialise stats collection
+	stats.Init()
 
 	// ci mode
 	if f.Ci {
@@ -123,6 +127,27 @@ func (f *Format) Run() (err error) {
 
 	log.Debugf("config-file=%s tree-root=%s", f.ConfigFile, f.TreeRoot)
 
+	// ensure all path arguments exist and are contained within the tree root
+	for _, path := range f.Paths {
+		relPath, err := filepath.Rel(f.TreeRoot, path)
+		if err != nil {
+			return fmt.Errorf("failed to determine relative path for %s to the tree root %s: %w", path, f.TreeRoot, err)
+		}
+		if strings.Contains(relPath, "..") {
+			return fmt.Errorf("path %s is outside the tree root %s", path, f.TreeRoot)
+		}
+		if f.Stdin {
+			// skip checking if the file exists if we are processing from stdin
+			// the file path is just used for matching against glob rules
+			continue
+		}
+		// check the path exists
+		_, err = os.Stat(path)
+		if err != nil {
+			return err
+		}
+	}
+
 	// read config
 	cfg, err := config.ReadFile(f.ConfigFile, f.Formatters)
 	if err != nil {
@@ -172,9 +197,6 @@ func (f *Format) Run() (err error) {
 		<-exit
 		cancel()
 	}()
-
-	// initialise stats collection
-	stats.Init()
 
 	// create an overall error group for executing high level tasks concurrently
 	eg, ctx := errgroup.WithContext(ctx)

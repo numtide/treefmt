@@ -6,12 +6,68 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/go-git/go-git/v5/plumbing/format/index"
 
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/filemode"
 )
+
+// fileTree represents a hierarchical file structure with directories and files.
+type fileTree struct {
+	name    string
+	entries map[string]*fileTree
+}
+
+// add inserts a file path into the fileTree structure, creating necessary parent directories if they do not exist.
+func (n *fileTree) add(path []string) {
+	if len(path) == 0 {
+		return
+	} else if n.entries == nil {
+		n.entries = make(map[string]*fileTree)
+	}
+
+	name := path[0]
+	child, ok := n.entries[name]
+	if !ok {
+		child = &fileTree{name: name}
+		n.entries[name] = child
+	}
+	child.add(path[1:])
+}
+
+// addPath splits the given path by the filepath separator and inserts it into the fileTree structure.
+func (n *fileTree) addPath(path string) {
+	n.add(strings.Split(path, string(filepath.Separator)))
+}
+
+// has returns true if the specified path exists in the fileTree, false otherwise.
+func (n *fileTree) has(path []string) bool {
+	if len(path) == 0 {
+		return true
+	} else if len(n.entries) == 0 {
+		return false
+	}
+	child, ok := n.entries[path[0]]
+	if !ok {
+		return false
+	}
+	return child.has(path[1:])
+}
+
+// hasPath splits the given path by the filepath separator and checks if it exists in the fileTree.
+func (n *fileTree) hasPath(path string) bool {
+	return n.has(strings.Split(path, string(filepath.Separator)))
+}
+
+// readIndex traverses the index entries and adds each file path to the fileTree structure.
+func (n *fileTree) readIndex(idx *index.Index) {
+	for _, entry := range idx.Entries {
+		n.addPath(entry.Name)
+	}
+}
 
 type gitWalker struct {
 	log           *log.Logger
@@ -25,12 +81,7 @@ func (g gitWalker) Root() string {
 	return g.root
 }
 
-func (g gitWalker) relPath(path string) (string, error) {
-	// quick optimization for the majority of use cases
-	if len(path) >= g.relPathOffset && path[:len(g.root)] == g.root {
-		return path[g.relPathOffset:], nil
-	}
-	// fallback to proper relative path resolution
+func (g gitWalker) relPath(path string) (string, error) { //
 	return filepath.Rel(g.root, path)
 }
 
@@ -40,12 +91,15 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 		return fmt.Errorf("failed to open git index: %w", err)
 	}
 
-	// cache in-memory whether a path is present in the git index
-	var cache map[string]bool
+	// if we need to walk a path that is not the root of the repository, we will read the directory structure of the
+	// git index into memory for faster lookups
+	var cache *fileTree
 
 	for path := range g.paths {
+		switch path {
 
-		if path == g.root {
+		case g.root:
+
 			// we can just iterate the index entries
 			for _, entry := range idx.Entries {
 				select {
@@ -86,51 +140,56 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 					}
 				}
 			}
-			continue
-		}
 
-		// otherwise we ensure the git index entries are cached and then check if they are in the git index
-		if cache == nil {
-			cache = make(map[string]bool)
-			for _, entry := range idx.Entries {
-				cache[entry.Name] = true
-			}
-		}
+		default:
 
-		relPath, err := filepath.Rel(g.root, path)
-		if err != nil {
-			return fmt.Errorf("failed to find relative path for %v: %w", path, err)
-		}
-
-		_, ok := cache[relPath]
-		if !(path == g.root || ok) {
-			log.Debugf("path %v not found in git index, skipping", path)
-			continue
-		}
-
-		return filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
-			if info.IsDir() {
-				return nil
+			// read the git index into memory if it hasn't already
+			if cache == nil {
+				cache = &fileTree{name: ""}
+				cache.readIndex(idx)
 			}
 
+			// git index entries are relative to the repository root, so we need to determine a relative path for the
+			// one we are currently processing before checking if it exists within the git index
 			relPath, err := g.relPath(path)
 			if err != nil {
-				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+				return fmt.Errorf("failed to find root relative path for %v: %w", path, err)
 			}
 
-			if _, ok := cache[relPath]; !ok {
-				log.Debugf("path %v not found in git index, skipping", path)
-				return nil
+			if !cache.hasPath(relPath) {
+				log.Debugf("path %s not found in git index, skipping", relPath)
+				continue
 			}
 
-			file := File{
-				Path:    path,
-				RelPath: relPath,
-				Info:    info,
-			}
+			err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
+				// skip directories
+				if info.IsDir() {
+					return nil
+				}
 
-			return fn(&file, err)
-		})
+				// determine a path relative to g.root before checking presence in the git index
+				relPath, err := g.relPath(path)
+				if err != nil {
+					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+				}
+
+				if !cache.hasPath(relPath) {
+					log.Debugf("path %v not found in git index, skipping", relPath)
+					return nil
+				}
+
+				file := File{
+					Path:    path,
+					RelPath: relPath,
+					Info:    info,
+				}
+
+				return fn(&file, err)
+			})
+			if err != nil {
+				return fmt.Errorf("failed to walk %s: %w", path, err)
+			}
+		}
 	}
 
 	return nil
