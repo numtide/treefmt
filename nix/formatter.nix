@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  perSystem,
   ...
 }:
 inputs.treefmt-nix.lib.mkWrapper pkgs {
