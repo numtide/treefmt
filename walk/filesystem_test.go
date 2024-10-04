@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/test"
 	"github.com/stretchr/testify/require"
 )
 

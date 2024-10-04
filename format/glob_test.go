@@ -3,7 +3,7 @@ package format_test
 import (
 	"testing"
 
-	"git.numtide.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/format"
 
 	"github.com/gobwas/glob"
 	"github.com/stretchr/testify/require"

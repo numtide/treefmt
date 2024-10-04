@@ -8,9 +8,9 @@ import (
 
 	"github.com/charmbracelet/log"
 
-	"git.numtide.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/stats"
 
-	"git.numtide.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/test"
 
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"

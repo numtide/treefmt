@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/config"
 
 	"github.com/BurntSushi/toml"
 	cp "github.com/otiai10/copy"

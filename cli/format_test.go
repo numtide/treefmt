@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/config"
-	"git.numtide.com/numtide/treefmt/format"
-	"git.numtide.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/test"
 
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"

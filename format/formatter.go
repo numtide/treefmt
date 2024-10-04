@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/config"
-	"git.numtide.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"

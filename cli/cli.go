@@ -5,10 +5,10 @@ import (
 
 	"github.com/gobwas/glob"
 
-	"git.numtide.com/numtide/treefmt/format"
-	"git.numtide.com/numtide/treefmt/walk"
 	"github.com/alecthomas/kong"
 	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/walk"
 )
 
 func New() *Format {

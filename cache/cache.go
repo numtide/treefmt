@@ -9,10 +9,10 @@ import (
 	"runtime"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/stats"
 
-	"git.numtide.com/numtide/treefmt/format"
-	"git.numtide.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 
