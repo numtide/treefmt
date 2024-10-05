@@ -13,13 +13,16 @@ perSystem.self.treefmt.overrideAttrs (old: {
 
   nativeBuildInputs =
     old.nativeBuildInputs
-    ++ [
-      pkgs.goreleaser
-      pkgs.golangci-lint
-      pkgs.delve
-      pkgs.pprof
-      pkgs.graphviz
-    ]
+    ++ (with pkgs; [
+      goreleaser
+      golangci-lint
+      delve
+      pprof
+      graphviz
+      cobra-cli
+      enumer
+      perSystem.gomod2nix.default
+    ])
     ++
     # include formatters for development and testing
     (import ../packages/treefmt/formatters.nix pkgs);

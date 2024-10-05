@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 )
 
-type Type string
+//go:generate enumer -type=Type -text -transform=snake -output=./type_enum.go
+type Type int
 
 const (
-	Git        Type = "git"
-	Auto       Type = "auto"
-	Filesystem Type = "filesystem"
+	Auto Type = iota
+	Git  Type = iota
+	Filesystem
 )
 
 type File struct {
@@ -35,7 +37,7 @@ func (f File) HasChanged() (bool, fs.FileInfo, error) {
 	}
 
 	// POSIX specifies EPOCH time for Mod time, but some filesystems give more precision.
-	// Some formatters mess with the mod time (e.g., dos2unix) but not to the same precision,
+	// Some formatters mess with the mod time (e.g. dos2unix) but not to the same precision,
 	// triggering false positives.
 	// We truncate everything below a second.
 	if f.Info.ModTime().Truncate(time.Second) != current.ModTime().Truncate(time.Second) {
@@ -76,4 +78,59 @@ func Detect(root string, pathsCh chan string) (Walker, error) {
 		return w, err
 	}
 	return NewFilesystem(root, pathsCh)
+}
+
+func FindUp(searchDir string, fileNames ...string) (path string, dir string, err error) {
+	for _, dir := range eachDir(searchDir) {
+		for _, f := range fileNames {
+			path := filepath.Join(dir, f)
+			if fileExists(path) {
+				return path, dir, nil
+			}
+		}
+	}
+	return "", "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
+}
+
+func eachDir(path string) (paths []string) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return
+	}
+
+	paths = []string{path}
+
+	if path == "/" {
+		return
+	}
+
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] == os.PathSeparator {
+			path = path[:i]
+			if path == "" {
+				path = "/"
+			}
+			paths = append(paths, path)
+		}
+	}
+
+	return
+}
+
+func fileExists(path string) bool {
+	// Some broken filesystems like SSHFS return file information on stat() but
+	// then cannot open the file. So we use os.Open.
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	// Next, check that the file is a regular file.
+	fi, err := f.Stat()
+	if err != nil {
+		return false
+	}
+
+	return fi.Mode().IsRegular()
 }

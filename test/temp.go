@@ -6,15 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/numtide/treefmt/config"
-
 	"github.com/BurntSushi/toml"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
 )
 
-func WriteConfig(t *testing.T, path string, cfg config.Config) {
+func WriteConfig(t *testing.T, path string, cfg map[string]any) {
 	t.Helper()
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("failed to create a new config file: %v", err)
