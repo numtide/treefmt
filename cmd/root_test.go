@@ -1,8 +1,9 @@
-package cli
+package cmd
 
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -12,7 +13,14 @@ import (
 	"time"
 
 	"github.com/numtide/treefmt/config"
+
+	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/stats"
+
+	format2 "github.com/numtide/treefmt/cmd/format"
+
 	"github.com/numtide/treefmt/format"
+
 	"github.com/numtide/treefmt/test"
 
 	"github.com/go-git/go-billy/v5/osfs"
@@ -78,7 +86,8 @@ func TestOnUnmatched(t *testing.T) {
 	as.NoError(err)
 	checkOutput("INFO", out)
 
-	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv", "-u", "debug")
+	t.Setenv("TREEFMT_ON_UNMATCHED", "debug")
+	out, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv")
 	as.NoError(err)
 	checkOutput("DEBU", out)
 }
@@ -101,6 +110,13 @@ func TestCpuProfile(t *testing.T) {
 	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
 	_, err = os.Stat(filepath.Join(tempDir, "cpu.pprof"))
 	as.NoError(err)
+
+	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
+	_, err = cmd(t, "-C", tempDir, "--allow-missing-formatter")
+	as.NoError(err)
+	as.FileExists(filepath.Join(tempDir, "env.pprof"))
+	_, err = os.Stat(filepath.Join(tempDir, "env.pprof"))
+	as.NoError(err)
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
@@ -109,26 +125,30 @@ func TestAllowMissingFormatter(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"foo-fmt": {
 				Command: "foo-fmt",
 			},
 		},
 	})
 
-	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
 	as.ErrorIs(err, format.ErrCommandNotFound)
 
 	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--allow-missing-formatter")
+	as.NoError(err)
+
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"elm": {
 				Command:  "touch",
 				Options:  []string{"-m"},
@@ -182,7 +202,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 
-	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "bar,foo")
+	t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
+	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.Errorf(err, "formatter not found in config: bar")
 }
 
@@ -193,8 +214,8 @@ func TestIncludesAndExcludes(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -208,7 +229,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	assertStats(t, as, 32, 32, 32, 0)
 
 	// globally exclude nix files
-	cfg.Global.Excludes = []string{"*.nix"}
+	cfg.Excludes = []string{"*.nix"}
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
@@ -216,14 +237,14 @@ func TestIncludesAndExcludes(t *testing.T) {
 	assertStats(t, as, 32, 32, 31, 0)
 
 	// add haskell files to the global exclude
-	cfg.Global.Excludes = []string{"*.nix", "*.hs"}
+	cfg.Excludes = []string{"*.nix", "*.hs"}
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 25, 0)
 
-	echo := cfg.Formatters["echo"]
+	echo := cfg.FormatterConfigs["echo"]
 
 	// remove python files from the echo formatter
 	echo.Excludes = []string{"*.py"}
@@ -233,13 +254,15 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 23, 0)
 
-	// remove go files from the echo formatter
-	echo.Excludes = []string{"*.py", "*.go"}
+	// remove go files from the echo formatter via env
+	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "*.py,*.go")
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 22, 0)
+
+	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "") // reset
 
 	// adjust the includes for echo to only include elm files
 	echo.Includes = []string{"*.elm"}
@@ -249,13 +272,36 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 1, 0)
 
-	// add js files to echo formatter
-	echo.Includes = []string{"*.elm", "*.js"}
+	// add js files to echo formatter via env
+	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 2, 0)
+}
+
+func TestPrjRootEnvVariable(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/treefmt.toml"
+
+	// test without any excludes
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, cfg)
+	t.Setenv("PRJ_ROOT", tempDir)
+	_, err := cmd(t, "--config-file", configPath)
+	as.NoError(err)
+	assertStats(t, as, 32, 32, 32, 0)
 }
 
 func TestCache(t *testing.T) {
@@ -265,8 +311,8 @@ func TestCache(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -325,8 +371,8 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	configPath := tempDir + "/treefmt.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
@@ -341,6 +387,12 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	_, err = cmd(t, "-C", tempDir)
 	as.NoError(err)
 	assertStats(t, as, 32, 32, 32, 0)
+
+	// use env
+	t.Setenv("TREEFMT_WORKING_DIR", tempDir)
+	_, err = cmd(t, "-c")
+	as.NoError(err)
+	assertStats(t, as, 32, 32, 32, 0)
 }
 
 func TestFailOnChange(t *testing.T) {
@@ -350,8 +402,8 @@ func TestFailOnChange(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// test without any excludes
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"touch": {
 				Command:  "touch",
 				Includes: []string{"*"},
@@ -361,15 +413,16 @@ func TestFailOnChange(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 	_, err := cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, ErrFailOnChange)
+	as.ErrorIs(err, format2.ErrFailOnChange)
 
 	// we have second precision mod time tracking
 	time.Sleep(time.Second)
 
 	// test with no cache
+	t.Setenv("TREEFMT_FAIL_ON_CHANGE", "true")
 	test.WriteConfig(t, configPath, cfg)
-	_, err = cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
-	as.ErrorIs(err, ErrFailOnChange)
+	_, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	as.ErrorIs(err, format2.ErrFailOnChange)
 }
 
 func TestBustCacheOnFormatterChange(t *testing.T) {
@@ -394,8 +447,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	as.NoError(os.Setenv("PATH", binPath+":"+os.Getenv("PATH")))
 
 	// start with 2 formatters
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"python": {
 				Command:  "black",
 				Includes: []string{"*.py"},
@@ -439,7 +492,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, 32, 0, 0, 0)
 
 	// add go formatter
-	cfg.Formatters["go"] = &config.Formatter{
+	cfg.FormatterConfigs["go"] = &config.Formatter{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
@@ -456,7 +509,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, 32, 0, 0, 0)
 
 	// remove python formatter
-	delete(cfg.Formatters, "python")
+	delete(cfg.FormatterConfigs, "python")
 	test.WriteConfig(t, configPath, cfg)
 
 	_, err = cmd(t, args...)
@@ -469,7 +522,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, 32, 0, 0, 0)
 
 	// remove elm formatter
-	delete(cfg.Formatters, "elm")
+	delete(cfg.FormatterConfigs, "elm")
 	test.WriteConfig(t, configPath, cfg)
 
 	_, err = cmd(t, args...)
@@ -489,14 +542,15 @@ func TestGitWorktree(t *testing.T) {
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
 			},
 		},
 	}
+
 	test.WriteConfig(t, configPath, cfg)
 
 	// init a git repo
@@ -564,7 +618,7 @@ func TestGitWorktree(t *testing.T) {
 
 	// try with a bad path
 	_, err = cmd(t, "-C", tempDir, "-c", "haskell", "foo")
-	as.ErrorContains(err, fmt.Sprintf("stat %s: no such file or directory", filepath.Join(tempDir, "foo")))
+	as.ErrorContains(err, "path foo not found within the tree root")
 	assertStats(t, as, 0, 0, 0, 0)
 
 	// try with a path not in the git index, e.g. it is skipped
@@ -596,14 +650,15 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(os.Chdir(tempDir))
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo",
 				Includes: []string{"*"},
 			},
 		},
 	}
+
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
@@ -618,15 +673,15 @@ func TestPathsArg(t *testing.T) {
 
 	// specify a bad path
 	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
-	as.ErrorContains(err, "no such file or directory")
+	as.ErrorContains(err, "path haskell/Nested/Bar.hs not found within the tree root")
 
 	// specify a path outside the tree root
 	externalPath := filepath.Join(cwd, "go.mod")
 	_, err = cmd(t, "-c", externalPath)
-	as.ErrorContains(err, fmt.Sprintf("%s is outside the tree root %s", externalPath, tempDir))
+	as.ErrorContains(err, fmt.Sprintf("path %s not found within the tree root", externalPath))
 }
 
-func TestStdIn(t *testing.T) {
+func TestStdin(t *testing.T) {
 	as := require.New(t)
 
 	// capture current cwd, so we can replace it after the test is finished
@@ -700,8 +755,8 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := tempDir + "/treefmt.toml"
 
-	test.WriteConfig(t, configPath, config.Config{
-		Formatters: map[string]*config.Formatter{
+	test.WriteConfig(t, configPath, &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			// a and b have no priority set, which means they default to 0 and should execute first
 			// a and b should execute in lexicographical order
 			// c should execute first since it has a priority of 1
@@ -723,7 +778,6 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 			},
 		},
 	})
-
 	_, err = cmd(t, "-C", tempDir)
 	as.NoError(err)
 
@@ -778,8 +832,8 @@ func TestRunInSubdir(t *testing.T) {
 	as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
 
 	// basic config
-	cfg := config.Config{
-		Formatters: map[string]*config.Formatter{
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "./echo",
 				Includes: []string{"*"},
@@ -794,7 +848,66 @@ func TestRunInSubdir(t *testing.T) {
 	assertStats(t, as, 32, 32, 32, 0)
 
 	// specify some explicit paths, relative to the tree root
-	_, err = cmd(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
+	_, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, 2, 2, 2, 0)
+}
+
+func cmd(t *testing.T, args ...string) ([]byte, error) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
+
+	// capture standard outputs before swapping them
+	stdout := os.Stdout
+	stderr := os.Stderr
+
+	// swap them temporarily
+	os.Stdout = tempOut
+	os.Stderr = tempOut
+
+	log.SetOutput(tempOut)
+
+	defer func() {
+		// swap outputs back
+		os.Stdout = stdout
+		os.Stderr = stderr
+		log.SetOutput(stderr)
+	}()
+
+	// run the command
+	root := NewRoot()
+
+	if args == nil {
+		// we must pass an empty array otherwise cobra with use os.Args[1:]
+		args = []string{}
+	}
+	root.SetArgs(args)
+	root.SetOut(tempOut)
+	root.SetErr(tempOut)
+
+	if err := root.Execute(); err != nil {
+		return nil, err
+	}
+
+	// reset and read the temporary output
+	if _, err := tempOut.Seek(0, 0); err != nil {
+		return nil, fmt.Errorf("failed to reset temp output for reading: %w", err)
+	}
+
+	out, err := io.ReadAll(tempOut)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read temp output: %w", err)
+	}
+
+	return out, nil
+}
+
+func assertStats(t *testing.T, as *require.Assertions, traversed int32, emitted int32, matched int32, formatted int32) {
+	t.Helper()
+	as.Equal(traversed, stats.Value(stats.Traversed), "stats.traversed")
+	as.Equal(emitted, stats.Value(stats.Emitted), "stats.emitted")
+	as.Equal(matched, stats.Value(stats.Matched), "stats.matched")
+	as.Equal(formatted, stats.Value(stats.Formatted), "stats.formatted")
 }

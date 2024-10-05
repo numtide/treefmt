@@ -8,12 +8,13 @@ import (
 	"time"
 )
 
-type Type string
+//go:generate enumer -type=Type -text -transform=snake -output=./type_enum.go
+type Type int
 
 const (
-	Git        Type = "git"
-	Auto       Type = "auto"
-	Filesystem Type = "filesystem"
+	Auto Type = iota
+	Git  Type = iota
+	Filesystem
 )
 
 type File struct {
@@ -35,7 +36,7 @@ func (f File) HasChanged() (bool, fs.FileInfo, error) {
 	}
 
 	// POSIX specifies EPOCH time for Mod time, but some filesystems give more precision.
-	// Some formatters mess with the mod time (e.g., dos2unix) but not to the same precision,
+	// Some formatters mess with the mod time (e.g. dos2unix) but not to the same precision,
 	// triggering false positives.
 	// We truncate everything below a second.
 	if f.Info.ModTime().Truncate(time.Second) != current.ModTime().Truncate(time.Second) {

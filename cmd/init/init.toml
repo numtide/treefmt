@@ -1,0 +1,45 @@
+# One CLI to format the code tree - https://github.com/numtide/treefmt
+
+# Do not exit with error if a configured formatter is missing (env $TREEFMT_ALLOW_MISSING_FORMATTER)
+# allow-missing-formatter = true
+
+# The file into which a cpu profile will be written (env $TREEFMT_CPU_PROFILE)
+# cpu-profile = ./cpu.pprof
+
+# Exclude files or directories matching the specified globs (env $TREEFMT_EXCLUDES)
+# excludes = ["*.md", "*.gif"]
+
+# Exit with error if any changes were made. Useful for CI (env $TREEFMT_FAIL_ON_CHANGE)
+# fail-on-change = true
+
+# Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)
+# formatters = ["gofmt", "prettier"]
+
+# Log paths that did not match any formatters at the specified log level.
+# Possible values are <debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED)
+# on-unmatched = "info"
+
+# The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the
+# config file). (env $TREEFMT_TREE_ROOT)
+# tree-root = "/tmp/foo"
+
+# File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)
+# tree-root-file = ".git/config"
+
+# Set the verbosity of logs e.g.
+# 0 = warn, 1 = info, 2 = debug (env $TREEFMT_VERBOSE)
+# verbose = 2
+
+# The method used to traverse the files within the tree root.
+# Currently supports 'auto', 'git' or 'filesystem'. (env $TREEFMT_WALK)
+# walk = "filesystem"
+
+[formatter.mylanguage]
+# Formatter to run
+command = "command-to-run"
+# Command-line arguments for the command
+options = []
+# Glob pattern of files to include
+includes = [ "*.<language-extension>" ]
+# Glob patterns of files to exclude
+excludes = []
