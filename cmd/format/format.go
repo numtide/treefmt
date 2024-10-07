@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-
 	"mvdan.cc/sh/v3/expand"
 )
 
@@ -60,16 +59,17 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 		// Wait until we tick over into the next second before processing to ensure our EPOCH level modtime comparisons
 		// for change detection are accurate.
 		// This can fail in CI between checkout and running treefmt if everything happens too quickly.
-		// For humans, the second level precision should not be a problem as they are unlikely to run treefmt in sub-second succession.
+		// For humans, the second level precision should not be a problem as they are unlikely to run treefmt in
+		// sub-second succession.
 		<-time.After(time.Until(startAfter))
 	}
 
-	if cfg.Stdin {
-		// check we have only received one path arg which we use for the file extension / matching to formatters
-		if len(paths) != 1 {
-			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
-		}
+	// for stdin, check we have only received one path arg which we use for the file extension / matching to formatters
+	if cfg.Stdin && len(paths) != 1 {
+		return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+	}
 
+	if cfg.Stdin {
 		// read stdin into a temporary file with the same file extension
 		pattern := fmt.Sprintf("*%s", filepath.Ext(paths[0]))
 
@@ -93,7 +93,6 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 
 		// update paths with temp file
 		paths[0] = file.Name()
-
 	} else {
 		// checks all paths are contained within the tree root
 		for idx, path := range paths {
@@ -107,15 +106,17 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 	}
 
 	// cpu profiling
-	if cfg.CpuProfile != "" {
-		cpuProfile, err := os.Create(cfg.CpuProfile)
+	if cfg.CPUProfile != "" {
+		cpuProfile, err := os.Create(cfg.CPUProfile)
 		if err != nil {
 			return fmt.Errorf("failed to open file for writing cpu profile: %w", err)
 		} else if err = pprof.StartCPUProfile(cpuProfile); err != nil {
 			return fmt.Errorf("failed to start cpu profile: %w", err)
 		}
+
 		defer func() {
 			pprof.StopCPUProfile()
+
 			if err := cpuProfile.Close(); err != nil {
 				log.Errorf("failed to close cpu profile: %v", err)
 			}
@@ -148,6 +149,7 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 
 		if errors.Is(err, format.ErrCommandNotFound) && cfg.AllowMissingFormatter {
 			log.Debugf("formatter command not found: %v", name)
+
 			continue
 		} else if err != nil {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
@@ -162,6 +164,7 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 		if err = cache.Open(cfg.TreeRoot, cfg.ClearCache, formatters); err != nil {
 			// if we can't open the cache, we log a warning and fallback to no cache
 			log.Warnf("failed to open cache: %v", err)
+
 			cfg.NoCache = true
 		}
 	}
@@ -230,7 +233,8 @@ func walkFilesystem(
 					return ctx.Err()
 				default:
 					pathsCh <- paths[idx]
-					idx += 1
+
+					idx++
 				}
 			}
 
@@ -253,7 +257,7 @@ func walkFilesystem(
 
 		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
 		if cfg.NoCache || cfg.Stdin {
-			return walker.Walk(ctx, func(file *walk.File, err error) error {
+			return walker.Walk(ctx, func(file *walk.File, _ error) error {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
@@ -261,6 +265,7 @@ func walkFilesystem(
 					stats.Add(stats.Traversed, 1)
 					stats.Add(stats.Emitted, 1)
 					filesCh <- file
+
 					return nil
 				}
 			})
@@ -271,11 +276,12 @@ func walkFilesystem(
 		if err = cache.ChangeSet(ctx, walker, filesCh); err != nil {
 			return fmt.Errorf("failed to generate change set: %w", err)
 		}
+
 		return nil
 	}
 }
 
-// applyFormatters
+// applyFormatters.
 func applyFormatters(
 	ctx context.Context,
 	cfg *config.Config,
@@ -304,7 +310,6 @@ func applyFormatters(
 
 		// process the batch if it's full, or we've been asked to flush partial batches
 		if flush || len(batch) == BatchSize {
-
 			// copy the batch as we re-use it for the next batch
 			tasks := make([]*format.Task, len(batch))
 			copy(tasks, batch)
@@ -316,6 +321,7 @@ func applyFormatters(
 				formatters := tasks[0].Formatters
 
 				var formatErrors []error
+
 				for idx := range formatters {
 					if err := formatters[idx].Apply(ctx, tasks); err != nil {
 						formatErrors = append(formatErrors, err)
@@ -357,7 +363,6 @@ func applyFormatters(
 
 		// iterate the files channel
 		for file := range filesCh {
-
 			// first check if this file has been globally excluded
 			if format.PathMatches(file.RelPath, globalExcludes) {
 				log.Debugf("path matched global excludes: %s", file.RelPath)
@@ -365,11 +370,13 @@ func applyFormatters(
 				formattedCh <- &format.Task{
 					File: file,
 				}
+
 				continue
 			}
 
 			// check if any formatters are interested in this file
 			var matches []*format.Formatter
+
 			for _, formatter := range formatters {
 				if formatter.Wants(file) {
 					matches = append(matches, formatter)
@@ -378,11 +385,12 @@ func applyFormatters(
 
 			// see if any formatters matched
 			if len(matches) == 0 {
-
 				if unmatchedLevel == log.FatalLevel {
 					return fmt.Errorf("no formatter for path: %s", file.RelPath)
 				}
+
 				log.Logf(unmatchedLevel, "no formatter for path: %s", file.RelPath)
+
 				// mark it as processed and continue to the next
 				formattedCh <- &format.Task{
 					File: file,
@@ -405,11 +413,17 @@ func applyFormatters(
 		if err := fg.Wait(); err != nil {
 			return fmt.Errorf("formatting failure: %w", err)
 		}
+
 		return nil
 	}
 }
 
-func detectFormatted(ctx context.Context, cfg *config.Config, formattedCh chan *format.Task, processedCh chan *format.Task) func() error {
+func detectFormatted(
+	ctx context.Context,
+	cfg *config.Config,
+	formattedCh chan *format.Task,
+	processedCh chan *format.Task,
+) func() error {
 	return func() error {
 		defer func() {
 			// close formatted channel
@@ -418,7 +432,6 @@ func detectFormatted(ctx context.Context, cfg *config.Config, formattedCh chan *
 
 		for {
 			select {
-
 			// detect ctx cancellation
 			case <-ctx.Done():
 				return ctx.Err()
@@ -431,6 +444,7 @@ func detectFormatted(ctx context.Context, cfg *config.Config, formattedCh chan *
 
 				// check if the file has changed
 				file := task.File
+
 				changed, newInfo, err := file.HasChanged()
 				if err != nil {
 					return err
@@ -478,10 +492,13 @@ func updateCache(ctx context.Context, cfg *config.Config, processedCh chan *form
 			for idx := range batch {
 				files[idx] = batch[idx].File
 			}
+
 			if err := cache.Update(files); err != nil {
 				return err
 			}
+
 			batch = batch[:0]
+
 			return nil
 		}
 

@@ -1,7 +1,6 @@
 package test
 
 import (
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ func WriteConfig(t *testing.T, path string, cfg map[string]any) {
 	if err != nil {
 		t.Fatalf("failed to create a new config file: %v", err)
 	}
+
 	encoder := toml.NewEncoder(f)
 	if err = encoder.Encode(cfg); err != nil {
 		t.Fatalf("failed to write to config file: %v", err)
@@ -29,7 +29,7 @@ func TempExamples(t *testing.T) string {
 	require.NoError(t, cp.Copy("../test/examples", tempDir), "failed to copy test data to temp dir")
 
 	// we have second precision mod time tracking, so we wait a second before returning, so we don't trigger false
-	//positives for things like fail on change
+	// positives for things like fail on change
 	time.Sleep(time.Second)
 
 	return tempDir
@@ -55,18 +55,12 @@ func TempFile(t *testing.T, dir string, pattern string, contents *string) *os.Fi
 	return file
 }
 
-func ReadStdout(t *testing.T) string {
-	_, err := os.Stdout.Seek(0, 0)
-	require.NoError(t, err, "failed to seek to 0")
-	bytes, err := io.ReadAll(os.Stdout)
-	require.NoError(t, err, "failed to read")
-	return string(bytes)
-}
-
 func RecreateSymlink(t *testing.T, path string) error {
 	t.Helper()
+
 	src, err := os.Readlink(path)
 	require.NoError(t, err, "failed to read symlink")
 	require.NoError(t, os.Remove(path), "failed to remove symlink")
+
 	return os.Symlink(src, path)
 }

@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"bufio"
@@ -9,31 +9,34 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/numtide/treefmt/config"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/require"
 )
 
 func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	t.Helper()
-	v := NewViper()
 
+	v := config.NewViper()
 	tempDir := t.TempDir()
+
 	v.SetConfigFile(filepath.Join(tempDir, "treefmt.toml"))
 
-	flags := SetFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
+	flags := config.SetFlags(pflag.NewFlagSet("test", pflag.ContinueOnError))
 	if err := v.BindPFlags(flags); err != nil {
 		t.Fatal(err)
 	}
+
 	return v, flags
 }
 
-func readValue(t *testing.T, v *viper.Viper, cfg map[string]any, test func(*Config)) {
+func readValue(t *testing.T, v *viper.Viper, cfg map[string]any, test func(*config.Config)) {
 	t.Helper()
 
 	// serialise the config and read it into viper
 	buf := bytes.NewBuffer(nil)
+
 	encoder := toml.NewEncoder(buf)
 	if err := encoder.Encode(cfg); err != nil {
 		t.Fatal(fmt.Errorf("failed to marshal config: %w", err))
@@ -42,7 +45,7 @@ func readValue(t *testing.T, v *viper.Viper, cfg map[string]any, test func(*Conf
 	}
 
 	//
-	decodedCfg, err := FromViper(v)
+	decodedCfg, err := config.FromViper(v)
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to unmarshal config from viper: %w", err))
 	}
@@ -57,7 +60,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.AllowMissingFormatter)
 		})
 	}
@@ -85,7 +88,7 @@ func TestCI(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValues := func(ci bool, noCache bool, failOnChange bool, verbosity uint8) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(ci, cfg.CI)
 			as.Equal(noCache, cfg.NoCache)
 			as.Equal(failOnChange, cfg.FailOnChange)
@@ -110,6 +113,7 @@ func TestCI(t *testing.T) {
 
 	// increase verbosity above 1 and check it isn't reset
 	cfg["verbose"] = 2
+
 	checkValues(true, true, true, 2)
 }
 
@@ -120,7 +124,7 @@ func TestClearCache(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.ClearCache)
 		})
 	}
@@ -148,8 +152,8 @@ func TestCpuProfile(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
-			as.Equal(expected, cfg.CpuProfile)
+		readValue(t, v, cfg, func(cfg *config.Config) {
+			as.Equal(expected, cfg.CPUProfile)
 		})
 	}
 
@@ -158,14 +162,17 @@ func TestCpuProfile(t *testing.T) {
 
 	// set config value
 	cfg["cpu-profile"] = "/foo/bar"
+
 	checkValue("/foo/bar")
 
 	// env override
 	t.Setenv("TREEFMT_CPU_PROFILE", "/fizz/buzz")
+
 	checkValue("/fizz/buzz")
 
 	// flag override
 	as.NoError(flags.Set("cpu-profile", "/bla/bla"))
+
 	checkValue("/bla/bla")
 }
 
@@ -176,7 +183,7 @@ func TestExcludes(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected []string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Excludes)
 		})
 	}
@@ -186,6 +193,7 @@ func TestExcludes(t *testing.T) {
 
 	// set config value
 	cfg["excludes"] = []string{"foo", "bar"}
+
 	checkValue([]string{"foo", "bar"})
 
 	// test global.excludes fallback
@@ -193,6 +201,7 @@ func TestExcludes(t *testing.T) {
 	cfg["global"] = map[string]any{
 		"excludes": []string{"fizz", "buzz"},
 	}
+
 	checkValue([]string{"fizz", "buzz"})
 
 	// env override
@@ -211,7 +220,7 @@ func TestFailOnChange(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.FailOnChange)
 		})
 	}
@@ -239,7 +248,7 @@ func TestFormatters(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected []string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Formatters)
 		})
 	}
@@ -260,19 +269,24 @@ func TestFormatters(t *testing.T) {
 		},
 	}
 	cfg["formatters"] = []string{"echo", "touch"}
+
 	checkValue([]string{"echo", "touch"})
 
 	// env override
 	t.Setenv("TREEFMT_FORMATTERS", "echo,date")
+
 	checkValue([]string{"echo", "date"})
 
 	// flag override
 	as.NoError(flags.Set("formatters", "date,touch"))
+
 	checkValue([]string{"date", "touch"})
 
 	// bad formatter name
 	as.NoError(flags.Set("formatters", "foo,echo,date"))
-	_, err := FromViper(v)
+
+	_, err := config.FromViper(v)
+
 	as.ErrorContains(err, "formatter foo not found in config")
 }
 
@@ -283,7 +297,7 @@ func TestNoCache(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.NoCache)
 		})
 	}
@@ -311,7 +325,7 @@ func TestOnUnmatched(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.OnUnmatched)
 		})
 	}
@@ -321,10 +335,12 @@ func TestOnUnmatched(t *testing.T) {
 
 	// set config value
 	cfg["on-unmatched"] = "error"
+
 	checkValue("error")
 
 	// env override
 	t.Setenv("TREEFMT_ON_UNMATCHED", "debug")
+
 	checkValue("debug")
 
 	// flag override
@@ -339,7 +355,7 @@ func TestTreeRoot(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.TreeRoot)
 		})
 	}
@@ -350,14 +366,17 @@ func TestTreeRoot(t *testing.T) {
 
 	// set config value
 	cfg["tree-root"] = "/foo/bar"
+
 	checkValue("/foo/bar")
 
 	// env override
 	t.Setenv("TREEFMT_TREE_ROOT", "/fizz/buzz")
+
 	checkValue("/fizz/buzz")
 
 	// flag override
 	as.NoError(flags.Set("tree-root", "/flip/flop"))
+
 	checkValue("/flip/flop")
 }
 
@@ -370,13 +389,13 @@ func TestTreeRootFile(t *testing.T) {
 	// create a directory structure with config files at various levels
 	tempDir := t.TempDir()
 	as.NoError(os.MkdirAll(filepath.Join(tempDir, "foo", "bar"), 0o755))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "bar", "a.txt"), []byte{}, 0o644))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "go.mod"), []byte{}, 0o644))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "bar", "a.txt"), []byte{}, 0o600))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "go.mod"), []byte{}, 0o600))
 	as.NoError(os.MkdirAll(filepath.Join(tempDir, ".git"), 0o755))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, ".git", "config"), []byte{}, 0o644))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, ".git", "config"), []byte{}, 0o600))
 
 	checkValue := func(treeRoot string, treeRootFile string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(treeRoot, cfg.TreeRoot)
 			as.Equal(treeRootFile, cfg.TreeRootFile)
 		})
@@ -391,6 +410,7 @@ func TestTreeRootFile(t *testing.T) {
 	workDir := filepath.Join(tempDir, "foo", "bar")
 	cfg["working-dir"] = workDir
 	cfg["tree-root-file"] = "a.txt"
+
 	checkValue(workDir, "a.txt")
 
 	// env override
@@ -411,7 +431,7 @@ func TestVerbosity(t *testing.T) {
 	v, _ := newViper(t)
 
 	checkValue := func(expected uint8) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Verbosity)
 		})
 	}
@@ -421,16 +441,14 @@ func TestVerbosity(t *testing.T) {
 
 	// set config value
 	cfg["verbose"] = 1
+
 	checkValue(1)
+
+	// todo unsure how to set a count flag via the flags api
 
 	// env override
 	t.Setenv("TREEFMT_VERBOSE", "2")
 	checkValue(2)
-
-	// flag override
-	// todo unsure how to set a count flag via the flags api
-	// as.NoError(flags.Set("verbose", "v"))
-	// checkValue(1)
 }
 
 func TestWalk(t *testing.T) {
@@ -440,7 +458,7 @@ func TestWalk(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Walk)
 		})
 	}
@@ -450,10 +468,12 @@ func TestWalk(t *testing.T) {
 
 	// set config value
 	cfg["walk"] = "git"
+
 	checkValue("git")
 
 	// env override
 	t.Setenv("TREEFMT_WALK", "filesystem")
+
 	checkValue("filesystem")
 
 	// flag override
@@ -468,7 +488,7 @@ func TestWorkingDirectory(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.WorkingDirectory)
 		})
 	}
@@ -485,14 +505,17 @@ func TestWorkingDirectory(t *testing.T) {
 	// set config value
 	// should resolve input paths to absolute paths
 	cfg["working-dir"] = "/foo/bar/baz/../fizz"
+
 	checkValue("/foo/bar/fizz")
 
 	// env override
 	t.Setenv("TREEFMT_WORKING_DIR", "/fizz/buzz/..")
+
 	checkValue("/fizz")
 
 	// flag override
 	as.NoError(flags.Set("working-dir", "/flip/flop"))
+
 	checkValue("/flip/flop")
 }
 
@@ -503,7 +526,7 @@ func TestStdin(t *testing.T) {
 	v, flags := newViper(t)
 
 	checkValues := func(stdin bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(stdin, cfg.Stdin)
 		})
 	}
@@ -531,7 +554,7 @@ func TestSampleConfigFile(t *testing.T) {
 	v.SetConfigFile("../test/examples/treefmt.toml")
 	as.NoError(v.ReadInConfig(), "failed to read config file")
 
-	cfg, err := FromViper(v)
+	cfg, err := config.FromViper(v)
 	as.NoError(err, "failed to unmarshal config from viper")
 
 	as.NotNil(cfg)

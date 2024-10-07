@@ -26,7 +26,7 @@ func NewRoot() *cobra.Command {
 
 	// create out root command
 	cmd := &cobra.Command{
-		Use:     "treefmt <paths...>",
+		Use:     fmt.Sprintf("%s <paths...>", build.Name),
 		Short:   "One CLI to format your repo",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,7 +44,11 @@ func NewRoot() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("tree-root", "tree-root-file")
 
 	// add a couple of special flags which don't have a corresponding entry in treefmt.toml
-	pfs.StringVar(&configFile, "config-file", "", "Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).")
+	pfs.StringVar(
+		&configFile, "config-file", "",
+		"Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).",
+	)
+
 	pfs.BoolVarP(&treefmtInit, "init", "i", false, "Create a treefmt.toml file in the current directory.")
 
 	// bind prj_root to the tree-root flag, allowing viper to handle environment override for us
@@ -99,6 +103,7 @@ func runE(v *viper.Viper, cmd *cobra.Command, args []string) error {
 
 	// read in the config
 	v.SetConfigFile(configFile)
+
 	if err := v.ReadInConfig(); err != nil {
 		cobra.CheckErr(fmt.Errorf("failed to read config file '%s': %w", configFile, err))
 	}

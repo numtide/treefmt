@@ -8,11 +8,10 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/numtide/treefmt/config"
-	"github.com/numtide/treefmt/walk"
-
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
+	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/walk"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 )
@@ -34,7 +33,7 @@ type Formatter struct {
 	excludes []glob.Glob
 }
 
-// Executable returns the path to the executable defined by Command
+// Executable returns the path to the executable defined by Command.
 func (f *Formatter) Executable() string {
 	return f.executable
 }
@@ -64,6 +63,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 	}
 
 	// execute the command
+	//nolint:gosec
 	cmd := exec.CommandContext(ctx, f.executable, args...)
 	// replace the default Cancel handler installed by CommandContext because it sends SIGKILL (-9).
 	cmd.Cancel = func() error {
@@ -76,13 +76,15 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 	if out, err := cmd.CombinedOutput(); err != nil {
 		f.log.Errorf("failed to apply with options '%v': %s", f.config.Options, err)
+
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s error:\n%s\n", f.name, out)
 		}
+
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
-	} else {
-		f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
 	}
+
+	f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
 
 	return nil
 }
@@ -94,6 +96,7 @@ func (f *Formatter) Wants(file *walk.File) bool {
 	if match {
 		f.log.Debugf("match: %v", file)
 	}
+
 	return match
 }
 
@@ -118,6 +121,7 @@ func NewFormatter(
 	if err != nil {
 		return nil, ErrCommandNotFound
 	}
+
 	f.executable = executable
 
 	// initialise internal state

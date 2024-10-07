@@ -2,21 +2,18 @@ package cache
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec
 	"encoding/hex"
 	"fmt"
 	"os"
 	"runtime"
 	"time"
 
-	"github.com/numtide/treefmt/stats"
-
-	"github.com/numtide/treefmt/format"
-	"github.com/numtide/treefmt/walk"
-
-	"github.com/charmbracelet/log"
-
 	"github.com/adrg/xdg"
+	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/walk"
 	"github.com/vmihailenco/msgpack/v5"
 	bolt "go.etcd.io/bbolt"
 )
@@ -48,11 +45,12 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 	logger = log.WithPrefix("cache")
 
 	// determine a unique and consistent db name for the tree root
-	h := sha1.New()
+	h := sha1.New() //nolint:gosec
 	h.Write([]byte(treeRoot))
 	digest := h.Sum(nil)
 
 	name := hex.EncodeToString(digest)
+
 	path, err := xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name))
 	if err != nil {
 		return fmt.Errorf("could not resolve local path for the cache: %w", err)
@@ -64,7 +62,7 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 		return fmt.Errorf("failed to open cache at %v: %w", path, err)
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
+	return db.Update(func(tx *bolt.Tx) error {
 		// create bucket for tracking paths
 		pathsBucket, err := tx.CreateBucketIfNotExists([]byte(pathsBucket))
 		if err != nil {
@@ -79,7 +77,6 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 
 		// check for any newly configured or modified formatters
 		for name, formatter := range formatters {
-
 			stat, err := os.Lstat(formatter.Executable())
 			if err != nil {
 				return fmt.Errorf("failed to stat formatter executable %v: %w", formatter.Executable(), err)
@@ -130,6 +127,7 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 				// indicate a clean is required
 				clean = true
 			}
+
 			return nil
 		}); err != nil {
 			return fmt.Errorf("failed to check cache for removed formatters: %w", err)
@@ -147,8 +145,6 @@ func Open(treeRoot string, clean bool, formatters map[string]*format.Formatter) 
 
 		return nil
 	})
-
-	return
 }
 
 // Close closes any open instance of the cache.
@@ -156,6 +152,7 @@ func Close() error {
 	if db == nil {
 		return nil
 	}
+
 	return db.Close()
 }
 
@@ -167,10 +164,11 @@ func getEntry(bucket *bolt.Bucket, path string) (*Entry, error) {
 		if err := msgpack.Unmarshal(b, &cached); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal cache info for path '%v': %w", path, err)
 		}
+
 		return &cached, nil
-	} else {
-		return nil, nil
 	}
+	//nolint:nilnil
+	return nil, nil
 }
 
 // putEntry is a helper for writing cache entries into bolt.
@@ -183,6 +181,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 	if err = bucket.Put([]byte(path), bytes); err != nil {
 		return fmt.Errorf("failed to put cache path %v: %w", path, err)
 	}
+
 	return nil
 }
 
@@ -196,7 +195,9 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 	}()
 
 	var tx *bolt.Tx
+
 	var bucket *bolt.Bucket
+
 	var processed int
 
 	defer func() {
@@ -226,6 +227,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 			if err != nil {
 				return fmt.Errorf("failed to open a new cache read tx: %w", err)
 			}
+
 			bucket = tx.Bucket([]byte(pathsBucket))
 		}
 
@@ -237,6 +239,7 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 		changedOrNew := cached == nil || !(cached.Modified == file.Info.ModTime() && cached.Size == file.Info.Size())
 
 		stats.Add(stats.Traversed, 1)
+
 		if !changedOrNew {
 			// no change
 			return nil
@@ -253,10 +256,11 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 		}
 
 		// close the current tx if we have reached the batch size
-		processed += 1
+		processed++
 		if processed == ReadBatchSize {
 			err = tx.Rollback()
 			tx = nil
+
 			return err
 		}
 

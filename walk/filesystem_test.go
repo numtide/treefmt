@@ -1,4 +1,4 @@
-package walk
+package walk_test
 
 import (
 	"context"
@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/walk"
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:gochecknoglobals
 var examplesPaths = []string{
 	"elm/elm.json",
 	"elm/src/Main.elm",
@@ -55,13 +57,15 @@ func TestFilesystemWalker_Walk(t *testing.T) {
 
 	as := require.New(t)
 
-	walker, err := NewFilesystem(tempDir, paths)
+	walker, err := walk.NewFilesystem(tempDir, paths)
 	as.NoError(err)
 
 	idx := 0
-	err = walker.Walk(context.Background(), func(file *File, err error) error {
+	err = walker.Walk(context.Background(), func(file *walk.File, _ error) error {
 		as.Equal(examplesPaths[idx], file.RelPath)
-		idx += 1
+
+		idx++
+
 		return nil
 	})
 	as.NoError(err)

@@ -15,7 +15,7 @@ type Config struct {
 	AllowMissingFormatter bool     `mapstructure:"allow-missing-formatter,omitempty"`
 	CI                    bool     `mapstructure:"ci,omitempty"`
 	ClearCache            bool     `mapstructure:"clear-cache,omitempty"`
-	CpuProfile            string   `mapstructure:"cpu-profile,omitempty"`
+	CPUProfile            string   `mapstructure:"cpu-profile,omitempty"`
 	Excludes              []string `mapstructure:"excludes"`
 	FailOnChange          bool     `mapstructure:"fail-on-change,omitempty"`
 	Formatters            []string `mapstructure:"formatters,omitempty"`
@@ -37,39 +37,78 @@ type Config struct {
 
 type Formatter struct {
 	// Command is the command to invoke when applying this Formatter.
-	Command string `toml:"command" mapstructure:"command" toml:"command"`
+	Command string `mapstructure:"command"`
 	// Options are an optional list of args to be passed to Command.
-	Options []string `toml:"options,omitempty" mapstructure:"options,omitempty" toml:"options,omitempty"`
+	Options []string `mapstructure:"options,omitempty"`
 	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
-	Includes []string `toml:"includes,omitempty" mapstructure:"includes,omitempty" toml:"includes,omitempty"`
+	Includes []string `mapstructure:"includes,omitempty"`
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
-	Excludes []string `toml:"excludes,omitempty" mapstructure:"excludes,omitempty" toml:"excludes,omitempty"`
+	Excludes []string `mapstructure:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
-	Priority int `toml:"priority,omitempty" mapstructure:"priority,omitempty" toml:"priority,omitempty"`
+	Priority int `mapstructure:"priority,omitempty"`
 }
 
 // SetFlags appends our flags to the provided flag set.
 // We have a flag matching most entries in Config, taking care to ensure the name matches the field name defined in the
 // mapstructure tag.
-// We can rely on a flag's default value being provided in the event the same value was not specified in the config file.
+// We can rely on a flag's default value being provided in the event the same value was not specified in the config
+// file.
 func SetFlags(fs *pflag.FlagSet) *pflag.FlagSet {
-	fs.Bool("allow-missing-formatter", false, "Do not exit with error if a configured formatter is missing.")
-	fs.Bool("ci", false, "Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case.")
-	fs.BoolP("clear-cache", "c", false, "Reset the evaluation cache. Use in case the cache is not precise enough.")
+	fs.Bool(
+		"allow-missing-formatter", false,
+		"Do not exit with error if a configured formatter is missing.",
+	)
+
+	fs.Bool(
+		"ci", false,
+		"Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings "+
+			"best suited to a CI use case.",
+	)
+
+	fs.BoolP(
+		"clear-cache", "c", false,
+		"Reset the evaluation cache. Use in case the cache is not precise enough.",
+	)
+
 	fs.String("cpu-profile", "", "The file into which a cpu profile will be written.")
 	fs.StringSlice("excludes", nil, "Exclude files or directories matching the specified globs.")
 	fs.Bool("fail-on-change", false, "Exit with error if any changes were made. Useful for CI.")
-	fs.StringSliceP("formatters", "f", nil, "Specify formatters to apply. Defaults to all configured formatters.")
+
+	fs.StringSliceP(
+		"formatters", "f", nil,
+		"Specify formatters to apply. Defaults to all configured formatters.",
+	)
+
 	fs.Bool("no-cache", false, "Ignore the evaluation cache entirely. Useful for CI.")
-	fs.StringP("on-unmatched", "u", "warn", "Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are <debug|info|warn|error|fatal>.")
+
+	fs.StringP(
+		"on-unmatched", "u", "warn",
+		"Log paths that did not match any formatters at the specified log level, with fatal exiting the "+
+			"process with an error. Possible values are <debug|info|warn|error|fatal>.",
+	)
+
 	fs.Bool("stdin", false, "Format the context passed in via stdin.")
 
-	fs.String("tree-root", "", "The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file).")
+	fs.String(
+		"tree-root", "",
+		"The root directory from which treefmt will start walking the "+
+			"filesystem (defaults to the directory containing the config file).",
+	)
+
 	fs.String("tree-root-file", "", "File to search for to find the tree root (if --tree-root is not passed).")
 
-	fs.String("walk", "auto", "The method used to traverse the files within the tree root. Currently supports 'auto', 'git' or 'filesystem'.")
+	fs.String(
+		"walk", "auto",
+		"The method used to traverse the files within the tree root. Currently supports 'auto', 'git' or "+
+			"'filesystem'.",
+	)
+
 	fs.CountP("verbose", "v", "Set the verbosity of logs e.g. -vv.")
-	fs.StringP("working-dir", "C", ".", "Run as if treefmt was started in the specified working directory instead of the current working directory.")
+
+	fs.StringP(
+		"working-dir", "C", ".",
+		"Run as if treefmt was started in the specified working directory instead of the current working "+"directory.",
+	)
 
 	return fs
 }
@@ -78,7 +117,7 @@ func SetFlags(fs *pflag.FlagSet) *pflag.FlagSet {
 // * TOML config type
 // * automatic env enabled
 // * `TREEFMT_` env prefix for environment variables
-// * replacement of `-` and `.` with `_` when mapping from flags to env e.g. `global.excludes` => `TREEFMT_GLOBAL_EXCLUDES`
+// * replacement of `-` and `.` with `_` when mapping from flags to env.
 func NewViper() *viper.Viper {
 	v := viper.New()
 
@@ -96,6 +135,7 @@ func NewViper() *viper.Viper {
 // FromViper takes a viper instance and produces a Config instance.
 func FromViper(v *viper.Viper) (*Config, error) {
 	cfg := &Config{}
+
 	var err error
 
 	if err = v.Unmarshal(cfg); err != nil {
@@ -143,6 +183,7 @@ func FromViper(v *viper.Viper) (*Config, error) {
 			if !ok {
 				return nil, fmt.Errorf("formatter %v not found in config", name)
 			}
+
 			filtered[name] = formatterCfg
 		}
 

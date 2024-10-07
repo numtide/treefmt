@@ -51,13 +51,14 @@ func (f File) String() string {
 	return f.Path
 }
 
-type WalkFunc func(file *File, err error) error
+type WalkerFunc func(file *File, err error) error
 
 type Walker interface {
 	Root() string
-	Walk(ctx context.Context, fn WalkFunc) error
+	Walk(ctx context.Context, fn WalkerFunc) error
 }
 
+//nolint:ireturn
 func New(walkerType Type, root string, pathsCh chan string) (Walker, error) {
 	switch walkerType {
 	case Git:
@@ -71,12 +72,14 @@ func New(walkerType Type, root string, pathsCh chan string) (Walker, error) {
 	}
 }
 
+//nolint:ireturn
 func Detect(root string, pathsCh chan string) (Walker, error) {
 	// for now, we keep it simple and try git first, filesystem second
 	w, err := NewGit(root, pathsCh)
 	if err == nil {
-		return w, err
+		return w, nil
 	}
+
 	return NewFilesystem(root, pathsCh)
 }
 
@@ -89,6 +92,7 @@ func FindUp(searchDir string, fileNames ...string) (path string, dir string, err
 			}
 		}
 	}
+
 	return "", "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
 }
 
@@ -110,6 +114,7 @@ func eachDir(path string) (paths []string) {
 			if path == "" {
 				path = "/"
 			}
+
 			paths = append(paths, path)
 		}
 	}

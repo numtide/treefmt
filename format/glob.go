@@ -15,6 +15,7 @@ func CompileGlobs(patterns []string) ([]glob.Glob, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile include pattern '%v': %w", pattern, err)
 		}
+
 		globs[i] = g
 	}
 

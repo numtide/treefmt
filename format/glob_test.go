@@ -3,9 +3,8 @@ package format_test
 import (
 	"testing"
 
-	"github.com/numtide/treefmt/format"
-
 	"github.com/gobwas/glob"
+	"github.com/numtide/treefmt/format"
 	"github.com/stretchr/testify/require"
 )
 

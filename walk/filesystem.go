@@ -8,21 +8,21 @@ import (
 	"path/filepath"
 )
 
-type filesystemWalker struct {
+type FilesystemWalker struct {
 	root          string
 	pathsCh       chan string
 	relPathOffset int
 }
 
-func (f filesystemWalker) Root() string {
+func (f FilesystemWalker) Root() string {
 	return f.root
 }
 
-func (f filesystemWalker) relPath(path string) (string, error) {
+func (f FilesystemWalker) relPath(path string) (string, error) {
 	return filepath.Rel(f.root, path)
 }
 
-func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
+func (f FilesystemWalker) Walk(_ context.Context, fn WalkerFunc) error {
 	walkFn := func(path string, info fs.FileInfo, _ error) error {
 		if info == nil {
 			return fmt.Errorf("no such file or directory '%s'", path)
@@ -43,6 +43,7 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 			RelPath: relPath,
 			Info:    info,
 		}
+
 		return fn(&file, err)
 	}
 
@@ -55,8 +56,8 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewFilesystem(root string, paths chan string) (Walker, error) {
-	return filesystemWalker{
+func NewFilesystem(root string, paths chan string) (*FilesystemWalker, error) {
+	return &FilesystemWalker{
 		root:          root,
 		pathsCh:       paths,
 		relPathOffset: len(root) + 1,
