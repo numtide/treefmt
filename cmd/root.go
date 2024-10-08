@@ -38,6 +38,9 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 		},
 	}
 
+	// do not dump out the usage message on error
+	cmd.SilenceUsage = true
+
 	// update version template
 	cmd.SetVersionTemplate("treefmt {{.Version}}")
 

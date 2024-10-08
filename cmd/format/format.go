@@ -32,9 +32,7 @@ const (
 
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
-func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string) error {
-	cmd.SilenceUsage = true
-
+func Run(v *viper.Viper, statz *stats.Stats, _ *cobra.Command, paths []string) error {
 	cfg, err := config.FromViper(v)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
