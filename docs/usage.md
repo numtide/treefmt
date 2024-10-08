@@ -7,97 +7,93 @@ outline: deep
 `treefmt` has the following specification:
 
 ```
-Usage: treefmt [<paths> ...] [flags]
+One CLI to format your repo
 
-Arguments:
-  [<paths> ...]    Paths to format. Defaults to formatting the whole tree.
+Usage:
+  treefmt <paths...> [flags]
 
 Flags:
-  -h, --help                         Show context-sensitive help.
-      --allow-missing-formatter      Do not exit with error if a configured formatter is missing.
-  -C, --working-directory="."        Run as if treefmt was started in the specified working directory instead of the current working directory.
-      --no-cache                     Ignore the evaluation cache entirely. Useful for CI.
-  -c, --clear-cache                  Reset the evaluation cache. Use in case the cache is not precise enough.
-      --config-file=STRING           Load the config file from the given path (defaults to searching upwards for treefmt.toml).
-      --fail-on-change               Exit with error if any changes were made. Useful for CI.
-  -f, --formatters=FORMATTERS,...    Specify formatters to apply. Defaults to all formatters.
-      --tree-root=STRING             The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file) ($PRJ_ROOT).
-      --tree-root-file=STRING        File to search for to find the project root (if --tree-root is not passed).
-      --walk="auto"                  The method used to traverse the files within --tree-root. Currently supports 'auto', 'git' or 'filesystem'.
-  -v, --verbose                      Set the verbosity of logs e.g. -vv ($LOG_LEVEL).
-  -V, --version                      Print version.
-  -i, --init                         Create a new treefmt.toml.
-  -u, --on-unmatched=warn            Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are
-                                     <debug|info|warn|error|fatal>.
-      --stdin                        Format the context passed in via stdin.
-      --cpu-profile=STRING           The file into which a cpu profile will be written.
-      --ci                           Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case.
+      --allow-missing-formatter   Do not exit with error if a configured formatter is missing.
+      --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case.
+  -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough.
+      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
+      --cpu-profile string        The file into which a cpu profile will be written.
+  -e, --excludes strings          Exclude files or directories matching the specified globs.
+      --fail-on-change            Exit with error if any changes were made. Useful for CI.
+  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters.
+  -h, --help                      help for treefmt
+  -i, --init                      Create a treefmt.toml file in the current directory.
+      --no-cache                  Ignore the evaluation cache entirely. Useful for CI.
+  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level, with fatal exiting the process with an error. Possible values are <debug|info|warn|error|fatal>. (default "warn")
+      --stdin                     Format the context passed in via stdin.
+      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file).
+      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed).
+  -v, --verbose count             Set the verbosity of logs e.g. -vv.
+      --version                   version for treefmt
+      --walk string               The method used to traverse the files within the tree root. Currently supports 'auto', 'git' or 'filesystem'. (default "auto")
+  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (default ".")
 ```
 
 ## Arguments
 
-### `[<paths> ...]`
+### `<paths>...`
 
 Paths to format. Defaults to formatting the whole tree
 
 ## Flags
 
-### `-h, --help`
-
-Prints available flags and options
-
 ### `--allow-missing-formatter`
 
 Do not exit with an error if some of the configured formatters are missing.
 
-### `-C, --working-directory="."`
+### `--ci`
 
-Run as if `treefmt` was started in the specified working directory instead of the current working directory
+Runs treefmt in a CI mode which does the following:
+
+-   ensures `INFO` level logging at a minimum
+-   enables `--no-cache` and `--fail-on-change`
+-   introduces a small startup delay so we do not start processing until the second after the process started, thereby
+    ensuring the accuracy of our change detection based on second-level `modtime`.
+
+### `--clear-cache`
+
+Reset the evaluation cache. Use in case the cache is not precise enough.
+
+### `--config-file <config-file>`
+
+Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
+
+### `--cpu-profile`
+
+The file into which a cpu profile will be written.
+
+### `-e, --excludes strings`
+
+Exclude files or directories matching the specified globs.
+
+### `--fail-on-change`
+
+Exit with error if any changes were made. Useful for CI.
+
+### `-f, --formatters strings`
+
+Specify formatters to apply. Defaults to all configured formatters.
+
+### `-h, --help`
+
+Prints available flags and options
+
+### `--init`
+
+Create a treefmt.toml file in the current directory.
 
 ### `--no-cache`
 
 Tells `treefmt` to ignore the evaluation cache entirely.
 
-With this flag, you can avoid cache invalidation issues, if any. Typically, the machine that is running `treefmt` in
-CI is starting with a fresh environment each time, so any calculated cache is lost.
-
-The `--no-cache` flag eliminates unnecessary work in CI.
-
-### `--config-file <config-file>`
-
-Run with the specified config file.
-
-### `--fail-on-change`
-
-Exit with error if any changes were made.
-
-This is useful for CI if you want to detect if someone forgot to format their code.
-
-### `-f, --formatters <formatters>...`
-
-Specify formatters to apply. Defaults to all formatters.
-
-### `--tree-root="."`
-
-The root directory from which `treefmt` will start walking the filesystem.
-
-### `--walk <auto|git|filesystem>`
-
-The method used to traverse the files within `--tree-root`. Currently supports `auto`, `git` or `filesystem`.
-
-Default is `auto`, where we will detect if the `<tree-root>` is a git repository and use the `git` walker for
-traversal. If not we will fall back to the `filesystem` walker.
-
-### `-v, --verbose`
-
-Set the verbosity of logs e.g. `-vv`. Can also be set with an integer value in an env variable `$LOG_LEVEL`.
-
-Log verbosity is based off the number of 'v' used. With one `-v`, your logs will display `[INFO]` and `[ERROR]` messages,
-while `-vv` will also show `[DEBUG]` messages.
-
-### `--init`
-
-Create a new `treefmt.toml`.
+With this flag, you can avoid cache invalidation issues, if any.
+Typically, the machine that is running `treefmt` in CI is starting with a fresh environment each time,
+so any calculated cache is lost.
 
 ### `-u --on-unmatched`
 
@@ -109,22 +105,39 @@ Log paths that did not match any formatters at the specified log level, with fat
 
 Format the context passed in via stdin.
 
-### `--cpu-profile`
+### `--tree-root string`
 
-The file into which a cpu profile will be written.
+The root directory from which `treefmt` will start walking the filesystem.
 
-### `--ci`
+[default: the directory containing the config file]
 
-Runs treefmt in a CI mode which does the following:
+### `--tree-root-file string`
 
--   ensures `INFO` level logging at a minimum
--   enables `--no-cache` and `--fail-on-change`
--   introduces a small startup delay so we do not start processing until the second after the process started, thereby
-    ensuring the accuracy of our change detection based on second-level `modtime`.
+File to search for to find the tree root (if `--tree-root` is not passed).
 
-### `-V, --version`
+### `-v, --verbose`
+
+Set the verbosity of logs e.g. `-vv`. Can also be set with an integer value in an env variable `$LOG_LEVEL`.
+
+Log verbosity is based off the number of 'v' used. With one `-v`, your logs will display `[INFO]` and `[ERROR]` messages,
+while `-vv` will also show `[DEBUG]` messages.
+
+### `--version`
 
 Print version.
+
+### `--walk <auto|git|filesystem>`
+
+The method used to traverse the files within `--tree-root`.
+Currently, supports `auto`, `git` or `filesystem`.
+
+Default is `auto`, where we will detect if the `<tree-root>` is a git repository and use the `git` walker for
+traversal.
+If not we will fall back to the `filesystem` walker.
+
+### `-C, --working-directory string`
+
+Run as if `treefmt` was started in the specified working directory instead of the current working directory
 
 ## CI integration
 

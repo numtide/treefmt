@@ -71,7 +71,7 @@ func SetFlags(fs *pflag.FlagSet) *pflag.FlagSet {
 	)
 
 	fs.String("cpu-profile", "", "The file into which a cpu profile will be written.")
-	fs.StringSlice("excludes", nil, "Exclude files or directories matching the specified globs.")
+	fs.StringSliceP("excludes", "e", nil, "Exclude files or directories matching the specified globs.")
 	fs.Bool("fail-on-change", false, "Exit with error if any changes were made. Useful for CI.")
 
 	fs.StringSliceP(
