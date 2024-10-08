@@ -30,10 +30,10 @@ type Entry struct {
 }
 
 var (
-	db     *bolt.DB
-	logger *log.Logger
+	db     *bolt.DB    //nolint:gochecknoglobals
+	logger *log.Logger //nolint:gochecknoglobals
 
-	ReadBatchSize = 1024 * runtime.NumCPU()
+	ReadBatchSize = 1024 * runtime.NumCPU() //nolint:gochecknoglobals
 )
 
 // Open creates an instance of bolt.DB for a given treeRoot path.
@@ -187,7 +187,7 @@ func putEntry(bucket *bolt.Bucket, path string, entry *Entry) error {
 
 // ChangeSet is used to walk a filesystem, starting at root, and outputting any new or changed paths using pathsCh.
 // It determines if a path is new or has changed by comparing against cache entries.
-func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.File) error {
+func ChangeSet(ctx context.Context, statz *stats.Stats, walker walk.Walker, filesCh chan<- *walk.File) error {
 	start := time.Now()
 
 	defer func() {
@@ -238,14 +238,14 @@ func ChangeSet(ctx context.Context, walker walk.Walker, filesCh chan<- *walk.Fil
 
 		changedOrNew := cached == nil || !(cached.Modified == file.Info.ModTime() && cached.Size == file.Info.Size())
 
-		stats.Add(stats.Traversed, 1)
+		statz.Add(stats.Traversed, 1)
 
 		if !changedOrNew {
 			// no change
 			return nil
 		}
 
-		stats.Add(stats.Emitted, 1)
+		statz.Add(stats.Emitted, 1)
 
 		// pass on the path
 		select {

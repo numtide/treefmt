@@ -10,12 +10,13 @@ import (
 	"github.com/numtide/treefmt/cmd/format"
 	_init "github.com/numtide/treefmt/cmd/init"
 	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/stats"
 	"github.com/numtide/treefmt/walk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func NewRoot() *cobra.Command {
+func NewRoot() (*cobra.Command, *stats.Stats) {
 	var (
 		treefmtInit bool
 		configFile  string
@@ -24,13 +25,16 @@ func NewRoot() *cobra.Command {
 	// create a viper instance for reading in config
 	v := config.NewViper()
 
+	// create a new stats instance
+	statz := stats.New()
+
 	// create out root command
 	cmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <paths...>", build.Name),
 		Short:   "One CLI to format your repo",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(v, cmd, args)
+			return runE(v, statz, cmd, args)
 		},
 	}
 
@@ -60,10 +64,10 @@ func NewRoot() *cobra.Command {
 		cobra.CheckErr(fmt.Errorf("failed to bind global config to viper: %w", err))
 	}
 
-	return cmd
+	return cmd, statz
 }
 
-func runE(v *viper.Viper, cmd *cobra.Command, args []string) error {
+func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
 	// change working directory if required
@@ -122,5 +126,5 @@ func runE(v *viper.Viper, cmd *cobra.Command, args []string) error {
 	}
 
 	// format
-	return format.Run(v, cmd, args)
+	return format.Run(v, statz, cmd, args)
 }

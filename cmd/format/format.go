@@ -32,16 +32,13 @@ const (
 
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
-func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
+func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string) error {
 	cmd.SilenceUsage = true
 
 	cfg, err := config.FromViper(v)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-
-	// initialise stats collection
-	stats.Init()
 
 	if cfg.CI {
 		log.Info("ci mode enabled")
@@ -69,6 +66,7 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 		return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
 	}
 
+	//nolint:nestif
 	if cfg.Stdin {
 		// read stdin into a temporary file with the same file extension
 		pattern := fmt.Sprintf("*%s", filepath.Ext(paths[0]))
@@ -194,10 +192,10 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 	processedCh := make(chan *format.Task, cap(filesCh))
 
 	// start concurrent processing tasks in reverse order
-	eg.Go(updateCache(ctx, cfg, processedCh))
-	eg.Go(detectFormatted(ctx, cfg, formattedCh, processedCh))
-	eg.Go(applyFormatters(ctx, cfg, globalExcludes, formatters, filesCh, formattedCh))
-	eg.Go(walkFilesystem(ctx, cfg, paths, filesCh))
+	eg.Go(updateCache(ctx, cfg, statz, processedCh))
+	eg.Go(detectFormatted(ctx, cfg, statz, formattedCh, processedCh))
+	eg.Go(applyFormatters(ctx, cfg, statz, globalExcludes, formatters, filesCh, formattedCh))
+	eg.Go(walkFilesystem(ctx, cfg, statz, paths, filesCh))
 
 	// wait for everything to complete
 	return eg.Wait()
@@ -206,6 +204,7 @@ func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
 func walkFilesystem(
 	ctx context.Context,
 	cfg *config.Config,
+	statz *stats.Stats,
 	paths []string,
 	filesCh chan *walk.File,
 ) func() error {
@@ -262,8 +261,8 @@ func walkFilesystem(
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					stats.Add(stats.Traversed, 1)
-					stats.Add(stats.Emitted, 1)
+					statz.Add(stats.Traversed, 1)
+					statz.Add(stats.Emitted, 1)
 					filesCh <- file
 
 					return nil
@@ -273,7 +272,7 @@ func walkFilesystem(
 
 		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
 		// they have been added/changed since the last invocation
-		if err = cache.ChangeSet(ctx, walker, filesCh); err != nil {
+		if err = cache.ChangeSet(ctx, statz, walker, filesCh); err != nil {
 			return fmt.Errorf("failed to generate change set: %w", err)
 		}
 
@@ -285,6 +284,7 @@ func walkFilesystem(
 func applyFormatters(
 	ctx context.Context,
 	cfg *config.Config,
+	statz *stats.Stats,
 	globalExcludes []glob.Glob,
 	formatters map[string]*format.Formatter,
 	filesCh chan *walk.File,
@@ -397,7 +397,7 @@ func applyFormatters(
 				}
 			} else {
 				// record the match
-				stats.Add(stats.Matched, 1)
+				statz.Add(stats.Matched, 1)
 				// create a new format task, add it to a batch based on its batch key and try to apply if the batch is full
 				task := format.NewTask(file, matches)
 				tryApply(&task)
@@ -421,6 +421,7 @@ func applyFormatters(
 func detectFormatted(
 	ctx context.Context,
 	cfg *config.Config,
+	statz *stats.Stats,
 	formattedCh chan *format.Task,
 	processedCh chan *format.Task,
 ) func() error {
@@ -452,7 +453,7 @@ func detectFormatted(
 
 				if changed {
 					// record the change
-					stats.Add(stats.Formatted, 1)
+					statz.Add(stats.Formatted, 1)
 
 					logMethod := log.Debug
 					if cfg.FailOnChange {
@@ -480,7 +481,12 @@ func detectFormatted(
 	}
 }
 
-func updateCache(ctx context.Context, cfg *config.Config, processedCh chan *format.Task) func() error {
+func updateCache(
+	ctx context.Context,
+	cfg *config.Config,
+	statz *stats.Stats,
+	processedCh chan *format.Task,
+) func() error {
 	return func() error {
 		// used to batch updates for more efficient txs
 		batch := make([]*format.Task, 0, BatchSize)
@@ -561,13 +567,13 @@ func updateCache(ctx context.Context, cfg *config.Config, processedCh chan *form
 		}
 
 		// if fail on change has been enabled, check that no files were actually formatted, throwing an error if so
-		if cfg.FailOnChange && stats.Value(stats.Formatted) != 0 {
+		if cfg.FailOnChange && statz.Value(stats.Formatted) != 0 {
 			return ErrFailOnChange
 		}
 
 		// print stats to stdout unless we are processing stdin and printing the results to stdout
 		if !cfg.Stdin {
-			stats.Print()
+			statz.Print()
 		}
 
 		return nil

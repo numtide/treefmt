@@ -16,36 +16,24 @@ const (
 	Formatted
 )
 
-var (
-	counters map[Type]*atomic.Int32
+type Stats struct {
 	start    time.Time
-)
-
-func Init() {
-	// record start time
-	start = time.Now()
-
-	// init counters
-	counters = make(map[Type]*atomic.Int32)
-	counters[Traversed] = &atomic.Int32{}
-	counters[Emitted] = &atomic.Int32{}
-	counters[Matched] = &atomic.Int32{}
-	counters[Formatted] = &atomic.Int32{}
+	counters map[Type]*atomic.Int32
 }
 
-func Add(t Type, delta int32) int32 {
-	return counters[t].Add(delta)
+func (s *Stats) Add(t Type, delta int32) int32 {
+	return s.counters[t].Add(delta)
 }
 
-func Value(t Type) int32 {
-	return counters[t].Load()
+func (s *Stats) Value(t Type) int32 {
+	return s.counters[t].Load()
 }
 
-func Elapsed() time.Duration {
-	return time.Since(start)
+func (s *Stats) Elapsed() time.Duration {
+	return time.Since(s.start)
 }
 
-func Print() {
+func (s *Stats) Print() {
 	components := []string{
 		"traversed %d files",
 		"emitted %d files for processing",
@@ -55,10 +43,27 @@ func Print() {
 
 	fmt.Printf(
 		strings.Join(components, "\n"),
-		Value(Traversed),
-		Value(Emitted),
-		Value(Matched),
-		Value(Formatted),
-		Elapsed().Round(time.Millisecond),
+		s.Value(Traversed),
+		s.Value(Emitted),
+		s.Value(Matched),
+		s.Value(Formatted),
+		s.Elapsed().Round(time.Millisecond),
 	)
+}
+
+func New() *Stats {
+	// record start time
+	start := time.Now()
+
+	// init counters
+	counters := make(map[Type]*atomic.Int32)
+	counters[Traversed] = &atomic.Int32{}
+	counters[Emitted] = &atomic.Int32{}
+	counters[Matched] = &atomic.Int32{}
+	counters[Formatted] = &atomic.Int32{}
+
+	return &Stats{
+		start:    start,
+		counters: counters,
+	}
 }
