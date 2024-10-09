@@ -1,4 +1,4 @@
-package cli
+package format
 
 import (
 	"context"
@@ -10,20 +10,21 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
-	"strings"
 	"syscall"
 	"time"
 
-	"github.com/numtide/treefmt/format"
-	"github.com/numtide/treefmt/stats"
-	"mvdan.cc/sh/v3/expand"
-
+	"github.com/charmbracelet/log"
+	"github.com/gobwas/glob"
 	"github.com/numtide/treefmt/cache"
 	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/stats"
 	"github.com/numtide/treefmt/walk"
-
-	"github.com/charmbracelet/log"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+
+	"mvdan.cc/sh/v3/expand"
 )
 
 const (
@@ -32,25 +33,18 @@ const (
 
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
-func (f *Format) Run() (err error) {
-	// set log level and other options
-	f.configureLogging()
+func Run(v *viper.Viper, cmd *cobra.Command, paths []string) error {
+	cmd.SilenceUsage = true
+
+	cfg, err := config.FromViper(v)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
 
 	// initialise stats collection
 	stats.Init()
 
-	// ci mode
-	if f.Ci {
-		f.NoCache = true
-		f.FailOnChange = true
-
-		// ensure INFO level
-		if f.Verbosity < 1 {
-			f.Verbosity = 1
-		}
-		// reconfigure logging
-		f.configureLogging()
-
+	if cfg.CI {
 		log.Info("ci mode enabled")
 
 		startAfter := time.Now().
@@ -70,9 +64,51 @@ func (f *Format) Run() (err error) {
 		<-time.After(time.Until(startAfter))
 	}
 
+	if cfg.Stdin {
+		// check we have only received one path arg which we use for the file extension / matching to formatters
+		if len(paths) != 1 {
+			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+		}
+
+		// read stdin into a temporary file with the same file extension
+		pattern := fmt.Sprintf("*%s", filepath.Ext(paths[0]))
+
+		file, err := os.CreateTemp("", pattern)
+		if err != nil {
+			return fmt.Errorf("failed to create a temporary file for processing stdin: %w", err)
+		}
+
+		if _, err = io.Copy(file, os.Stdin); err != nil {
+			return fmt.Errorf("failed to copy stdin into a temporary file")
+		}
+
+		// set the tree root to match the temp directory
+		cfg.TreeRoot, err = filepath.Abs(filepath.Dir(file.Name()))
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for tree root: %w", err)
+		}
+
+		// configure filesystem walker to traverse the temporary tree root
+		cfg.Walk = "filesystem"
+
+		// update paths with temp file
+		paths[0] = file.Name()
+
+	} else {
+		// checks all paths are contained within the tree root
+		for idx, path := range paths {
+			rootPath := filepath.Join(cfg.TreeRoot, path)
+			if _, err = os.Stat(rootPath); err != nil {
+				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
+			}
+			// update the path entry with an absolute path
+			paths[idx] = filepath.Clean(rootPath)
+		}
+	}
+
 	// cpu profiling
-	if f.CpuProfile != "" {
-		cpuProfile, err := os.Create(f.CpuProfile)
+	if cfg.CpuProfile != "" {
+		cpuProfile, err := os.Create(cfg.CpuProfile)
 		if err != nil {
 			return fmt.Errorf("failed to open file for writing cpu profile: %w", err)
 		} else if err = pprof.StartCPUProfile(cpuProfile); err != nil {
@@ -96,78 +132,21 @@ func (f *Format) Run() (err error) {
 		}
 	}()
 
-	// find the config file unless specified
-	if f.ConfigFile == "" {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		f.ConfigFile, _, err = findUp(pwd, "treefmt.toml", ".treefmt.toml")
-		if err != nil {
-			return err
-		}
-	}
-
-	// default the tree root to the directory containing the config file
-	if f.TreeRoot == "" {
-		f.TreeRoot = filepath.Dir(f.ConfigFile)
-	}
-
-	// search the tree root using the --tree-root-file if specified
-	if f.TreeRootFile != "" {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		_, f.TreeRoot, err = findUp(pwd, f.TreeRootFile)
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Debugf("config-file=%s tree-root=%s", f.ConfigFile, f.TreeRoot)
-
-	// ensure all path arguments exist and are contained within the tree root
-	for _, path := range f.Paths {
-		relPath, err := filepath.Rel(f.TreeRoot, path)
-		if err != nil {
-			return fmt.Errorf("failed to determine relative path for %s to the tree root %s: %w", path, f.TreeRoot, err)
-		}
-		if strings.Contains(relPath, "..") {
-			return fmt.Errorf("path %s is outside the tree root %s", path, f.TreeRoot)
-		}
-		if f.Stdin {
-			// skip checking if the file exists if we are processing from stdin
-			// the file path is just used for matching against glob rules
-			continue
-		}
-		// check the path exists
-		_, err = os.Stat(path)
-		if err != nil {
-			return err
-		}
-	}
-
-	// read config
-	cfg, err := config.ReadFile(f.ConfigFile, f.Formatters)
-	if err != nil {
-		return fmt.Errorf("failed to read config file %v: %w", f.ConfigFile, err)
-	}
-
 	// compile global exclude globs
-	if f.globalExcludes, err = format.CompileGlobs(cfg.Global.Excludes); err != nil {
+	globalExcludes, err := format.CompileGlobs(cfg.Excludes)
+	if err != nil {
 		return fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
 	// initialise formatters
-	f.formatters = make(map[string]*format.Formatter)
+	formatters := make(map[string]*format.Formatter)
 
 	env := expand.ListEnviron(os.Environ()...)
 
-	for name, formatterCfg := range cfg.Formatters {
-		formatter, err := format.NewFormatter(name, f.TreeRoot, env, formatterCfg)
+	for name, formatterCfg := range cfg.FormatterConfigs {
+		formatter, err := format.NewFormatter(name, cfg.TreeRoot, env, formatterCfg)
 
-		if errors.Is(err, format.ErrCommandNotFound) && f.AllowMissingFormatter {
+		if errors.Is(err, format.ErrCommandNotFound) && cfg.AllowMissingFormatter {
 			log.Debugf("formatter command not found: %v", name)
 			continue
 		} else if err != nil {
@@ -175,15 +154,15 @@ func (f *Format) Run() (err error) {
 		}
 
 		// store formatter by name
-		f.formatters[name] = formatter
+		formatters[name] = formatter
 	}
 
 	// open the cache if configured
-	if !f.NoCache {
-		if err = cache.Open(f.TreeRoot, f.ClearCache, f.formatters); err != nil {
+	if !cfg.NoCache {
+		if err = cache.Open(cfg.TreeRoot, cfg.ClearCache, formatters); err != nil {
 			// if we can't open the cache, we log a warning and fallback to no cache
 			log.Warnf("failed to open cache: %v", err)
-			f.NoCache = true
+			cfg.NoCache = true
 		}
 	}
 
@@ -203,68 +182,54 @@ func (f *Format) Run() (err error) {
 
 	// create a channel for files needing to be processed
 	// we use a multiple of batch size here as a rudimentary concurrency optimization based on the host machine
-	f.filesCh = make(chan *walk.File, BatchSize*runtime.NumCPU())
+	filesCh := make(chan *walk.File, BatchSize*runtime.NumCPU())
 
 	// create a channel for files that have been formatted
-	f.formattedCh = make(chan *format.Task, cap(f.filesCh))
+	formattedCh := make(chan *format.Task, cap(filesCh))
 
 	// create a channel for files that have been processed
-	f.processedCh = make(chan *format.Task, cap(f.filesCh))
+	processedCh := make(chan *format.Task, cap(filesCh))
 
 	// start concurrent processing tasks in reverse order
-	eg.Go(f.updateCache(ctx))
-	eg.Go(f.detectFormatted(ctx))
-	eg.Go(f.applyFormatters(ctx))
-	eg.Go(f.walkFilesystem(ctx))
+	eg.Go(updateCache(ctx, cfg, processedCh))
+	eg.Go(detectFormatted(ctx, cfg, formattedCh, processedCh))
+	eg.Go(applyFormatters(ctx, cfg, globalExcludes, formatters, filesCh, formattedCh))
+	eg.Go(walkFilesystem(ctx, cfg, paths, filesCh))
 
 	// wait for everything to complete
 	return eg.Wait()
 }
 
-func (f *Format) walkFilesystem(ctx context.Context) func() error {
+func walkFilesystem(
+	ctx context.Context,
+	cfg *config.Config,
+	paths []string,
+	filesCh chan *walk.File,
+) func() error {
 	return func() error {
 		// close the files channel when we're done walking the file system
-		defer close(f.filesCh)
+		defer close(filesCh)
 
 		eg, ctx := errgroup.WithContext(ctx)
 		pathsCh := make(chan string, BatchSize)
 
 		// By default, we use the cli arg, but if the stdin flag has been set we force a filesystem walk
 		// since we will only be processing one file from a temp directory
-		walkerType := f.Walk
-
-		if f.Stdin {
-			walkerType = walk.Filesystem
-
-			// check we have only received one path arg which we use for the file extension / matching to formatters
-			if len(f.Paths) != 1 {
-				return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
-			}
-
-			// read stdin into a temporary file with the same file extension
-			pattern := fmt.Sprintf("*%s", filepath.Ext(f.Paths[0]))
-			file, err := os.CreateTemp("", pattern)
-			if err != nil {
-				return fmt.Errorf("failed to create a temporary file for processing stdin: %w", err)
-			}
-
-			if _, err = io.Copy(file, os.Stdin); err != nil {
-				return fmt.Errorf("failed to copy stdin into a temporary file")
-			}
-
-			f.Paths[0] = file.Name()
+		walkerType, err := walk.TypeString(cfg.Walk)
+		if err != nil {
+			return fmt.Errorf("invalid walk type: %w", err)
 		}
 
 		walkPaths := func() error {
 			defer close(pathsCh)
 
 			var idx int
-			for idx < len(f.Paths) {
+			for idx < len(paths) {
 				select {
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					pathsCh <- f.Paths[idx]
+					pathsCh <- paths[idx]
 					idx += 1
 				}
 			}
@@ -272,22 +237,22 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 			return nil
 		}
 
-		if len(f.Paths) > 0 {
+		if len(paths) > 0 {
 			eg.Go(walkPaths)
 		} else {
 			// no explicit paths to process, so we only need to process root
-			pathsCh <- f.TreeRoot
+			pathsCh <- cfg.TreeRoot
 			close(pathsCh)
 		}
 
 		// create a filesystem walker
-		walker, err := walk.New(walkerType, f.TreeRoot, pathsCh)
+		walker, err := walk.New(walkerType, cfg.TreeRoot, pathsCh)
 		if err != nil {
 			return fmt.Errorf("failed to create walker: %w", err)
 		}
 
 		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
-		if f.NoCache || f.Stdin {
+		if cfg.NoCache || cfg.Stdin {
 			return walker.Walk(ctx, func(file *walk.File, err error) error {
 				select {
 				case <-ctx.Done():
@@ -295,7 +260,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 				default:
 					stats.Add(stats.Traversed, 1)
 					stats.Add(stats.Emitted, 1)
-					f.filesCh <- file
+					filesCh <- file
 					return nil
 				}
 			})
@@ -303,7 +268,7 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 
 		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
 		// they have been added/changed since the last invocation
-		if err = cache.ChangeSet(ctx, walker, f.filesCh); err != nil {
+		if err = cache.ChangeSet(ctx, walker, filesCh); err != nil {
 			return fmt.Errorf("failed to generate change set: %w", err)
 		}
 		return nil
@@ -311,7 +276,14 @@ func (f *Format) walkFilesystem(ctx context.Context) func() error {
 }
 
 // applyFormatters
-func (f *Format) applyFormatters(ctx context.Context) func() error {
+func applyFormatters(
+	ctx context.Context,
+	cfg *config.Config,
+	globalExcludes []glob.Glob,
+	formatters map[string]*format.Formatter,
+	filesCh chan *walk.File,
+	formattedCh chan *format.Task,
+) func() error {
 	// create our own errgroup for concurrent formatting tasks.
 	// we don't want a cancel clause, in order to let formatters run up to the end.
 	fg := errgroup.Group{}
@@ -353,7 +325,7 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 				// pass each file to the formatted channel
 				for _, task := range tasks {
 					task.Errors = formatErrors
-					f.formattedCh <- task
+					formattedCh <- task
 				}
 
 				return nil
@@ -375,17 +347,22 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 	return func() error {
 		defer func() {
 			// close processed channel
-			close(f.formattedCh)
+			close(formattedCh)
 		}()
 
+		unmatchedLevel, err := log.ParseLevel(cfg.OnUnmatched)
+		if err != nil {
+			return fmt.Errorf("invalid on-unmatched value: %w", err)
+		}
+
 		// iterate the files channel
-		for file := range f.filesCh {
+		for file := range filesCh {
 
 			// first check if this file has been globally excluded
-			if format.PathMatches(file.RelPath, f.globalExcludes) {
+			if format.PathMatches(file.RelPath, globalExcludes) {
 				log.Debugf("path matched global excludes: %s", file.RelPath)
 				// mark it as processed and continue to the next
-				f.formattedCh <- &format.Task{
+				formattedCh <- &format.Task{
 					File: file,
 				}
 				continue
@@ -393,7 +370,7 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 
 			// check if any formatters are interested in this file
 			var matches []*format.Formatter
-			for _, formatter := range f.formatters {
+			for _, formatter := range formatters {
 				if formatter.Wants(file) {
 					matches = append(matches, formatter)
 				}
@@ -401,12 +378,13 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 
 			// see if any formatters matched
 			if len(matches) == 0 {
-				if f.OnUnmatched == log.FatalLevel {
+
+				if unmatchedLevel == log.FatalLevel {
 					return fmt.Errorf("no formatter for path: %s", file.RelPath)
 				}
-				log.Logf(f.OnUnmatched, "no formatter for path: %s", file.RelPath)
+				log.Logf(unmatchedLevel, "no formatter for path: %s", file.RelPath)
 				// mark it as processed and continue to the next
-				f.formattedCh <- &format.Task{
+				formattedCh <- &format.Task{
 					File: file,
 				}
 			} else {
@@ -431,11 +409,11 @@ func (f *Format) applyFormatters(ctx context.Context) func() error {
 	}
 }
 
-func (f *Format) detectFormatted(ctx context.Context) func() error {
+func detectFormatted(ctx context.Context, cfg *config.Config, formattedCh chan *format.Task, processedCh chan *format.Task) func() error {
 	return func() error {
 		defer func() {
 			// close formatted channel
-			close(f.processedCh)
+			close(processedCh)
 		}()
 
 		for {
@@ -445,7 +423,7 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 			case <-ctx.Done():
 				return ctx.Err()
 			// take the next task that has been processed
-			case task, ok := <-f.formattedCh:
+			case task, ok := <-formattedCh:
 				if !ok {
 					// channel has been closed, no further files to process
 					return nil
@@ -463,7 +441,7 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 					stats.Add(stats.Formatted, 1)
 
 					logMethod := log.Debug
-					if f.FailOnChange {
+					if cfg.FailOnChange {
 						// surface the changed file more obviously
 						logMethod = log.Error
 					}
@@ -482,13 +460,13 @@ func (f *Format) detectFormatted(ctx context.Context) func() error {
 				}
 
 				// mark as processed
-				f.processedCh <- task
+				processedCh <- task
 			}
 		}
 	}
 }
 
-func (f *Format) updateCache(ctx context.Context) func() error {
+func updateCache(ctx context.Context, cfg *config.Config, processedCh chan *format.Task) func() error {
 	return func() error {
 		// used to batch updates for more efficient txs
 		batch := make([]*format.Task, 0, BatchSize)
@@ -509,7 +487,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 
 		// if we are processing from stdin that means we are outputting to stdout, no caching involved
 		// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
-		if f.Stdin || f.NoCache {
+		if cfg.Stdin || cfg.NoCache {
 			// do nothing
 			processBatch = func() error { return nil }
 		}
@@ -521,7 +499,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 			case <-ctx.Done():
 				return ctx.Err()
 			// respond to formatted files
-			case task, ok := <-f.processedCh:
+			case task, ok := <-processedCh:
 				if !ok {
 					// channel has been closed, no further files to process
 					break LOOP
@@ -529,7 +507,7 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 
 				file := task.File
 
-				if f.Stdin {
+				if cfg.Stdin {
 					// dump file into stdout
 					f, err := os.Open(file.Path)
 					if err != nil {
@@ -566,70 +544,15 @@ func (f *Format) updateCache(ctx context.Context) func() error {
 		}
 
 		// if fail on change has been enabled, check that no files were actually formatted, throwing an error if so
-		if f.FailOnChange && stats.Value(stats.Formatted) != 0 {
+		if cfg.FailOnChange && stats.Value(stats.Formatted) != 0 {
 			return ErrFailOnChange
 		}
 
 		// print stats to stdout unless we are processing stdin and printing the results to stdout
-		if !f.Stdin {
+		if !cfg.Stdin {
 			stats.Print()
 		}
 
 		return nil
 	}
-}
-
-func findUp(searchDir string, fileNames ...string) (path string, dir string, err error) {
-	for _, dir := range eachDir(searchDir) {
-		for _, f := range fileNames {
-			path := filepath.Join(dir, f)
-			if fileExists(path) {
-				return path, dir, nil
-			}
-		}
-	}
-	return "", "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
-}
-
-func eachDir(path string) (paths []string) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return
-	}
-
-	paths = []string{path}
-
-	if path == "/" {
-		return
-	}
-
-	for i := len(path) - 1; i >= 0; i-- {
-		if path[i] == os.PathSeparator {
-			path = path[:i]
-			if path == "" {
-				path = "/"
-			}
-			paths = append(paths, path)
-		}
-	}
-
-	return
-}
-
-func fileExists(path string) bool {
-	// Some broken filesystems like SSHFS return file information on stat() but
-	// then cannot open the file. So we use os.Open.
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-
-	// Next, check that the file is a regular file.
-	fi, err := f.Stat()
-	if err != nil {
-		return false
-	}
-
-	return fi.Mode().IsRegular()
 }

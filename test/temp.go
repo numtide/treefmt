@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func WriteConfig(t *testing.T, path string, cfg config.Config) {
+func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	t.Helper()
 	f, err := os.Create(path)
 	if err != nil {
