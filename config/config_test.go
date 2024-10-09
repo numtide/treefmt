@@ -558,7 +558,7 @@ func TestSampleConfigFile(t *testing.T) {
 	as.NoError(err, "failed to unmarshal config from viper")
 
 	as.NotNil(cfg)
-	as.Equal([]string{"*.toml"}, cfg.Global.Excludes)
+	as.Equal([]string{"*.toml"}, cfg.Excludes)
 
 	// python
 	python, ok := cfg.FormatterConfigs["python"]
