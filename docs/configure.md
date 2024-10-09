@@ -7,8 +7,27 @@ outline: deep
 The `treefmt.toml` configuration file consists of a mixture of global options and formatter sections:
 
 ```toml
-[global]
+
+# At the root level of the config file, you can set values for the various flags which you can pass to treefmt.
+# See `treefmt -h` for more info.
+
+# allow-missing-formatter = true
+# ci = true
+# clear-cache = true
+# cpu-profile = ./cpu.pprof
+# fail-on-change = true
+# formatters = [ "gofmt" "prettier" ]
+# no-cache = true
+# on-unmatched = "info"
+# tree-root = /tmp/checkout
+# tree-root-file = ".git/config"
+# verbosity = 2
+# walk = "filesystem"
+# working-directory = /tmp/wd
+
 excludes = ["*.md", "*.dat"]
+
+# define some formatters
 
 [formatter.elm]
 command = "elm-format"
@@ -40,9 +59,10 @@ includes = ["*.sh"]
 priority = 1
 ```
 
-## Global Options
+## Root Options
 
--   `excludes` - an optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from all formatters.
+More information is available [here](usage.md) about possible values you can set at the root of the config file.
+In general, if it can be passed as a cli arg you can set it at the root of the config file.
 
 ## Formatter Options
 
