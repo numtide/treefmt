@@ -1,4 +1,4 @@
-package cmd
+package cmd_test
 
 import (
 	"bufio"
@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/numtide/treefmt/cmd"
 
 	"github.com/numtide/treefmt/config"
 
@@ -58,7 +60,7 @@ func TestOnUnmatched(t *testing.T) {
 		// - "haskell/treefmt.toml"
 	}
 
-	_, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
 	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
 
 	checkOutput := func(level string, output []byte) {
@@ -70,24 +72,24 @@ func TestOnUnmatched(t *testing.T) {
 	var out []byte
 
 	// default is warn
-	out, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c")
 	as.NoError(err)
 	checkOutput("WARN", out)
 
-	out, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "--on-unmatched", "warn")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "--on-unmatched", "warn")
 	as.NoError(err)
 	checkOutput("WARN", out)
 
-	out, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-u", "error")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-u", "error")
 	as.NoError(err)
 	checkOutput("ERRO", out)
 
-	out, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-v", "--on-unmatched", "info")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-v", "--on-unmatched", "info")
 	as.NoError(err)
 	checkOutput("INFO", out)
 
 	t.Setenv("TREEFMT_ON_UNMATCHED", "debug")
-	out, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv")
 	as.NoError(err)
 	checkOutput("DEBU", out)
 }
@@ -105,14 +107,14 @@ func TestCpuProfile(t *testing.T) {
 		as.NoError(os.Chdir(cwd))
 	})
 
-	_, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--cpu-profile", "cpu.pprof")
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--cpu-profile", "cpu.pprof")
 	as.NoError(err)
 	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
 	_, err = os.Stat(filepath.Join(tempDir, "cpu.pprof"))
 	as.NoError(err)
 
 	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
-	_, _, err = cmd(t, "-C", tempDir, "--allow-missing-formatter")
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
 	as.NoError(err)
 	as.FileExists(filepath.Join(tempDir, "env.pprof"))
 	_, err = os.Stat(filepath.Join(tempDir, "env.pprof"))
@@ -133,14 +135,14 @@ func TestAllowMissingFormatter(t *testing.T) {
 		},
 	})
 
-	_, _, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
+	_, _, err := treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
 	as.ErrorIs(err, format.ErrCommandNotFound)
 
-	_, _, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--allow-missing-formatter")
+	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--allow-missing-formatter")
 	as.NoError(err)
 
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-	_, _, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 }
 
@@ -178,32 +180,32 @@ func TestSpecifyingFormatters(t *testing.T) {
 	}
 
 	setup()
-	_, statz, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 3, 3)
 
 	setup()
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 2, 2)
 
 	setup()
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "ruby,nix")
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "ruby,nix")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 2, 2)
 
 	setup()
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 1, 1)
 
 	// test bad names
 	setup()
-	_, _, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
+	_, _, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 
 	t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
-	_, _, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, _, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.Errorf(err, "formatter not found in config: bar")
 }
 
@@ -224,7 +226,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
@@ -232,7 +234,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	cfg.Excludes = []string{"*.nix"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 31, 0)
 
@@ -240,7 +242,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	cfg.Excludes = []string{"*.nix", "*.hs"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 25, 0)
 
@@ -250,7 +252,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Excludes = []string{"*.py"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 23, 0)
 
@@ -258,7 +260,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "*.py,*.go")
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 22, 0)
 
@@ -268,7 +270,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Includes = []string{"*.elm"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 1, 0)
 
@@ -276,7 +278,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 2, 0)
 }
@@ -299,7 +301,7 @@ func TestPrjRootEnvVariable(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 	t.Setenv("PRJ_ROOT", tempDir)
-	_, statz, err := cmd(t, "--config-file", configPath)
+	_, statz, err := treefmt(t, "--config-file", configPath)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 }
@@ -323,34 +325,34 @@ func TestCache(t *testing.T) {
 	var err error
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err := cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err := treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
 	// clear cache
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
 	// clear cache
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir)
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
 	// no cache
-	_, statz, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 }
@@ -384,13 +386,13 @@ func TestChangeWorkingDirectory(t *testing.T) {
 
 	// by default, we look for ./treefmt.toml and use the cwd for the tree root
 	// this should fail if the working directory hasn't been changed first
-	_, statz, err := cmd(t, "-C", tempDir)
+	_, statz, err := treefmt(t, "-C", tempDir)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
 	// use env
 	t.Setenv("TREEFMT_WORKING_DIR", tempDir)
-	_, statz, err = cmd(t, "-c")
+	_, statz, err = treefmt(t, "-c")
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 }
@@ -412,7 +414,7 @@ func TestFailOnChange(t *testing.T) {
 	}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, _, err := cmd(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+	_, _, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
 	as.ErrorIs(err, format2.ErrFailOnChange)
 
 	// we have second precision mod time tracking
@@ -421,7 +423,7 @@ func TestFailOnChange(t *testing.T) {
 	// test with no cache
 	t.Setenv("TREEFMT_FAIL_ON_CHANGE", "true")
 	test.WriteConfig(t, configPath, cfg)
-	_, _, err = cmd(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
+	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.ErrorIs(err, format2.ErrFailOnChange)
 }
 
@@ -463,31 +465,31 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 	args := []string{"--config-file", configPath, "--tree-root", tempDir}
-	_, statz, err := cmd(t, args...)
+	_, statz, err := treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 3, 0)
 
 	// tweak mod time of elm formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
 
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 3, 0)
 
 	// check cache is working
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
 	// tweak mod time of python formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
 
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 3, 0)
 
 	// check cache is working
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
@@ -499,12 +501,12 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	}
 	test.WriteConfig(t, configPath, cfg)
 
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 4, 0)
 
 	// check cache is working
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
@@ -512,12 +514,12 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	delete(cfg.FormatterConfigs, "python")
 	test.WriteConfig(t, configPath, cfg)
 
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 2, 0)
 
 	// check cache is working
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 
@@ -525,12 +527,12 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	delete(cfg.FormatterConfigs, "elm")
 	test.WriteConfig(t, configPath, cfg)
 
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 1, 0)
 
 	// check cache is working
-	_, statz, err = cmd(t, args...)
+	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 0, 0, 0)
 }
@@ -568,7 +570,7 @@ func TestGitWorktree(t *testing.T) {
 	as.NoError(err, "failed to get git worktree")
 
 	run := func(traversed int32, emitted int32, matched int32, formatted int32) {
-		_, statz, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+		_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
 		assertStats(t, as, statz, traversed, emitted, matched, formatted)
 	}
@@ -590,7 +592,7 @@ func TestGitWorktree(t *testing.T) {
 	run(28, 28, 28, 0)
 
 	// walk with filesystem instead of git
-	_, statz, err := cmd(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
+	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
 	assertStats(t, as, statz, 60, 60, 60, 0)
 
@@ -604,31 +606,31 @@ func TestGitWorktree(t *testing.T) {
 	})
 
 	// format specific sub paths
-	_, statz, err = cmd(t, "-C", tempDir, "-c", "go", "-vv")
+	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "-vv")
 	as.NoError(err)
 	assertStats(t, as, statz, 2, 2, 2, 0)
 
-	_, statz, err = cmd(t, "-C", tempDir, "-c", "go", "haskell")
+	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell")
 	as.NoError(err)
 	assertStats(t, as, statz, 9, 9, 9, 0)
 
-	_, statz, err = cmd(t, "-C", tempDir, "-c", "go", "haskell", "ruby")
+	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell", "ruby")
 	as.NoError(err)
 	assertStats(t, as, statz, 10, 10, 10, 0)
 
 	// try with a bad path
-	_, _, err = cmd(t, "-C", tempDir, "-c", "haskell", "foo")
+	_, _, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo")
 	as.ErrorContains(err, "path foo not found within the tree root")
 
 	// try with a path not in the git index, e.g. it is skipped
 	_, err = os.Create(filepath.Join(tempDir, "foo.txt"))
 	as.NoError(err)
 
-	_, statz, err = cmd(t, "-C", tempDir, "-c", "haskell", "foo.txt")
+	_, statz, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo.txt")
 	as.NoError(err)
 	assertStats(t, as, statz, 7, 7, 7, 0)
 
-	_, statz, err = cmd(t, "-C", tempDir, "-c", "foo.txt")
+	_, statz, err = treefmt(t, "-C", tempDir, "-c", "foo.txt")
 	as.NoError(err)
 	assertStats(t, as, statz, 0, 0, 0, 0)
 }
@@ -664,22 +666,22 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	_, statz, err := cmd(t)
+	_, statz, err := treefmt(t)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
 	// specify some explicit paths
-	_, statz, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	_, statz, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, statz, 2, 2, 2, 0)
 
 	// specify a bad path
-	_, _, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
+	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
 	as.ErrorContains(err, "path haskell/Nested/Bar.hs not found within the tree root")
 
 	// specify a path outside the tree root
 	externalPath := filepath.Join(cwd, "go.mod")
-	_, _, err = cmd(t, "-c", externalPath)
+	_, _, err = treefmt(t, "-c", externalPath)
 	as.ErrorContains(err, fmt.Sprintf("path %s not found within the tree root", externalPath))
 }
 
@@ -706,7 +708,7 @@ func TestStdin(t *testing.T) {
 	contents := `{ foo, ... }: "hello"`
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 	// we get an error about the missing filename parameter.
-	out, _, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
+	out, _, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
 	as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
 	as.Equal("", string(out))
 
@@ -714,7 +716,7 @@ func TestStdin(t *testing.T) {
 	contents = `{ foo, ... }: "hello"`
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	out, statz, err := cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
+	out, statz, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
 	as.NoError(err)
 	assertStats(t, as, statz, 1, 1, 1, 1)
 
@@ -731,7 +733,7 @@ func TestStdin(t *testing.T) {
 `
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	out, statz, err = cmd(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.md")
+	out, statz, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.md")
 	as.NoError(err)
 	assertStats(t, as, statz, 1, 1, 1, 1)
 
@@ -780,7 +782,7 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 			},
 		},
 	})
-	_, _, err = cmd(t, "-C", tempDir)
+	_, _, err = treefmt(t, "-C", tempDir)
 	as.NoError(err)
 
 	matcher := regexp.MustCompile("^fmt-(.*)")
@@ -845,17 +847,17 @@ func TestRunInSubdir(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args, should reformat the whole tree
-	_, statz, err := cmd(t)
+	_, statz, err := treefmt(t)
 	as.NoError(err)
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
 	// specify some explicit paths, relative to the tree root
-	_, statz, err = cmd(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	_, statz, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, statz, 2, 2, 2, 0)
 }
 
-func cmd(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
+func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	t.Helper()
 
 	tempDir := t.TempDir()
@@ -879,7 +881,7 @@ func cmd(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	}()
 
 	// run the command
-	root, statz := NewRoot()
+	root, statz := cmd.NewRoot()
 
 	if args == nil {
 		// we must pass an empty array otherwise cobra with use os.Args[1:]

@@ -6,6 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"time"
+
+	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/walk/cache"
+	bolt "go.etcd.io/bbolt"
 )
 
 //go:generate enumer -type=Type -text -transform=snake -output=./type_enum.go
@@ -21,9 +25,13 @@ type File struct {
 	Path    string
 	RelPath string
 	Info    fs.FileInfo
+
+	CacheEntry *cache.Entry
+
+	Release func()
 }
 
-func (f File) HasChanged() (bool, fs.FileInfo, error) {
+func (f File) Stat() (bool, fs.FileInfo, error) {
 	// get the file's current state
 	current, err := os.Stat(f.Path)
 	if err != nil {
@@ -50,31 +58,45 @@ func (f File) String() string {
 	return f.Path
 }
 
-type WalkFunc func(file *File, err error) error
-
-type Walker interface {
-	Root() string
-	Walk(ctx context.Context, fn WalkFunc) error
+type Reader interface {
+	Read(ctx context.Context, files []*File) (n int, err error)
+	Close() error
 }
 
-func New(walkerType Type, root string, pathsCh chan string) (Walker, error) {
-	switch walkerType {
-	case Git:
-		return NewGit(root, pathsCh)
+func NewReader(
+	walkType Type,
+	root string,
+	paths []string,
+	db *bolt.DB,
+	statz *stats.Stats,
+) (Reader, error) {
+	var (
+		err    error
+		reader Reader
+	)
+
+	switch walkType {
 	case Auto:
-		return Detect(root, pathsCh)
+		// for now, we keep it simple and try git first, filesystem second
+		reader, err = NewReader(Git, root, paths, db, statz)
+		if err != nil {
+			reader, err = NewReader(Filesystem, root, paths, db, statz)
+		}
+		return reader, err
+	case Git:
+		reader, err = NewGitReader(root, paths, statz, 1024)
 	case Filesystem:
-		return NewFilesystem(root, pathsCh)
+		reader = NewFilesystemReader(root, paths, statz, 1024)
 	default:
-		return nil, fmt.Errorf("unknown walker type: %v", walkerType)
+		return nil, fmt.Errorf("unknown walk type: %v", walkType)
 	}
-}
 
-func Detect(root string, pathsCh chan string) (Walker, error) {
-	// for now, we keep it simple and try git first, filesystem second
-	w, err := NewGit(root, pathsCh)
-	if err == nil {
-		return w, err
+	if err != nil {
+		return nil, err
 	}
-	return NewFilesystem(root, pathsCh)
+
+	// wrap with cached reader
+	reader, err = NewCachedReader(db, 1024, reader)
+
+	return reader, err
 }

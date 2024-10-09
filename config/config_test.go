@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/numtide/treefmt/config"
 
 	"github.com/BurntSushi/toml"
 	"github.com/spf13/pflag"
@@ -17,7 +19,7 @@ import (
 
 func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	t.Helper()
-	v, err := NewViper()
+	v, err := config.NewViper()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +28,7 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	v.SetConfigFile(filepath.Join(tempDir, "treefmt.toml"))
 
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
-	SetFlags(flags)
+	config.SetFlags(flags)
 
 	if err := v.BindPFlags(flags); err != nil {
 		t.Fatal(err)
@@ -34,7 +36,7 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	return v, flags
 }
 
-func readValue(t *testing.T, v *viper.Viper, cfg *Config, test func(*Config)) {
+func readValue(t *testing.T, v *viper.Viper, cfg *config.Config, test func(*config.Config)) {
 	t.Helper()
 
 	// serialise the config and read it into viper
@@ -47,7 +49,7 @@ func readValue(t *testing.T, v *viper.Viper, cfg *Config, test func(*Config)) {
 	}
 
 	//
-	decodedCfg, err := FromViper(v)
+	decodedCfg, err := config.FromViper(v)
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to unmarshal config from viper: %w", err))
 	}
@@ -58,11 +60,11 @@ func readValue(t *testing.T, v *viper.Viper, cfg *Config, test func(*Config)) {
 func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.AllowMissingFormatter)
 		})
 	}
@@ -86,11 +88,11 @@ func TestAllowMissingFormatter(t *testing.T) {
 func TestCI(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValues := func(ci bool, noCache bool, failOnChange bool, verbosity uint8) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(ci, cfg.CI)
 			as.Equal(noCache, cfg.NoCache)
 			as.Equal(failOnChange, cfg.FailOnChange)
@@ -122,11 +124,11 @@ func TestCI(t *testing.T) {
 func TestClearCache(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.ClearCache)
 		})
 	}
@@ -151,11 +153,11 @@ func TestClearCache(t *testing.T) {
 func TestCpuProfile(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.CpuProfile)
 		})
 	}
@@ -179,11 +181,11 @@ func TestCpuProfile(t *testing.T) {
 func TestExcludes(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected []string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Excludes)
 		})
 	}
@@ -212,11 +214,11 @@ func TestExcludes(t *testing.T) {
 func TestFailOnChange(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.FailOnChange)
 		})
 	}
@@ -240,11 +242,11 @@ func TestFailOnChange(t *testing.T) {
 func TestFormatters(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected []string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Formatters)
 		})
 	}
@@ -253,7 +255,7 @@ func TestFormatters(t *testing.T) {
 	checkValue([]string{})
 
 	// set config value
-	cfg.FormatterConfigs = map[string]*Formatter{
+	cfg.FormatterConfigs = map[string]*config.Formatter{
 		"echo": {
 			Command: "echo",
 		},
@@ -278,18 +280,18 @@ func TestFormatters(t *testing.T) {
 
 	// bad formatter name
 	as.NoError(flags.Set("formatters", "foo,echo,date"))
-	_, err := FromViper(v)
+	_, err := config.FromViper(v)
 	as.ErrorContains(err, "formatter foo not found in config")
 }
 
 func TestNoCache(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.NoCache)
 		})
 	}
@@ -314,11 +316,11 @@ func TestNoCache(t *testing.T) {
 func TestOnUnmatched(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.OnUnmatched)
 		})
 	}
@@ -342,11 +344,11 @@ func TestOnUnmatched(t *testing.T) {
 func TestTreeRoot(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.TreeRoot)
 		})
 	}
@@ -371,7 +373,7 @@ func TestTreeRoot(t *testing.T) {
 func TestTreeRootFile(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	// create a directory structure with config files at various levels
@@ -383,7 +385,7 @@ func TestTreeRootFile(t *testing.T) {
 	as.NoError(os.WriteFile(filepath.Join(tempDir, ".git", "config"), []byte{}, 0o644))
 
 	checkValue := func(treeRoot string, treeRootFile string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(treeRoot, cfg.TreeRoot)
 			as.Equal(treeRootFile, cfg.TreeRootFile)
 		})
@@ -415,11 +417,11 @@ func TestTreeRootFile(t *testing.T) {
 func TestVerbosity(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, _ := newViper(t)
 
 	checkValue := func(expected uint8) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Verbose)
 		})
 	}
@@ -444,11 +446,11 @@ func TestVerbosity(t *testing.T) {
 func TestWalk(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.Walk)
 		})
 	}
@@ -472,11 +474,11 @@ func TestWalk(t *testing.T) {
 func TestWorkingDirectory(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValue := func(expected string) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(expected, cfg.WorkingDirectory)
 		})
 	}
@@ -507,11 +509,11 @@ func TestWorkingDirectory(t *testing.T) {
 func TestStdin(t *testing.T) {
 	as := require.New(t)
 
-	cfg := &Config{}
+	cfg := &config.Config{}
 	v, flags := newViper(t)
 
 	checkValues := func(stdin bool) {
-		readValue(t, v, cfg, func(cfg *Config) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
 			as.Equal(stdin, cfg.Stdin)
 		})
 	}
@@ -540,7 +542,7 @@ func TestSampleConfigFile(t *testing.T) {
 	v.SetConfigFile("../test/examples/treefmt.toml")
 	as.NoError(v.ReadInConfig(), "failed to read config file")
 
-	cfg, err := FromViper(v)
+	cfg, err := config.FromViper(v)
 	as.NoError(err, "failed to unmarshal config from viper")
 
 	as.NotNil(cfg)

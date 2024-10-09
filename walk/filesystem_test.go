@@ -1,9 +1,13 @@
-package walk
+package walk_test
 
 import (
 	"context"
-	"os"
 	"testing"
+	"time"
+
+	"github.com/numtide/treefmt/stats"
+
+	"github.com/numtide/treefmt/walk"
 
 	"github.com/numtide/treefmt/test"
 	"github.com/stretchr/testify/require"
@@ -44,33 +48,39 @@ var examplesPaths = []string{
 	"yaml/test.yaml",
 }
 
-func TestFilesystemWalker_Walk(t *testing.T) {
-	tempDir := test.TempExamples(t)
-
-	paths := make(chan string, 1)
-	go func() {
-		paths <- tempDir
-		close(paths)
-	}()
-
+func TestFilesystemReader(t *testing.T) {
 	as := require.New(t)
 
-	walker, err := NewFilesystem(tempDir, paths)
-	as.NoError(err)
+	tempDir := test.TempExamples(t)
+	statz := stats.New()
 
-	idx := 0
-	err = walker.Walk(context.Background(), func(file *File, err error) error {
-		as.Equal(examplesPaths[idx], file.RelPath)
-		idx += 1
-		return nil
-	})
-	as.NoError(err)
+	r := walk.NewFilesystemReader(tempDir, nil, &statz, 1024)
 
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
+	count := 0
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+
+		files := make([]*walk.File, 8)
+		n, err := r.Read(ctx, files)
+		as.NoError(err)
+
+		for i := count; i < count+n; i++ {
+			as.Equal(examplesPaths[i], files[i-count].RelPath)
+		}
+
+		count += n
+
+		cancel()
+
+		if n == 0 {
+			break
+		}
+	}
+
+	as.Equal(32, count)
+	as.Equal(int32(32), statz.Value(stats.Traversed))
+	as.Equal(int32(0), statz.Value(stats.Emitted))
+	as.Equal(int32(0), statz.Value(stats.Matched))
+	as.Equal(int32(0), statz.Value(stats.Formatted))
 }
