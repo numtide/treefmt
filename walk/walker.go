@@ -13,7 +13,7 @@ type Type int
 
 const (
 	Auto Type = iota
-	Git  Type = iota
+	Git
 	Filesystem
 )
 
