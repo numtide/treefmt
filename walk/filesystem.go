@@ -3,29 +3,42 @@ package walk
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/stats"
+	"golang.org/x/sync/errgroup"
 )
 
-type filesystemWalker struct {
-	root          string
-	pathsCh       chan string
-	relPathOffset int
+// FilesystemReader traverses and reads files from a specified root directory and its subdirectories.
+type FilesystemReader struct {
+	log       *log.Logger
+	root      string
+	paths     []string
+	batchSize int
+
+	eg *errgroup.Group
+
+	stats   *stats.Stats
+	filesCh chan *File
 }
 
-func (f filesystemWalker) Root() string {
-	return f.root
-}
+// process traverses the filesystem based on the specified paths, queuing files for the next read.
+func (f *FilesystemReader) process() error {
+	// ensure filesCh is closed on return
+	defer func() {
+		close(f.filesCh)
+	}()
 
-func (f filesystemWalker) relPath(path string) (string, error) {
-	return filepath.Rel(f.root, path)
-}
-
-func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
-	walkFn := func(path string, info fs.FileInfo, _ error) error {
-		if info == nil {
-			return fmt.Errorf("no such file or directory '%s'", path)
+	walkFn := func(path string, info fs.FileInfo, err error) error {
+		// return errors immediately
+		if err != nil {
+			return err
 		}
 
 		// ignore directories and symlinks
@@ -33,20 +46,38 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 			return nil
 		}
 
-		relPath, err := f.relPath(path)
+		// determine a path relative to the root
+		relPath, err := filepath.Rel(f.root, path)
 		if err != nil {
 			return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
 		}
 
+		// create a new file and pass to the files channel
 		file := File{
 			Path:    path,
 			RelPath: relPath,
 			Info:    info,
 		}
-		return fn(&file, err)
+
+		f.filesCh <- &file
+
+		f.log.Debugf("file queued %s", file.RelPath)
+
+		return nil
 	}
 
-	for path := range f.pathsCh {
+	// walk each path specified
+	for idx := range f.paths {
+		// f.paths are relative to the root, so we create a fully qualified version
+		// we also clean the path up in case there are any ../../ components etc.
+		path := filepath.Clean(filepath.Join(f.root, f.paths[idx]))
+
+		// ensure the path is within the root
+		if !strings.HasPrefix(path, f.root) {
+			return fmt.Errorf("path '%s' is outside of the root '%s'", path, f.root)
+		}
+
+		// walk the path
 		if err := filepath.Walk(path, walkFn); err != nil {
 			return err
 		}
@@ -55,10 +86,75 @@ func (f filesystemWalker) Walk(_ context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewFilesystem(root string, paths chan string) (Walker, error) {
-	return filesystemWalker{
-		root:          root,
-		pathsCh:       paths,
-		relPathOffset: len(root) + 1,
-	}, nil
+// Read populates the provided files array with as many files are available until the provided context is cancelled.
+// You must ensure to pass a context with a timeout otherwise this will block until files is full.
+func (f *FilesystemReader) Read(ctx context.Context, files []*File) (n int, err error) {
+	idx := 0
+
+LOOP:
+	// fill the files array up to it's length
+	for idx < len(files) {
+		select {
+
+		// exit early if the context was cancelled
+		case <-ctx.Done():
+			return idx, ctx.Err()
+
+		// read the next file from the files channel
+		case file, ok := <-f.filesCh:
+			if !ok {
+				// channel was closed
+				err = io.EOF
+				break LOOP
+			}
+
+			// set the next file entry
+			files[idx] = file
+			idx++
+
+			// record that we traversed a file
+			f.stats.Add(stats.Traversed, 1)
+		}
+	}
+
+	return idx, err
+}
+
+// Close waits for all filesystem processing to complete.
+func (f *FilesystemReader) Close() error {
+	return f.eg.Wait()
+}
+
+// NewFilesystemReader creates a new instance of FilesystemReader to traverse and read files from the specified paths
+// and root.
+func NewFilesystemReader(
+	root string,
+	paths []string,
+	statz *stats.Stats,
+	batchSize int,
+) *FilesystemReader {
+	// if no paths are specified, we default to the root path
+	if len(paths) == 0 {
+		paths = []string{"."}
+	}
+
+	// create an error group for managing the processing loop
+	eg := errgroup.Group{}
+
+	r := FilesystemReader{
+		log:       log.WithPrefix("walk[filesystem]"),
+		root:      root,
+		paths:     paths,
+		batchSize: batchSize,
+
+		eg: &eg,
+
+		stats:   statz,
+		filesCh: make(chan *File, batchSize*runtime.NumCPU()),
+	}
+
+	// start processing loop
+	eg.Go(r.process)
+
+	return &r
 }

@@ -13,9 +13,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/numtide/treefmt/walk/cache"
+	bolt "go.etcd.io/bbolt"
+
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
-	"github.com/numtide/treefmt/cache"
 	"github.com/numtide/treefmt/config"
 	"github.com/numtide/treefmt/format"
 	"github.com/numtide/treefmt/stats"
@@ -89,17 +91,18 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		cfg.Walk = "filesystem"
 
 		// update paths with temp file
-		paths[0] = file.Name()
+		paths[0], err = filepath.Rel(os.TempDir(), file.Name())
+		if err != nil {
+			return fmt.Errorf("failed to get relative path for temp file: %w", err)
+		}
 
 	} else {
 		// checks all paths are contained within the tree root
-		for idx, path := range paths {
+		for _, path := range paths {
 			rootPath := filepath.Join(cfg.TreeRoot, path)
 			if _, err = os.Stat(rootPath); err != nil {
 				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
 			}
-			// update the path entry with an absolute path
-			paths[idx] = filepath.Clean(rootPath)
 		}
 	}
 
@@ -121,13 +124,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	// create a prefixed logger
 	log.SetPrefix("format")
-
-	// ensure cache is closed on return
-	defer func() {
-		if err := cache.Close(); err != nil {
-			log.Errorf("failed to close cache: %v", err)
-		}
-	}()
 
 	// compile global exclude globs
 	globalExcludes, err := format.CompileGlobs(cfg.Excludes)
@@ -154,12 +150,32 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		formatters[name] = formatter
 	}
 
-	// open the cache if configured
+	var db *bolt.DB
+
 	if !cfg.NoCache {
-		if err = cache.Open(cfg.TreeRoot, cfg.ClearCache, formatters); err != nil {
-			// if we can't open the cache, we log a warning and fallback to no cache
-			log.Warnf("failed to open cache: %v", err)
-			cfg.NoCache = true
+		// open the db
+		db, err = cache.Open(cfg.TreeRoot)
+		if err != nil {
+			return fmt.Errorf("failed to open cache: %w", err)
+		}
+
+		// ensure db is closed after we're finished
+		defer func() {
+			if err := db.Close(); err != nil {
+				log.Errorf("failed to close cache: %v", err)
+			}
+		}()
+
+		// clear the cache if desired
+		if cfg.ClearCache {
+			if err = cache.Clear(db); err != nil {
+				return fmt.Errorf("failed to clear cache: %w", err)
+			}
+		}
+
+		// Compare formatters, clearing paths if they have changed, and recording their latest info in the db
+		if err = format.CompareFormatters(db, formatters); err != nil {
+			return fmt.Errorf("failed to compare formatters: %w", err)
 		}
 	}
 
@@ -184,93 +200,58 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	// create a channel for files that have been formatted
 	formattedCh := make(chan *format.Task, cap(filesCh))
 
-	// create a channel for files that have been processed
-	processedCh := make(chan *format.Task, cap(filesCh))
-
 	// start concurrent processing tasks in reverse order
-	eg.Go(updateCache(ctx, cfg, statz, processedCh))
-	eg.Go(detectFormatted(ctx, cfg, statz, formattedCh, processedCh))
+	eg.Go(postProcessing(ctx, cfg, statz, formattedCh))
 	eg.Go(applyFormatters(ctx, cfg, statz, globalExcludes, formatters, filesCh, formattedCh))
-	eg.Go(walkFilesystem(ctx, cfg, statz, paths, filesCh))
+
+	//
+	walkType, err := walk.TypeString(cfg.Walk)
+	if err != nil {
+		return fmt.Errorf("invalid walk type: %w", err)
+	}
+
+	reader, err := walk.NewReader(walkType, cfg.TreeRoot, paths, db, statz)
+	if err != nil {
+		return fmt.Errorf("failed to create walker: %w", err)
+	}
+
+	//
+
+	files := make([]*walk.File, BatchSize)
+	for {
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+
+		n, err := reader.Read(ctx, files)
+
+		for idx := 0; idx < n; idx++ {
+			file := files[idx]
+
+			// check if this file is new or has changed when compared to the cache entry
+			if file.Cache == nil || file.Cache.HasChanged(file.Info) {
+				filesCh <- file
+				statz.Add(stats.Emitted, 1)
+			}
+		}
+
+		cancel()
+
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			log.Errorf("failed to read files: %v", err)
+			cancel()
+			break
+		}
+	}
+
+	close(filesCh)
 
 	// wait for everything to complete
-	return eg.Wait()
-}
-
-func walkFilesystem(
-	ctx context.Context,
-	cfg *config.Config,
-	statz *stats.Stats,
-	paths []string,
-	filesCh chan *walk.File,
-) func() error {
-	return func() error {
-		// close the files channel when we're done walking the file system
-		defer close(filesCh)
-
-		eg, ctx := errgroup.WithContext(ctx)
-		pathsCh := make(chan string, BatchSize)
-
-		// By default, we use the cli arg, but if the stdin flag has been set we force a filesystem walk
-		// since we will only be processing one file from a temp directory
-		walkerType, err := walk.TypeString(cfg.Walk)
-		if err != nil {
-			return fmt.Errorf("invalid walk type: %w", err)
-		}
-
-		walkPaths := func() error {
-			defer close(pathsCh)
-
-			var idx int
-			for idx < len(paths) {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					pathsCh <- paths[idx]
-					idx += 1
-				}
-			}
-
-			return nil
-		}
-
-		if len(paths) > 0 {
-			eg.Go(walkPaths)
-		} else {
-			// no explicit paths to process, so we only need to process root
-			pathsCh <- cfg.TreeRoot
-			close(pathsCh)
-		}
-
-		// create a filesystem walker
-		walker, err := walk.New(walkerType, cfg.TreeRoot, pathsCh)
-		if err != nil {
-			return fmt.Errorf("failed to create walker: %w", err)
-		}
-
-		// if no cache has been configured, or we are processing from stdin, we invoke the walker directly
-		if cfg.NoCache || cfg.Stdin {
-			return walker.Walk(ctx, func(file *walk.File, err error) error {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					statz.Add(stats.Traversed, 1)
-					statz.Add(stats.Emitted, 1)
-					filesCh <- file
-					return nil
-				}
-			})
-		}
-
-		// otherwise we pass the walker to the cache and have it generate files for processing based on whether or not
-		// they have been added/changed since the last invocation
-		if err = cache.ChangeSet(ctx, statz, walker, filesCh); err != nil {
-			return fmt.Errorf("failed to generate change set: %w", err)
-		}
-		return nil
+	if err = eg.Wait(); err != nil {
+		return err
 	}
+
+	return reader.Close()
 }
 
 // applyFormatters
@@ -408,35 +389,30 @@ func applyFormatters(
 	}
 }
 
-func detectFormatted(
+func postProcessing(
 	ctx context.Context,
 	cfg *config.Config,
 	statz *stats.Stats,
 	formattedCh chan *format.Task,
-	processedCh chan *format.Task,
 ) func() error {
 	return func() error {
-		defer func() {
-			// close formatted channel
-			close(processedCh)
-		}()
-
+	LOOP:
 		for {
 			select {
 
 			// detect ctx cancellation
 			case <-ctx.Done():
 				return ctx.Err()
+
 			// take the next task that has been processed
 			case task, ok := <-formattedCh:
 				if !ok {
-					// channel has been closed, no further files to process
-					return nil
+					break LOOP
 				}
 
 				// check if the file has changed
 				file := task.File
-				changed, newInfo, err := file.HasChanged()
+				changed, newInfo, err := file.Stat()
 				if err != nil {
 					return err
 				}
@@ -464,58 +440,9 @@ func detectFormatted(
 					file.Info = newInfo
 				}
 
-				// mark as processed
-				processedCh <- task
-			}
-		}
-	}
-}
-
-func updateCache(
-	ctx context.Context,
-	cfg *config.Config,
-	statz *stats.Stats,
-	processedCh chan *format.Task,
-) func() error {
-	return func() error {
-		// used to batch updates for more efficient txs
-		batch := make([]*format.Task, 0, BatchSize)
-
-		// apply a batch
-		processBatch := func() error {
-			// pass the batch to the cache for updating
-			files := make([]*walk.File, len(batch))
-			for idx := range batch {
-				files[idx] = batch[idx].File
-			}
-			if err := cache.Update(files); err != nil {
-				return err
-			}
-			batch = batch[:0]
-			return nil
-		}
-
-		// if we are processing from stdin that means we are outputting to stdout, no caching involved
-		// if f.NoCache is set that means either the user explicitly disabled the cache or we failed to open on
-		if cfg.Stdin || cfg.NoCache {
-			// do nothing
-			processBatch = func() error { return nil }
-		}
-
-	LOOP:
-		for {
-			select {
-			// detect ctx cancellation
-			case <-ctx.Done():
-				return ctx.Err()
-			// respond to formatted files
-			case task, ok := <-processedCh:
-				if !ok {
-					// channel has been closed, no further files to process
-					break LOOP
+				if file.Release != nil {
+					file.Release()
 				}
-
-				file := task.File
 
 				if cfg.Stdin {
 					// dump file into stdout
@@ -529,28 +456,8 @@ func updateCache(
 					if err = os.Remove(f.Name()); err != nil {
 						return fmt.Errorf("failed to remove temp file %s: %w", file.Path, err)
 					}
-
-					continue
-				}
-
-				// Append to batch and process if we have enough.
-				// We do not cache any files that were part of a pipeline in which one or more formatters failed.
-				// This is to ensure those files are re-processed in later invocations after the user has potentially
-				// resolved the issue, e.g. fixed a config problem.
-				if len(task.Errors) == 0 {
-					batch = append(batch, task)
-					if len(batch) == BatchSize {
-						if err := processBatch(); err != nil {
-							return err
-						}
-					}
 				}
 			}
-		}
-
-		// final flush
-		if err := processBatch(); err != nil {
-			return err
 		}
 
 		// if fail on change has been enabled, check that no files were actually formatted, throwing an error if so

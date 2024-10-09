@@ -3,160 +3,111 @@ package walk
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/go-git/go-git/v5/plumbing/filemode"
-	"github.com/go-git/go-git/v5/plumbing/format/index"
-
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/filemode"
+	"github.com/numtide/treefmt/stats"
+	"golang.org/x/sync/errgroup"
 )
 
-// fileTree represents a hierarchical file structure with directories and files.
-type fileTree struct {
-	name    string
-	entries map[string]*fileTree
+type GitReader struct {
+	root      string
+	paths     []string
+	stats     *stats.Stats
+	batchSize int
+
+	log  *log.Logger
+	repo *git.Repository
+
+	filesCh chan *File
+
+	eg *errgroup.Group
 }
 
-// add inserts a file path into the fileTree structure, creating necessary parent directories if they do not exist.
-func (n *fileTree) add(path []string) {
-	if len(path) == 0 {
-		return
-	} else if n.entries == nil {
-		n.entries = make(map[string]*fileTree)
-	}
+func (g *GitReader) process() error {
+	defer func() {
+		close(g.filesCh)
+	}()
 
-	name := path[0]
-	child, ok := n.entries[name]
-	if !ok {
-		child = &fileTree{name: name}
-		n.entries[name] = child
-	}
-	child.add(path[1:])
-}
-
-// addPath splits the given path by the filepath separator and inserts it into the fileTree structure.
-func (n *fileTree) addPath(path string) {
-	n.add(strings.Split(path, string(filepath.Separator)))
-}
-
-// has returns true if the specified path exists in the fileTree, false otherwise.
-func (n *fileTree) has(path []string) bool {
-	if len(path) == 0 {
-		return true
-	} else if len(n.entries) == 0 {
-		return false
-	}
-	child, ok := n.entries[path[0]]
-	if !ok {
-		return false
-	}
-	return child.has(path[1:])
-}
-
-// hasPath splits the given path by the filepath separator and checks if it exists in the fileTree.
-func (n *fileTree) hasPath(path string) bool {
-	return n.has(strings.Split(path, string(filepath.Separator)))
-}
-
-// readIndex traverses the index entries and adds each file path to the fileTree structure.
-func (n *fileTree) readIndex(idx *index.Index) {
-	for _, entry := range idx.Entries {
-		n.addPath(entry.Name)
-	}
-}
-
-type gitWalker struct {
-	log           *log.Logger
-	root          string
-	paths         chan string
-	repo          *git.Repository
-	relPathOffset int
-}
-
-func (g gitWalker) Root() string {
-	return g.root
-}
-
-func (g gitWalker) relPath(path string) (string, error) { //
-	return filepath.Rel(g.root, path)
-}
-
-func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
-	idx, err := g.repo.Storer.Index()
+	gitIndex, err := g.repo.Storer.Index()
 	if err != nil {
 		return fmt.Errorf("failed to open git index: %w", err)
 	}
 
 	// if we need to walk a path that is not the root of the repository, we will read the directory structure of the
 	// git index into memory for faster lookups
-	var cache *fileTree
+	var idxCache *filetree
 
-	for path := range g.paths {
+	for pathIdx := range g.paths {
+
+		path := filepath.Clean(filepath.Join(g.root, g.paths[pathIdx]))
+		if !strings.HasPrefix(path, g.root) {
+			return fmt.Errorf("path '%s' is outside of the root '%s'", path, g.root)
+		}
+
 		switch path {
 
 		case g.root:
 
 			// we can just iterate the index entries
-			for _, entry := range idx.Entries {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					// we only want regular files, not directories or symlinks
-					if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
-						continue
-					}
+			for _, entry := range gitIndex.Entries {
 
-					// stat the file
-					path := filepath.Join(g.root, entry.Name)
-
-					info, err := os.Lstat(path)
-					if os.IsNotExist(err) {
-						// the underlying file might have been removed without the change being staged yet
-						g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
-						continue
-					} else if err != nil {
-						return fmt.Errorf("failed to stat %s: %w", path, err)
-					}
-
-					// determine a relative path
-					relPath, err := g.relPath(path)
-					if err != nil {
-						return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
-					}
-
-					file := File{
-						Path:    path,
-						RelPath: relPath,
-						Info:    info,
-					}
-
-					if err = fn(&file, err); err != nil {
-						return err
-					}
+				// we only want regular files, not directories or symlinks
+				if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
+					continue
 				}
+
+				// stat the file
+				path := filepath.Join(g.root, entry.Name)
+
+				info, err := os.Lstat(path)
+				if os.IsNotExist(err) {
+					// the underlying file might have been removed without the change being staged yet
+					g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
+					continue
+				} else if err != nil {
+					return fmt.Errorf("failed to stat %s: %w", path, err)
+				}
+
+				// determine a relative path
+				relPath, err := filepath.Rel(g.root, path)
+				if err != nil {
+					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+				}
+
+				file := File{
+					Path:    path,
+					RelPath: relPath,
+					Info:    info,
+				}
+
+				g.stats.Add(stats.Traversed, 1)
+				g.filesCh <- &file
 			}
 
 		default:
 
 			// read the git index into memory if it hasn't already
-			if cache == nil {
-				cache = &fileTree{name: ""}
-				cache.readIndex(idx)
+			if idxCache == nil {
+				idxCache = &filetree{name: ""}
+				idxCache.readIndex(gitIndex)
 			}
 
 			// git index entries are relative to the repository root, so we need to determine a relative path for the
 			// one we are currently processing before checking if it exists within the git index
-			relPath, err := g.relPath(path)
+			relPath, err := filepath.Rel(g.root, path)
 			if err != nil {
 				return fmt.Errorf("failed to find root relative path for %v: %w", path, err)
 			}
 
-			if !cache.hasPath(relPath) {
+			if !idxCache.hasPath(relPath) {
 				log.Debugf("path %s not found in git index, skipping", relPath)
 				continue
 			}
@@ -168,12 +119,12 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 				}
 
 				// determine a path relative to g.root before checking presence in the git index
-				relPath, err := g.relPath(path)
+				relPath, err := filepath.Rel(g.root, path)
 				if err != nil {
 					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
 				}
 
-				if !cache.hasPath(relPath) {
+				if !idxCache.hasPath(relPath) {
 					log.Debugf("path %v not found in git index, skipping", relPath)
 					return nil
 				}
@@ -184,7 +135,9 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 					Info:    info,
 				}
 
-				return fn(&file, err)
+				g.stats.Add(stats.Traversed, 1)
+				g.filesCh <- &file
+				return nil
 			})
 			if err != nil {
 				return fmt.Errorf("failed to walk %s: %w", path, err)
@@ -195,16 +148,60 @@ func (g gitWalker) Walk(ctx context.Context, fn WalkFunc) error {
 	return nil
 }
 
-func NewGit(root string, paths chan string) (Walker, error) {
+func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) {
+	idx := 0
+
+LOOP:
+	for idx < len(files) {
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case file, ok := <-g.filesCh:
+			if !ok {
+				err = io.EOF
+				break LOOP
+			}
+			files[idx] = file
+			idx++
+		}
+	}
+
+	return idx, err
+}
+
+func (g *GitReader) Close() error {
+	return g.eg.Wait()
+}
+
+func NewGitReader(
+	root string,
+	paths []string,
+	statz *stats.Stats,
+	batchSize int,
+) (*GitReader, error) {
 	repo, err := git.PlainOpen(root)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open git repo: %w", err)
+		return nil, fmt.Errorf("failed to open git repository: %w", err)
 	}
-	return &gitWalker{
-		log:           log.WithPrefix("walker[git]"),
-		root:          root,
-		paths:         paths,
-		repo:          repo,
-		relPathOffset: len(root) + 1,
-	}, nil
+
+	eg := &errgroup.Group{}
+
+	if len(paths) == 0 {
+		paths = []string{"."}
+	}
+
+	r := &GitReader{
+		root:      root,
+		paths:     paths,
+		stats:     statz,
+		batchSize: batchSize,
+		log:       log.WithPrefix("walk[git]"),
+		repo:      repo,
+		filesCh:   make(chan *File, batchSize*runtime.NumCPU()),
+		eg:        eg,
+	}
+
+	eg.Go(r.process)
+
+	return r, nil
 }
