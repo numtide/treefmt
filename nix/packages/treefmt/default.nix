@@ -42,8 +42,8 @@ in
     ldflags = [
       "-s"
       "-w"
-      "-X git.numtide.com/numtide/treefmt/build.Name=${pname}"
-      "-X git.numtide.com/numtide/treefmt/build.Version=v${version}"
+      "-X github.com/numtide/treefmt/build.Name=${pname}"
+      "-X github.com/numtide/treefmt/build.Version=v${version}"
     ];
 
     nativeBuildInputs =
@@ -57,7 +57,7 @@ in
 
     meta = with lib; {
       description = "treefmt: one CLI to format your repo";
-      homepage = "https://git.numtide.com/numtide/treefmt";
+      homepage = "https://github.com/numtide/treefmt";
       license = licenses.mit;
       mainProgram = "treefmt";
     };

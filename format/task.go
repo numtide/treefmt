@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"slices"
 
-	"git.numtide.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/walk"
 )
 
 type Task struct {

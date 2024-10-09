@@ -14,13 +14,13 @@ import (
 	"syscall"
 	"time"
 
-	"git.numtide.com/numtide/treefmt/format"
-	"git.numtide.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/format"
+	"github.com/numtide/treefmt/stats"
 	"mvdan.cc/sh/v3/expand"
 
-	"git.numtide.com/numtide/treefmt/cache"
-	"git.numtide.com/numtide/treefmt/config"
-	"git.numtide.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/cache"
+	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/walk"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/sync/errgroup"

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"git.numtide.com/numtide/treefmt/build"
-	"git.numtide.com/numtide/treefmt/cli"
 	"github.com/alecthomas/kong"
+	"github.com/numtide/treefmt/build"
+	"github.com/numtide/treefmt/cli"
 )
 
 // We embed the sample toml file for use with the init flag.

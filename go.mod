@@ -1,4 +1,4 @@
-module git.numtide.com/numtide/treefmt
+module github.com/numtide/treefmt
 
 go 1.22
 
