@@ -31,6 +31,7 @@ type Config struct {
 	FormatterConfigs map[string]*Formatter `mapstructure:"formatter"`
 
 	Global struct {
+		// Deprecated: Use Excludes
 		Excludes []string `mapstructure:"excludes,omitempty"`
 	} `mapstructure:"global"`
 }
@@ -56,35 +57,49 @@ type Formatter struct {
 func SetFlags(fs *pflag.FlagSet) *pflag.FlagSet {
 	fs.Bool(
 		"allow-missing-formatter", false,
-		"Do not exit with error if a configured formatter is missing.",
+		"Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)",
 	)
 
 	fs.Bool(
 		"ci", false,
 		"Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings "+
-			"best suited to a CI use case.",
+			"best suited to a CI use case. (env $TREEFMT_CI)",
 	)
 
 	fs.BoolP(
 		"clear-cache", "c", false,
-		"Reset the evaluation cache. Use in case the cache is not precise enough.",
+		"Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)",
 	)
 
-	fs.String("cpu-profile", "", "The file into which a cpu profile will be written.")
-	fs.StringSliceP("excludes", "e", nil, "Exclude files or directories matching the specified globs.")
-	fs.Bool("fail-on-change", false, "Exit with error if any changes were made. Useful for CI.")
+	fs.String(
+		"cpu-profile", "",
+		"The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)",
+	)
+
+	fs.StringSliceP(
+		"excludes", "e", nil,
+		"Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)",
+	)
+
+	fs.Bool(
+		"fail-on-change", false,
+		"Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)",
+	)
 
 	fs.StringSliceP(
 		"formatters", "f", nil,
-		"Specify formatters to apply. Defaults to all configured formatters.",
+		"Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)",
 	)
 
-	fs.Bool("no-cache", false, "Ignore the evaluation cache entirely. Useful for CI.")
+	fs.Bool(
+		"no-cache", false,
+		"Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)",
+	)
 
 	fs.StringP(
 		"on-unmatched", "u", "warn",
-		"Log paths that did not match any formatters at the specified log level, with fatal exiting the "+
-			"process with an error. Possible values are <debug|info|warn|error|fatal>.",
+		"Log paths that did not match any formatters at the specified log level. Possible values are "+
+			"<debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED)",
 	)
 
 	fs.Bool("stdin", false, "Format the context passed in via stdin.")
@@ -92,22 +107,26 @@ func SetFlags(fs *pflag.FlagSet) *pflag.FlagSet {
 	fs.String(
 		"tree-root", "",
 		"The root directory from which treefmt will start walking the "+
-			"filesystem (defaults to the directory containing the config file).",
+			"filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)",
 	)
 
-	fs.String("tree-root-file", "", "File to search for to find the tree root (if --tree-root is not passed).")
+	fs.String(
+		"tree-root-file", "",
+		"File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)",
+	)
 
 	fs.String(
 		"walk", "auto",
 		"The method used to traverse the files within the tree root. Currently supports 'auto', 'git' or "+
-			"'filesystem'.",
+			"'filesystem'. ($TREEFMT_WALK)",
 	)
 
-	fs.CountP("verbose", "v", "Set the verbosity of logs e.g. -vv.")
+	fs.CountP("verbose", "v", "Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)")
 
 	fs.StringP(
 		"working-dir", "C", ".",
-		"Run as if treefmt was started in the specified working directory instead of the current working "+"directory.",
+		"Run as if treefmt was started in the specified working directory instead of the current working "+
+			"directory. $(TREEFMT_WORKING_DIR)",
 	)
 
 	return fs

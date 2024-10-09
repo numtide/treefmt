@@ -1,5 +1,23 @@
 # One CLI to format the code tree - https://git.numtide.com/numtide/treefmt
 
+# At the root level of the config file, you can set values for the various flags which you can pass to treefmt.
+# See `treefmt -h` for more info.
+
+# allow-missing-formatter = true
+# ci = true
+# clear-cache = true
+# cpu-profile = ./cpu.pprof
+# excludes = [ "*.md" "*.gif" ]
+# fail-on-change = true
+# formatters = [ "gofmt" "prettier" ]
+# no-cache = true
+# on-unmatched = "info"
+# tree-root = /tmp/checkout
+# tree-root-file = ".git/config"
+# verbosity = 2
+# walk = "filesystem"
+# working-directory = /tmp/wd
+
 [formatter.mylanguage]
 # Formatter to run
 command = "command-to-run"
