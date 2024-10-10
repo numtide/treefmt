@@ -3,15 +3,14 @@ package walk
 import (
 	"context"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/filemode"
 	"github.com/numtide/treefmt/stats"
 	"golang.org/x/sync/errgroup"
 )
@@ -35,112 +34,59 @@ func (g *GitReader) process() error {
 		close(g.filesCh)
 	}()
 
-	gitIndex, err := g.repo.Storer.Index()
-	if err != nil {
-		return fmt.Errorf("failed to open git index: %w", err)
-	}
+	r, w := io.Pipe()
 
-	// if we need to walk a path that is not the root of the repository, we will read the directory structure of the
-	// git index into memory for faster lookups
-	var idxCache *filetree
+	g.eg.Go(func() error {
+		cmd := exec.Command("git", "status", "--short")
+		cmd.Dir = g.root
+		cmd.Stdout = w
 
-	for pathIdx := range g.paths {
+		err := cmd.Run()
+		w.CloseWithError(err)
+		return err
+	})
 
-		path := filepath.Clean(filepath.Join(g.root, g.paths[pathIdx]))
-		if !strings.HasPrefix(path, g.root) {
-			return fmt.Errorf("path '%s' is outside of the root '%s'", path, g.root)
+	tree := &filetree{name: ""}
+	tree.fromGit(r)
+
+	for _, subPath := range g.paths {
+
+		subTree, ok := tree.getPath(subPath)
+		if !ok {
+			return fmt.Errorf("path %s not found in git status", subPath)
 		}
 
-		switch path {
+		err := subTree.walk("", func(relPath string) error {
+			// stat the file
+			fullPath := filepath.Join(g.root, relPath)
 
-		case g.root:
-
-			// we can just iterate the index entries
-			for _, entry := range gitIndex.Entries {
-
-				// we only want regular files, not directories or symlinks
-				if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
-					continue
-				}
-
-				// stat the file
-				path := filepath.Join(g.root, entry.Name)
-
-				info, err := os.Lstat(path)
-				if os.IsNotExist(err) {
-					// the underlying file might have been removed without the change being staged yet
-					g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
-					continue
-				} else if err != nil {
-					return fmt.Errorf("failed to stat %s: %w", path, err)
-				}
-
-				// determine a relative path
-				relPath, err := filepath.Rel(g.root, path)
-				if err != nil {
-					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
-				}
-
-				file := File{
-					Path:    path,
-					RelPath: relPath,
-					Info:    info,
-				}
-
-				g.stats.Add(stats.Traversed, 1)
-				g.filesCh <- &file
-			}
-
-		default:
-
-			// read the git index into memory if it hasn't already
-			if idxCache == nil {
-				idxCache = &filetree{name: ""}
-				idxCache.readIndex(gitIndex)
-			}
-
-			// git index entries are relative to the repository root, so we need to determine a relative path for the
-			// one we are currently processing before checking if it exists within the git index
-			relPath, err := filepath.Rel(g.root, path)
-			if err != nil {
-				return fmt.Errorf("failed to find root relative path for %v: %w", path, err)
-			}
-
-			if !idxCache.hasPath(relPath) {
-				log.Debugf("path %s not found in git index, skipping", relPath)
-				continue
-			}
-
-			err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
-				// skip directories
-				if info.IsDir() {
-					return nil
-				}
-
-				// determine a path relative to g.root before checking presence in the git index
-				relPath, err := filepath.Rel(g.root, path)
-				if err != nil {
-					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
-				}
-
-				if !idxCache.hasPath(relPath) {
-					log.Debugf("path %v not found in git index, skipping", relPath)
-					return nil
-				}
-
-				file := File{
-					Path:    path,
-					RelPath: relPath,
-					Info:    info,
-				}
-
-				g.stats.Add(stats.Traversed, 1)
-				g.filesCh <- &file
+			if fullPath == g.root {
+				// skip the root
 				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("failed to walk %s: %w", path, err)
 			}
+
+			info, err := os.Lstat(fullPath)
+			if os.IsNotExist(err) {
+				// the underlying file might have been removed without the change being staged yet
+				g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", fullPath)
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("failed to stat %s: %w", fullPath, err)
+			}
+
+			file := File{
+				Path:    fullPath,
+				RelPath: relPath,
+				Info:    info,
+			}
+
+			g.stats.Add(stats.Traversed, 1)
+			g.filesCh <- &file
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to walk %s: %w", subPath, err)
 		}
 	}
 

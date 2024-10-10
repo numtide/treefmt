@@ -1,10 +1,10 @@
 package walk
 
 import (
+	"bufio"
+	"io"
 	"path/filepath"
 	"strings"
-
-	"github.com/go-git/go-git/v5/plumbing/format/index"
 )
 
 // filetree represents a hierarchical file structure with directories and files.
@@ -51,12 +51,63 @@ func (n *filetree) has(path []string) bool {
 
 // hasPath splits the given path by the filepath separator and checks if it exists in the filetree.
 func (n *filetree) hasPath(path string) bool {
+	if path == "." {
+		return true
+	}
 	return n.has(strings.Split(path, string(filepath.Separator)))
 }
 
-// readIndex traverses the index entries and adds each file path to the filetree structure.
-func (n *filetree) readIndex(idx *index.Index) {
-	for _, entry := range idx.Entries {
-		n.addPath(entry.Name)
+func (n *filetree) getPath(path string) (*filetree, bool) {
+	if path == "." {
+		return n, true
+	}
+	return n.get(strings.Split(path, string(filepath.Separator)))
+}
+
+func (n *filetree) get(path []string) (*filetree, bool) {
+	if len(path) == 0 {
+		return n, true
+	} else if len(n.entries) == 0 {
+		return nil, false
+	}
+
+	child, ok := n.entries[path[0]]
+	if !ok {
+		return nil, false
+	}
+
+	return child.get(path[1:])
+}
+
+func (n *filetree) walk(prefix string, fn func(path string) error) error {
+	path := filepath.Join(prefix, n.name)
+
+	if len(n.entries) == 0 {
+		if err := fn(path); err != nil {
+			return err
+		}
+	}
+
+	for _, child := range n.entries {
+		if err := child.walk(path, fn); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (n *filetree) fromGit(r io.Reader) {
+	scan := bufio.NewScanner(r)
+	for scan.Scan() {
+		text := scan.Text()
+
+		// we're only interested in staged changes
+		switch text[0] {
+		case 'A', 'M', 'R', 'C':
+			n.addPath(text[3:])
+		default:
+			// do nothing
+		}
 	}
 }
