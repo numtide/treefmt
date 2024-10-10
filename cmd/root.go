@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/numtide/treefmt/stats"
+
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/build"
 	"github.com/numtide/treefmt/cmd/format"
@@ -14,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func NewRoot() *cobra.Command {
+func NewRoot() (*cobra.Command, *stats.Stats) {
 	var (
 		treefmtInit bool
 		configFile  string
@@ -26,13 +28,16 @@ func NewRoot() *cobra.Command {
 		cobra.CheckErr(fmt.Errorf("failed to create viper instance: %w", err))
 	}
 
+	// create a new stats instance
+	statz := stats.New()
+
 	// create out root command
 	cmd := &cobra.Command{
 		Use:     "treefmt <paths...>",
 		Short:   "One CLI to format your repo",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(v, cmd, args)
+			return runE(v, &statz, cmd, args)
 		},
 	}
 
@@ -62,10 +67,10 @@ func NewRoot() *cobra.Command {
 	// conforms with https://github.com/numtide/prj-spec/blob/main/PRJ_SPEC.md
 	cobra.CheckErr(v.BindPFlag("prj_root", fs.Lookup("tree-root")))
 
-	return cmd
+	return cmd, &statz
 }
 
-func runE(v *viper.Viper, cmd *cobra.Command, args []string) error {
+func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string) error {
 	flags := cmd.Flags()
 
 	// change working directory if required
@@ -123,5 +128,5 @@ func runE(v *viper.Viper, cmd *cobra.Command, args []string) error {
 	}
 
 	// format
-	return format.Run(v, cmd, args)
+	return format.Run(v, statz, cmd, args)
 }
