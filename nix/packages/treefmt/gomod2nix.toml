@@ -1,3 +1,4 @@
+# Generated with `nix develop .#renovate -c gomod2nix:update`
 schema = 3
 
 [mod]
