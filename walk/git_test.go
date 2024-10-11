@@ -1,31 +1,68 @@
-package walk
+package walk_test
 
 import (
+	"context"
+	"errors"
+	"io"
+	"path"
 	"testing"
+	"time"
 
+	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/storage/filesystem"
+	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/walk"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileTree(t *testing.T) {
+func TestGitReader(t *testing.T) {
 	as := require.New(t)
 
-	node := &fileTree{name: ""}
-	node.addPath("foo/bar/baz")
-	node.addPath("fizz/buzz")
-	node.addPath("hello/world")
-	node.addPath("foo/bar/fizz")
-	node.addPath("foo/fizz/baz")
+	tempDir := test.TempExamples(t)
 
-	as.True(node.hasPath("foo"))
-	as.True(node.hasPath("foo/bar"))
-	as.True(node.hasPath("foo/bar/baz"))
-	as.True(node.hasPath("fizz"))
-	as.True(node.hasPath("fizz/buzz"))
-	as.True(node.hasPath("hello"))
-	as.True(node.hasPath("hello/world"))
-	as.True(node.hasPath("foo/bar/fizz"))
-	as.True(node.hasPath("foo/fizz/baz"))
+	// init a git repo
+	repo, err := git.Init(
+		filesystem.NewStorage(
+			osfs.New(path.Join(tempDir, ".git")),
+			cache.NewObjectLRUDefault(),
+		),
+		osfs.New(tempDir),
+	)
+	as.NoError(err, "failed to init git repository")
 
-	as.False(node.hasPath("fo"))
-	as.False(node.hasPath("world"))
+	// get worktree and add everything to it
+	wt, err := repo.Worktree()
+	as.NoError(err, "failed to get git worktree")
+	as.NoError(wt.AddGlob("."))
+
+	statz := stats.New()
+
+	reader, err := walk.NewGitReader(tempDir, nil, &statz, 1024)
+	as.NoError(err)
+
+	count := 0
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+
+		files := make([]*walk.File, 8)
+		n, err := reader.Read(ctx, files)
+
+		count += n
+
+		cancel()
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+	}
+
+	as.Equal(32, count)
+	as.Equal(int32(32), statz.Value(stats.Traversed))
+	as.Equal(int32(0), statz.Value(stats.Emitted))
+	as.Equal(int32(0), statz.Value(stats.Matched))
+	as.Equal(int32(0), statz.Value(stats.Formatted))
 }
