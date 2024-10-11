@@ -19,7 +19,7 @@ import (
 type FilesystemReader struct {
 	log       *log.Logger
 	root      string
-	paths     []string
+	path      string
 	batchSize int
 
 	eg *errgroup.Group
@@ -35,7 +35,17 @@ func (f *FilesystemReader) process() error {
 		close(f.filesCh)
 	}()
 
-	walkFn := func(path string, info fs.FileInfo, err error) error {
+	// f.path is relative to the root, so we create a fully qualified version
+	// we also clean the path up in case there are any ../../ components etc.
+	path := filepath.Clean(filepath.Join(f.root, f.path))
+
+	// ensure the path is within the root
+	if !strings.HasPrefix(path, f.root) {
+		return fmt.Errorf("path '%s' is outside of the root '%s'", path, f.root)
+	}
+
+	// walk the path
+	return filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
 		// return errors immediately
 		if err != nil {
 			return err
@@ -64,26 +74,7 @@ func (f *FilesystemReader) process() error {
 		f.log.Debugf("file queued %s", file.RelPath)
 
 		return nil
-	}
-
-	// walk each path specified
-	for idx := range f.paths {
-		// f.paths are relative to the root, so we create a fully qualified version
-		// we also clean the path up in case there are any ../../ components etc.
-		path := filepath.Clean(filepath.Join(f.root, f.paths[idx]))
-
-		// ensure the path is within the root
-		if !strings.HasPrefix(path, f.root) {
-			return fmt.Errorf("path '%s' is outside of the root '%s'", path, f.root)
-		}
-
-		// walk the path
-		if err := filepath.Walk(path, walkFn); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	})
 }
 
 // Read populates the provided files array with as many files are available until the provided context is cancelled.
@@ -129,22 +120,17 @@ func (f *FilesystemReader) Close() error {
 // and root.
 func NewFilesystemReader(
 	root string,
-	paths []string,
+	path string,
 	statz *stats.Stats,
 	batchSize int,
 ) *FilesystemReader {
-	// if no paths are specified, we default to the root path
-	if len(paths) == 0 {
-		paths = []string{"."}
-	}
-
 	// create an error group for managing the processing loop
 	eg := errgroup.Group{}
 
 	r := FilesystemReader{
 		log:       log.WithPrefix("walk[filesystem]"),
 		root:      root,
-		paths:     paths,
+		path:      path,
 		batchSize: batchSize,
 
 		eg: &eg,

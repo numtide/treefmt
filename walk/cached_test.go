@@ -22,14 +22,14 @@ func TestCachedReader(t *testing.T) {
 	batchSize := 1024
 	tempDir := test.TempExamples(t)
 
-	readAll := func(paths []string) (totalCount, newCount, changeCount int, statz stats.Stats) {
+	readAll := func(path string) (totalCount, newCount, changeCount int, statz stats.Stats) {
 		statz = stats.New()
 
 		db, err := cache.Open(tempDir)
 		as.NoError(err)
 		defer db.Close()
 
-		delegate := walk.NewFilesystemReader(tempDir, paths, &statz, batchSize)
+		delegate := walk.NewFilesystemReader(tempDir, path, &statz, batchSize)
 		reader, err := walk.NewCachedReader(db, batchSize, delegate)
 		as.NoError(err)
 
@@ -49,7 +49,8 @@ func TestCachedReader(t *testing.T) {
 				} else if file.Cache.HasChanged(file.Info) {
 					changeCount++
 				}
-				file.Release()
+
+				as.NoError(file.Release())
 			}
 
 			cancel()
@@ -64,13 +65,13 @@ func TestCachedReader(t *testing.T) {
 		return totalCount, newCount, changeCount, statz
 	}
 
-	totalCount, newCount, changeCount, _ := readAll([]string{"."})
+	totalCount, newCount, changeCount, _ := readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(32, newCount)
 	as.Equal(0, changeCount)
 
 	// read again, should be no changes
-	totalCount, newCount, changeCount, _ = readAll([]string{"."})
+	totalCount, newCount, changeCount, _ = readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)
@@ -83,7 +84,7 @@ func TestCachedReader(t *testing.T) {
 	as.NoError(os.Chtimes(filepath.Join(tempDir, "shell/foo.sh"), time.Now(), modTime))
 	as.NoError(os.Chtimes(filepath.Join(tempDir, "haskell/Nested/Foo.hs"), time.Now(), modTime))
 
-	totalCount, newCount, changeCount, _ = readAll([]string{"."})
+	totalCount, newCount, changeCount, _ = readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(3, changeCount)
@@ -95,7 +96,7 @@ func TestCachedReader(t *testing.T) {
 	_, err = os.Create(filepath.Join(tempDir, "fizz.go"))
 	as.NoError(err)
 
-	totalCount, newCount, changeCount, _ = readAll([]string{"."})
+	totalCount, newCount, changeCount, _ = readAll("")
 	as.Equal(34, totalCount)
 	as.Equal(2, newCount)
 	as.Equal(0, changeCount)
@@ -113,14 +114,24 @@ func TestCachedReader(t *testing.T) {
 	as.NoError(err)
 	as.NoError(f.Close())
 
-	totalCount, newCount, changeCount, _ = readAll([]string{"."})
+	totalCount, newCount, changeCount, _ = readAll("")
 	as.Equal(34, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(2, changeCount)
 
 	// read some paths within the root
-	totalCount, newCount, changeCount, _ = readAll([]string{"go", "elm/src", "haskell"})
-	as.Equal(10, totalCount)
+	totalCount, newCount, changeCount, _ = readAll("go")
+	as.Equal(2, totalCount)
+	as.Equal(0, newCount)
+	as.Equal(0, changeCount)
+
+	totalCount, newCount, changeCount, _ = readAll("elm/src")
+	as.Equal(1, totalCount)
+	as.Equal(0, newCount)
+	as.Equal(0, changeCount)
+
+	totalCount, newCount, changeCount, _ = readAll("haskell")
+	as.Equal(7, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)
 }

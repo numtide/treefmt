@@ -2,9 +2,12 @@ package walk
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/numtide/treefmt/stats"
@@ -19,12 +22,14 @@ const (
 	Auto Type = iota
 	Git
 	Filesystem
+	Stdin
 
 	BatchSize = 1024
 )
 
-// File represents a file object with its path, relative path, file info, and potential cached entry.
-// It provides an optional release function to trigger a cache update after processing.
+type ReleaseFunc func() error
+
+// File represents a file object with its path, relative path, file info, and potential cache entry.
 type File struct {
 	Path    string
 	RelPath string
@@ -33,14 +38,28 @@ type File struct {
 	// Cache is the latest entry found for this file, if one exists.
 	Cache *cache.Entry
 
-	// An optional function to be invoked when this File has finished processing.
-	// Typically used to trigger a cache update.
-	Release func()
+	releaseFuncs []ReleaseFunc
+}
+
+// Release invokes all registered release functions for the File.
+// If any release function returns an error, Release stops and returns that error.
+func (f *File) Release() error {
+	for _, fn := range f.releaseFuncs {
+		if err := fn(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// AddReleaseFunc adds a release function to the File's list of release functions.
+func (f *File) AddReleaseFunc(fn ReleaseFunc) {
+	f.releaseFuncs = append(f.releaseFuncs, fn)
 }
 
 // Stat checks if the file has changed by comparing its current state (size, mod time) to when it was first read.
 // It returns a boolean indicating if the file has changed, the current file info, and an error if any.
-func (f File) Stat() (bool, fs.FileInfo, error) {
+func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
 	// Get the file's current state
 	current, err := os.Stat(f.Path)
 	if err != nil {
@@ -64,7 +83,7 @@ func (f File) Stat() (bool, fs.FileInfo, error) {
 }
 
 // String returns the file's path as a string.
-func (f File) String() string {
+func (f *File) String() string {
 	return f.Path
 }
 
@@ -74,11 +93,56 @@ type Reader interface {
 	Close() error
 }
 
-// NewReader creates a new instance of Reader based on the given walkType (Auto, Git, Filesystem).
+// CompositeReader combines multiple Readers into one.
+// It iterates over the given readers, reading each until completion.
+type CompositeReader struct {
+	idx     int
+	current Reader
+	readers []Reader
+}
+
+func (c *CompositeReader) Read(ctx context.Context, files []*File) (n int, err error) {
+	if c.current == nil {
+		// check if we have exhausted all the readers
+		if c.idx >= len(c.readers) {
+			return 0, io.EOF
+		}
+
+		// if not, select the next reader
+		c.current = c.readers[c.idx]
+		c.idx++
+	}
+
+	// attempt a read
+	n, err = c.current.Read(ctx, files)
+
+	// check if the current reader has been exhausted
+	if errors.Is(err, io.EOF) {
+		// reset the error if it's EOF
+		err = nil
+		// set the current reader to nil so we try to read from the next reader on the next call
+		c.current = nil
+	} else if err != nil {
+		err = fmt.Errorf("failed to read from current reader: %w", err)
+	}
+
+	// return the number of files read in this call and any error
+	return n, err
+}
+
+func (c *CompositeReader) Close() error {
+	for _, reader := range c.readers {
+		if err := reader.Close(); err != nil {
+			return fmt.Errorf("failed to close reader: %w", err)
+		}
+	}
+	return nil
+}
+
 func NewReader(
 	walkType Type,
 	root string,
-	paths []string,
+	path string,
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
@@ -90,15 +154,17 @@ func NewReader(
 	switch walkType {
 	case Auto:
 		// for now, we keep it simple and try git first, filesystem second
-		reader, err = NewReader(Git, root, paths, db, statz)
+		reader, err = NewReader(Git, root, path, db, statz)
 		if err != nil {
-			reader, err = NewReader(Filesystem, root, paths, db, statz)
+			reader, err = NewReader(Filesystem, root, path, db, statz)
 		}
 		return reader, err
 	case Git:
-		reader, err = NewGitReader(root, paths, statz, BatchSize)
+		reader, err = NewGitReader(root, path, statz, BatchSize)
 	case Filesystem:
-		reader = NewFilesystemReader(root, paths, statz, BatchSize)
+		reader = NewFilesystemReader(root, path, statz, BatchSize)
+	case Stdin:
+		return nil, fmt.Errorf("stdin walk type is not supported")
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)
 	}
@@ -114,4 +180,61 @@ func NewReader(
 	}
 
 	return reader, err
+}
+
+func NewCompositeReader(
+	walkType Type,
+	root string,
+	paths []string,
+	db *bolt.DB,
+	statz *stats.Stats,
+) (Reader, error) {
+	// if not paths are provided we default to processing the tree root
+	if len(paths) == 0 {
+		return NewReader(walkType, root, "", db, statz)
+	}
+
+	readers := make([]Reader, len(paths))
+
+	// check we have received 1 path for the stdin walk type
+	if walkType == Stdin {
+		if len(paths) != 1 {
+			return nil, fmt.Errorf("stdin walk requires exactly one path")
+		}
+
+		return NewStdinReader(root, paths[0], statz), nil
+	}
+
+	// create a reader for each provided path
+	for idx, relPath := range paths {
+		var (
+			err  error
+			info os.FileInfo
+		)
+
+		// create a clean absolute path
+		path := filepath.Clean(filepath.Join(root, relPath))
+
+		// check the path exists
+		info, err = os.Lstat(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat %s: %w", path, err)
+		}
+
+		if info.IsDir() {
+			// for directories, we honour the walk type as we traverse them
+			readers[idx], err = NewReader(walkType, root, relPath, db, statz)
+		} else {
+			// for files, we enforce a simple filesystem read
+			readers[idx], err = NewReader(Filesystem, root, relPath, db, statz)
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to create reader for %s: %w", relPath, err)
+		}
+	}
+
+	return &CompositeReader{
+		readers: readers,
+	}, nil
 }

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/numtide/treefmt/walk"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -173,6 +175,11 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	cfg.WorkingDirectory, err = filepath.Abs(cfg.WorkingDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path for working directory: %w", err)
+	}
+
+	// if the stdin flag was passed, we force the stdin walk type
+	if cfg.Stdin {
+		cfg.Walk = walk.Stdin.String()
 	}
 
 	// determine the tree root

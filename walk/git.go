@@ -19,7 +19,7 @@ import (
 
 type GitReader struct {
 	root      string
-	paths     []string
+	path      string
 	stats     *stats.Stats
 	batchSize int
 
@@ -45,103 +45,100 @@ func (g *GitReader) process() error {
 	// git index into memory for faster lookups
 	var idxCache *filetree
 
-	for pathIdx := range g.paths {
+	path := filepath.Clean(filepath.Join(g.root, g.path))
+	if !strings.HasPrefix(path, g.root) {
+		return fmt.Errorf("path '%s' is outside of the root '%s'", path, g.root)
+	}
 
-		path := filepath.Clean(filepath.Join(g.root, g.paths[pathIdx]))
-		if !strings.HasPrefix(path, g.root) {
-			return fmt.Errorf("path '%s' is outside of the root '%s'", path, g.root)
-		}
+	switch path {
 
-		switch path {
+	case g.root:
 
-		case g.root:
+		// we can just iterate the index entries
+		for _, entry := range gitIndex.Entries {
 
-			// we can just iterate the index entries
-			for _, entry := range gitIndex.Entries {
-
-				// we only want regular files, not directories or symlinks
-				if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
-					continue
-				}
-
-				// stat the file
-				path := filepath.Join(g.root, entry.Name)
-
-				info, err := os.Lstat(path)
-				if os.IsNotExist(err) {
-					// the underlying file might have been removed without the change being staged yet
-					g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
-					continue
-				} else if err != nil {
-					return fmt.Errorf("failed to stat %s: %w", path, err)
-				}
-
-				// determine a relative path
-				relPath, err := filepath.Rel(g.root, path)
-				if err != nil {
-					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
-				}
-
-				file := File{
-					Path:    path,
-					RelPath: relPath,
-					Info:    info,
-				}
-
-				g.stats.Add(stats.Traversed, 1)
-				g.filesCh <- &file
-			}
-
-		default:
-
-			// read the git index into memory if it hasn't already
-			if idxCache == nil {
-				idxCache = &filetree{name: ""}
-				idxCache.readIndex(gitIndex)
-			}
-
-			// git index entries are relative to the repository root, so we need to determine a relative path for the
-			// one we are currently processing before checking if it exists within the git index
-			relPath, err := filepath.Rel(g.root, path)
-			if err != nil {
-				return fmt.Errorf("failed to find root relative path for %v: %w", path, err)
-			}
-
-			if !idxCache.hasPath(relPath) {
-				log.Debugf("path %s not found in git index, skipping", relPath)
+			// we only want regular files, not directories or symlinks
+			if entry.Mode == filemode.Dir || entry.Mode == filemode.Symlink {
 				continue
 			}
 
-			err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
-				// skip directories
-				if info.IsDir() {
-					return nil
-				}
+			// stat the file
+			path := filepath.Join(g.root, entry.Name)
 
-				// determine a path relative to g.root before checking presence in the git index
-				relPath, err := filepath.Rel(g.root, path)
-				if err != nil {
-					return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
-				}
-
-				if !idxCache.hasPath(relPath) {
-					log.Debugf("path %v not found in git index, skipping", relPath)
-					return nil
-				}
-
-				file := File{
-					Path:    path,
-					RelPath: relPath,
-					Info:    info,
-				}
-
-				g.stats.Add(stats.Traversed, 1)
-				g.filesCh <- &file
-				return nil
-			})
-			if err != nil {
-				return fmt.Errorf("failed to walk %s: %w", path, err)
+			info, err := os.Lstat(path)
+			if os.IsNotExist(err) {
+				// the underlying file might have been removed without the change being staged yet
+				g.log.Warnf("Path %s is in the index but appears to have been removed from the filesystem", path)
+				continue
+			} else if err != nil {
+				return fmt.Errorf("failed to stat %s: %w", path, err)
 			}
+
+			// determine a relative path
+			relPath, err := filepath.Rel(g.root, path)
+			if err != nil {
+				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+			}
+
+			file := File{
+				Path:    path,
+				RelPath: relPath,
+				Info:    info,
+			}
+
+			g.stats.Add(stats.Traversed, 1)
+			g.filesCh <- &file
+		}
+
+	default:
+
+		// read the git index into memory if it hasn't already
+		if idxCache == nil {
+			idxCache = &filetree{name: ""}
+			idxCache.readIndex(gitIndex)
+		}
+
+		// git index entries are relative to the repository root, so we need to determine a relative path for the
+		// one we are currently processing before checking if it exists within the git index
+		relPath, err := filepath.Rel(g.root, path)
+		if err != nil {
+			return fmt.Errorf("failed to find root relative path for %v: %w", path, err)
+		}
+
+		if !idxCache.hasPath(relPath) {
+			log.Debugf("path %s not found in git index, skipping", relPath)
+			return nil
+		}
+
+		err = filepath.Walk(path, func(path string, info fs.FileInfo, _ error) error {
+			// skip directories
+			if info.IsDir() {
+				return nil
+			}
+
+			// determine a path relative to g.root before checking presence in the git index
+			relPath, err := filepath.Rel(g.root, path)
+			if err != nil {
+				return fmt.Errorf("failed to determine a relative path for %s: %w", path, err)
+			}
+
+			if !idxCache.hasPath(relPath) {
+				log.Debugf("path %v not found in git index, skipping", relPath)
+				return nil
+			}
+
+			file := File{
+				Path:    path,
+				RelPath: relPath,
+				Info:    info,
+			}
+
+			g.stats.Add(stats.Traversed, 1)
+			g.filesCh <- &file
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to walk %s: %w", path, err)
 		}
 	}
 
@@ -175,7 +172,7 @@ func (g *GitReader) Close() error {
 
 func NewGitReader(
 	root string,
-	paths []string,
+	path string,
 	statz *stats.Stats,
 	batchSize int,
 ) (*GitReader, error) {
@@ -186,13 +183,9 @@ func NewGitReader(
 
 	eg := &errgroup.Group{}
 
-	if len(paths) == 0 {
-		paths = []string{"."}
-	}
-
 	r := &GitReader{
 		root:      root,
-		paths:     paths,
+		path:      path,
 		stats:     statz,
 		batchSize: batchSize,
 		log:       log.WithPrefix("walk[git]"),

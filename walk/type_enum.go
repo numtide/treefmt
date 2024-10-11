@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const _TypeName = "autogitfilesystem"
+const _TypeName = "autogitfilesystemstdin"
 
-var _TypeIndex = [...]uint8{0, 4, 7, 17}
+var _TypeIndex = [...]uint8{0, 4, 7, 17, 22}
 
-const _TypeLowerName = "autogitfilesystem"
+const _TypeLowerName = "autogitfilesystemstdin"
 
 func (i Type) String() string {
 	if i < 0 || i >= Type(len(_TypeIndex)-1) {
@@ -27,23 +27,27 @@ func _TypeNoOp() {
 	_ = x[Auto-(0)]
 	_ = x[Git-(1)]
 	_ = x[Filesystem-(2)]
+	_ = x[Stdin-(3)]
 }
 
-var _TypeValues = []Type{Auto, Git, Filesystem}
+var _TypeValues = []Type{Auto, Git, Filesystem, Stdin}
 
 var _TypeNameToValueMap = map[string]Type{
-	_TypeName[0:4]:       Auto,
-	_TypeLowerName[0:4]:  Auto,
-	_TypeName[4:7]:       Git,
-	_TypeLowerName[4:7]:  Git,
-	_TypeName[7:17]:      Filesystem,
-	_TypeLowerName[7:17]: Filesystem,
+	_TypeName[0:4]:        Auto,
+	_TypeLowerName[0:4]:   Auto,
+	_TypeName[4:7]:        Git,
+	_TypeLowerName[4:7]:   Git,
+	_TypeName[7:17]:       Filesystem,
+	_TypeLowerName[7:17]:  Filesystem,
+	_TypeName[17:22]:      Stdin,
+	_TypeLowerName[17:22]: Stdin,
 }
 
 var _TypeNames = []string{
 	_TypeName[0:4],
 	_TypeName[4:7],
 	_TypeName[7:17],
+	_TypeName[17:22],
 }
 
 // TypeString retrieves an enum value from the enum constants string name.
