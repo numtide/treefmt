@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"syscall"
 	"time"
 
@@ -173,11 +174,27 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
 		}
 	} else {
-		// checks all paths are contained within the tree root
-		for _, path := range paths {
-			rootPath := filepath.Join(cfg.TreeRoot, path)
-			if _, err = os.Stat(rootPath); err != nil {
-				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
+		// checks all paths are contained within the tree root and exist
+		// also "normalize" paths so they're relative to cfg.TreeRoot
+		for i, path := range paths {
+			absolutePath, err := filepath.Abs(path)
+			if err != nil {
+				return fmt.Errorf("error computing absolute path of %s: %w", path, err)
+			}
+
+			relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
+			if err != nil {
+				return fmt.Errorf("error computing relative path from %s to %s: %s", cfg.TreeRoot, absolutePath, err)
+			}
+
+			if strings.HasPrefix(relativePath, "..") {
+				return fmt.Errorf("path %s not inside the tree root %s", path, cfg.TreeRoot)
+			}
+
+			paths[i] = relativePath
+
+			if _, err = os.Stat(absolutePath); err != nil {
+				return fmt.Errorf("path %s not found", path)
 			}
 		}
 	}
@@ -187,8 +204,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	if err != nil {
 		return fmt.Errorf("failed to create walker: %w", err)
 	}
-
-	//
 
 	files := make([]*walk.File, BatchSize)
 	for {

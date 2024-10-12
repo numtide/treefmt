@@ -620,7 +620,7 @@ func TestGitWorktree(t *testing.T) {
 
 	// try with a bad path
 	_, _, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo")
-	as.ErrorContains(err, "path foo not found within the tree root")
+	as.ErrorContains(err, "path foo not found")
 
 	// try with a path not in the git index, e.g. it is skipped
 	_, err = os.Create(filepath.Join(tempDir, "foo.txt"))
@@ -647,11 +647,20 @@ func TestPathsArg(t *testing.T) {
 		as.NoError(os.Chdir(cwd))
 	})
 
-	tempDir := test.TempExamples(t)
-	configPath := filepath.Join(tempDir, "/treefmt.toml")
+	// create a project root under a temp dir, in order verify behavior with
+	// files inside of temp dir, but outside of the project root
+	tempDir := t.TempDir()
+	treeRoot := filepath.Join(tempDir, "tree-root")
+	test.TempExamplesInDir(t, treeRoot)
 
-	// change working directory to temp root
-	as.NoError(os.Chdir(tempDir))
+	configPath := filepath.Join(treeRoot, "/treefmt.toml")
+
+	// create a file outside of treeRoot
+	externalFile, err := os.Create(filepath.Join(tempDir, "outside_tree.go"))
+	as.NoError(err)
+
+	// change working directory to project root
+	as.NoError(os.Chdir(treeRoot))
 
 	// basic config
 	cfg := &config.Config{
@@ -675,14 +684,29 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(err)
 	assertStats(t, as, statz, 2, 2, 2, 0)
 
+	// specify an absolute path
+	absoluteInternalPath, err := filepath.Abs("elm/elm.json")
+	as.NoError(err)
+	_, statz, err = treefmt(t, "-c", absoluteInternalPath)
+	as.NoError(err)
+	assertStats(t, as, statz, 1, 1, 1, 0)
+
 	// specify a bad path
 	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
-	as.ErrorContains(err, "path haskell/Nested/Bar.hs not found within the tree root")
+	as.Errorf(err, "path haskell/Nested/Bar.hs not found")
 
-	// specify a path outside the tree root
-	externalPath := filepath.Join(cwd, "go.mod")
-	_, _, err = treefmt(t, "-c", externalPath)
-	as.ErrorContains(err, fmt.Sprintf("path %s not found within the tree root", externalPath))
+	// specify an absolute path outside the tree root
+	absoluteExternalPath, err := filepath.Abs(externalFile.Name())
+	as.NoError(err)
+	as.FileExists(absoluteExternalPath, "exernal file must exist")
+	_, _, err = treefmt(t, "-c", absoluteExternalPath)
+	as.Errorf(err, "path %s not found within the tree root", absoluteExternalPath)
+
+	// specify a relative path outside the tree root
+	relativeExternalPath := "../outside_tree.go"
+	as.FileExists(relativeExternalPath, "exernal file must exist")
+	_, _, err = treefmt(t, "-c", relativeExternalPath)
+	as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
 }
 
 func TestStdin(t *testing.T) {
@@ -852,7 +876,12 @@ func TestRunInSubdir(t *testing.T) {
 	assertStats(t, as, statz, 32, 32, 32, 0)
 
 	// specify some explicit paths, relative to the tree root
-	_, statz, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	// this should not work, as we're in a subdirectory
+	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+	as.ErrorContains(err, "path elm/elm.json not found")
+
+	// specify some explicit paths, relative to the current directory
+	_, statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
 	as.NoError(err)
 	assertStats(t, as, statz, 2, 2, 2, 0)
 }
