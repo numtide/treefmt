@@ -80,6 +80,11 @@ func (f *FilesystemReader) process() error {
 // Read populates the provided files array with as many files are available until the provided context is cancelled.
 // You must ensure to pass a context with a timeout otherwise this will block until files is full.
 func (f *FilesystemReader) Read(ctx context.Context, files []*File) (n int, err error) {
+	// ensure we record how many files we traversed
+	defer func() {
+		f.stats.Add(stats.Traversed, int32(n))
+	}()
+
 	idx := 0
 
 LOOP:
@@ -102,9 +107,6 @@ LOOP:
 			// set the next file entry
 			files[idx] = file
 			idx++
-
-			// record that we traversed a file
-			f.stats.Add(stats.Traversed, 1)
 		}
 	}
 
