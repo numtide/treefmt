@@ -61,7 +61,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 
 	// append paths to the args
 	for _, task := range tasks {
-		args = append(args, task.File.RelPath)
+		args = append(args, task.File.Path)
 	}
 
 	// execute the command
@@ -91,7 +91,7 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 // Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
 // Returns true if the Formatter should be applied to path, false otherwise.
 func (f *Formatter) Wants(file *walk.File) bool {
-	match := !PathMatches(file.RelPath, f.excludes) && PathMatches(file.RelPath, f.includes)
+	match := !PathMatches(file.Path, f.excludes) && PathMatches(file.Path, f.includes)
 	if match {
 		f.log.Debugf("match: %v", file)
 	}

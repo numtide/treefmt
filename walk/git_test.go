@@ -107,7 +107,7 @@ func TestGitStagedReader(t *testing.T) {
 	// stage some changes
 
 	appendToFile := func(path string, content string) {
-		f, err := os.OpenFile(filepath.Join(tempDir, path), os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(filepath.Join(tempDir, path), os.O_APPEND|os.O_WRONLY, 0o644)
 		as.NoError(err)
 		defer f.Close()
 		_, err = f.WriteString(content)
@@ -142,10 +142,10 @@ func TestGitStagedReader(t *testing.T) {
 	as.Equal(4, n)
 	as.ErrorIs(err, io.EOF)
 
-	as.Equal("new.txt", files[0].RelPath)
-	as.Equal("nix/sources.nix", files[1].RelPath)
-	as.Equal("rust/Cargo.toml", files[2].RelPath)
-	as.Equal("treefmt.toml", files[3].RelPath)
+	as.Equal("new.txt", files[0].Path)
+	as.Equal("nix/sources.nix", files[1].Path)
+	as.Equal("rust/Cargo.toml", files[2].Path)
+	as.Equal("treefmt.toml", files[3].Path)
 
 	as.Equal(int32(4), statz.Value(stats.Traversed))
 	as.Equal(int32(0), statz.Value(stats.Emitted))

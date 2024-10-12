@@ -67,7 +67,7 @@ func TestFilesystemReader(t *testing.T) {
 		n, err := r.Read(ctx, files)
 
 		for i := count; i < count+n; i++ {
-			as.Equal(examplesPaths[i], files[i-count].RelPath)
+			as.Equal(examplesPaths[i], files[i-count].Path)
 		}
 
 		count += n

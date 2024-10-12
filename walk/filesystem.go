@@ -64,14 +64,14 @@ func (f *FilesystemReader) process() error {
 
 		// create a new file and pass to the files channel
 		file := File{
-			Path:    path,
-			RelPath: relPath,
-			Info:    info,
+			Root: f.root,
+			Path: relPath,
+			Info: info,
 		}
 
 		f.filesCh <- &file
 
-		f.log.Debugf("file queued %s", file.RelPath)
+		f.log.Debugf("file queued %s", file.Path)
 
 		return nil
 	})

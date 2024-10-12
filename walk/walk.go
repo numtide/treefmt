@@ -33,20 +33,22 @@ type ReleaseFunc func() error
 
 // File represents a file object with its path, relative path, file info, and potential cache entry.
 type File struct {
-	Path    string
-	RelPath string
-	Info    fs.FileInfo
-
+	// Path is the tree root in which this File resides
+	Root string
+	// Path is a relative path from Root
+	Path string
+	// Info contains the file's information at the time of reading
+	Info fs.FileInfo
 	// Cache is the latest entry found for this file, if one exists.
 	Cache *cache.Entry
-
-	releaseFuncs []ReleaseFunc
+	// ReleaseFuncs is a list of functions that are executed to release resources tied to the File.
+	ReleaseFuncs []ReleaseFunc
 }
 
 // Release invokes all registered release functions for the File.
 // If any release function returns an error, Release stops and returns that error.
 func (f *File) Release() error {
-	for _, fn := range f.releaseFuncs {
+	for _, fn := range f.ReleaseFuncs {
 		if err := fn(); err != nil {
 			return err
 		}
@@ -54,39 +56,39 @@ func (f *File) Release() error {
 	return nil
 }
 
-// AddReleaseFunc adds a release function to the File's list of release functions.
-func (f *File) AddReleaseFunc(fn ReleaseFunc) {
-	f.releaseFuncs = append(f.releaseFuncs, fn)
-}
-
 // Stat checks if the file has changed by comparing its current state (size, mod time) to when it was first read.
 // It returns a boolean indicating if the file has changed, the current file info, and an error if any.
 func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
 	// Get the file's current state
-	current, err := os.Stat(f.Path)
+	path := filepath.Join(f.Root, f.Path)
+
+	currentInfo, err := os.Lstat(path)
 	if err != nil {
-		return false, nil, fmt.Errorf("failed to stat %s: %w", f.Path, err)
+		return false, nil, fmt.Errorf("failed to stat %s: %w", path, err)
 	}
 
 	// Check the size first
-	if f.Info.Size() != current.Size() {
-		return true, current, nil
+	if f.Info.Size() != currentInfo.Size() {
+		return true, currentInfo, nil
 	}
 
 	// POSIX specifies EPOCH time for Mod time, but some filesystems give more precision.
 	// Some formatters mess with the mod time (e.g. dos2unix) but not to the same precision,
 	// triggering false positives.
 	// We truncate everything below a second.
-	if f.Info.ModTime().Truncate(time.Second) != current.ModTime().Truncate(time.Second) {
-		return true, current, nil
+	initialModTime := f.Info.ModTime().Truncate(time.Second)
+	currentModTime := currentInfo.ModTime().Truncate(time.Second)
+
+	if initialModTime != currentModTime {
+		return true, currentInfo, nil
 	}
 
-	return false, nil, nil
+	return false, currentInfo, nil
 }
 
 // String returns the file's path as a string.
 func (f *File) String() string {
-	return f.Path
+	return f.Info.Name()
 }
 
 // Reader is an interface for reading files.

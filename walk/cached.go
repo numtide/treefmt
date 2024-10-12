@@ -51,8 +51,8 @@ func (c *CachedReader) process() error {
 					Size:     file.Info.Size(),
 					Modified: file.Info.ModTime(),
 				}
-				if err = bucket.Put(file.RelPath, entry); err != nil {
-					return fmt.Errorf("failed to put entry for path %s: %w", file.RelPath, err)
+				if err = bucket.Put(file.Path, entry); err != nil {
+					return fmt.Errorf("failed to put entry for path %s: %w", file.Path, err)
 				}
 			}
 			return nil
@@ -89,13 +89,13 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 			file := files[i]
 
 			// lookup cache entry and append to the file
-			file.Cache, err = bucket.Get(file.RelPath)
+			file.Cache, err = bucket.Get(file.Path)
 			if err != nil {
 				return err
 			}
 
 			// set a release function which inserts this file into the release channel for updating
-			file.AddReleaseFunc(func() error {
+			file.ReleaseFuncs = append(file.ReleaseFuncs, func() error {
 				c.releaseCh <- file
 				return nil
 			})

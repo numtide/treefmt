@@ -47,7 +47,8 @@ in
     ];
 
     nativeBuildInputs =
-      [ pkgs.git ] ++
+      [pkgs.git]
+      ++
       # we need some formatters available for the tests
       import ./formatters.nix pkgs;
 

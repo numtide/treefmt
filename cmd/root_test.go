@@ -640,7 +640,7 @@ func TestGit(t *testing.T) {
 	as.NoError(err)
 
 	appendToFile := func(path string, content string) {
-		f, err := os.OpenFile(filepath.Join(tempDir, path), os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(filepath.Join(tempDir, path), os.O_APPEND|os.O_WRONLY, 0o644)
 		as.NoError(err)
 		defer f.Close()
 		_, err = f.WriteString(content)

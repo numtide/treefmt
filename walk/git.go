@@ -67,7 +67,7 @@ LOOP:
 
 				g.log.Debugf("processing file: %s", path)
 
-				info, err := os.Stat(path)
+				info, err := os.Lstat(path)
 				if os.IsNotExist(err) {
 					// the underlying file might have been removed
 					g.log.Warnf(
@@ -79,9 +79,9 @@ LOOP:
 				}
 
 				files[n] = &File{
-					Path:    path,
-					RelPath: filepath.Join(g.path, g.scanner.Text()),
-					Info:    info,
+					Root: g.root,
+					Path: filepath.Join(g.path, g.scanner.Text()),
+					Info: info,
 				}
 				n++
 

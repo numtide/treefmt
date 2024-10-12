@@ -312,8 +312,8 @@ func applyFormatters(
 		for file := range filesCh {
 
 			// first check if this file has been globally excluded
-			if format.PathMatches(file.RelPath, globalExcludes) {
-				log.Debugf("path matched global excludes: %s", file.RelPath)
+			if format.PathMatches(file.Path, globalExcludes) {
+				log.Debugf("path matched global excludes: %s", file.Path)
 				// mark it as processed and continue to the next
 				formattedCh <- &format.Task{
 					File: file,
@@ -333,9 +333,9 @@ func applyFormatters(
 			if len(matches) == 0 {
 
 				if unmatchedLevel == log.FatalLevel {
-					return fmt.Errorf("no formatter for path: %s", file.RelPath)
+					return fmt.Errorf("no formatter for path: %s", file.Path)
 				}
-				log.Logf(unmatchedLevel, "no formatter for path: %s", file.RelPath)
+				log.Logf(unmatchedLevel, "no formatter for path: %s", file.Path)
 				// mark it as processed and continue to the next
 				formattedCh <- &format.Task{
 					File: file,
@@ -403,7 +403,7 @@ func postProcessing(
 					// log the change
 					logMethod(
 						"file has changed",
-						"path", file.RelPath,
+						"path", file.Path,
 						"prev_size", file.Info.Size(),
 						"prev_mod_time", file.Info.ModTime().Truncate(time.Second),
 						"current_size", newInfo.Size(),

@@ -42,19 +42,20 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 		return 0, fmt.Errorf("failed to get file info for temporary file: %w", err)
 	}
 
-	relPath, err := filepath.Rel(s.root, file.Name())
+	path, err := filepath.Rel(s.root, file.Name())
 	if err != nil {
 		return 0, fmt.Errorf("failed to get relative path for temporary file: %w", err)
 	}
 
 	files[0] = &File{
-		Path:    file.Name(),
-		RelPath: relPath,
-		Info:    info,
+		Root: s.root,
+		Path: path,
+		Info: info,
 	}
 
 	// dump the temp file to stdout and remove it once the file is finished being processed
-	files[0].AddReleaseFunc(func() error {
+
+	releaseFunc := func() error {
 		// open the temp file
 		file, err := os.Open(file.Name())
 		if err != nil {
@@ -75,7 +76,9 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 		}
 
 		return nil
-	})
+	}
+
+	files[0].ReleaseFuncs = append(files[0].ReleaseFuncs, releaseFunc)
 
 	s.complete = true
 	s.stats.Add(stats.Traversed, 1)
