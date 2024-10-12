@@ -172,13 +172,13 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		if len(paths) != 1 {
 			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
 		}
-	} else {
-		// checks all paths are contained within the tree root
-		for _, path := range paths {
-			rootPath := filepath.Join(cfg.TreeRoot, path)
-			if _, err = os.Stat(rootPath); err != nil {
-				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
-			}
+	}
+
+	// checks all paths are contained within the tree root
+	for _, path := range paths {
+		rootPath := filepath.Join(cfg.TreeRoot, path)
+		if _, err = os.Stat(rootPath); err != nil {
+			return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
 		}
 	}
 
