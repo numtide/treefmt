@@ -38,6 +38,8 @@ $ rustfmt --edition 2018 src/main.rs src/lib.rs
 ```
 
 > [!IMPORTANT]
+> It _MUST_ process the specified files. For example, it _MUST_ NOT ignore files because they are not tracked by a VCS.
+>
 > It _SHOULD_ processes only the specified files. Files that are not passed _SHOULD_ never be formatted.
 
 ### 2. Write to changed files
