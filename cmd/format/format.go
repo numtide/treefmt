@@ -63,49 +63,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		<-time.After(time.Until(startAfter))
 	}
 
-	if cfg.Stdin {
-		// check we have only received one path arg which we use for the file extension / matching to formatters
-		if len(paths) != 1 {
-			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
-		}
-
-		// read stdin into a temporary file with the same file extension
-		pattern := fmt.Sprintf("*%s", filepath.Ext(paths[0]))
-
-		file, err := os.CreateTemp("", pattern)
-		if err != nil {
-			return fmt.Errorf("failed to create a temporary file for processing stdin: %w", err)
-		}
-
-		if _, err = io.Copy(file, os.Stdin); err != nil {
-			return fmt.Errorf("failed to copy stdin into a temporary file")
-		}
-
-		// set the tree root to match the temp directory
-		cfg.TreeRoot, err = filepath.Abs(filepath.Dir(file.Name()))
-		if err != nil {
-			return fmt.Errorf("failed to get absolute path for tree root: %w", err)
-		}
-
-		// configure filesystem walker to traverse the temporary tree root
-		cfg.Walk = "filesystem"
-
-		// update paths with temp file
-		paths[0], err = filepath.Rel(os.TempDir(), file.Name())
-		if err != nil {
-			return fmt.Errorf("failed to get relative path for temp file: %w", err)
-		}
-
-	} else {
-		// checks all paths are contained within the tree root
-		for _, path := range paths {
-			rootPath := filepath.Join(cfg.TreeRoot, path)
-			if _, err = os.Stat(rootPath); err != nil {
-				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
-			}
-		}
-	}
-
 	// cpu profiling
 	if cfg.CpuProfile != "" {
 		cpuProfile, err := os.Create(cfg.CpuProfile)
@@ -204,13 +161,29 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	eg.Go(postProcessing(ctx, cfg, statz, formattedCh))
 	eg.Go(applyFormatters(ctx, cfg, statz, globalExcludes, formatters, filesCh, formattedCh))
 
-	//
+	// parse the walk type
 	walkType, err := walk.TypeString(cfg.Walk)
 	if err != nil {
 		return fmt.Errorf("invalid walk type: %w", err)
 	}
 
-	reader, err := walk.NewReader(walkType, cfg.TreeRoot, paths, db, statz)
+	if walkType == walk.Stdin {
+		// check we have only received one path arg which we use for the file extension / matching to formatters
+		if len(paths) != 1 {
+			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+		}
+	} else {
+		// checks all paths are contained within the tree root
+		for _, path := range paths {
+			rootPath := filepath.Join(cfg.TreeRoot, path)
+			if _, err = os.Stat(rootPath); err != nil {
+				return fmt.Errorf("path %s not found within the tree root %s", path, cfg.TreeRoot)
+			}
+		}
+	}
+
+	// create a new reader for traversing the paths
+	reader, err := walk.NewCompositeReader(walkType, cfg.TreeRoot, paths, db, statz)
 	if err != nil {
 		return fmt.Errorf("failed to create walker: %w", err)
 	}
@@ -440,22 +413,8 @@ func postProcessing(
 					file.Info = newInfo
 				}
 
-				if file.Release != nil {
-					file.Release()
-				}
-
-				if cfg.Stdin {
-					// dump file into stdout
-					f, err := os.Open(file.Path)
-					if err != nil {
-						return fmt.Errorf("failed to open %s: %w", file.Path, err)
-					}
-					if _, err = io.Copy(os.Stdout, f); err != nil {
-						return fmt.Errorf("failed to copy %s to stdout: %w", file.Path, err)
-					}
-					if err = os.Remove(f.Name()); err != nil {
-						return fmt.Errorf("failed to remove temp file %s: %w", file.Path, err)
-					}
+				if err := file.Release(); err != nil {
+					return fmt.Errorf("failed to release file: %w", err)
 				}
 			}
 		}

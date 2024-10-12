@@ -95,9 +95,10 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 			}
 
 			// set a release function which inserts this file into the release channel for updating
-			file.Release = func() {
+			file.AddReleaseFunc(func() error {
 				c.releaseCh <- file
-			}
+				return nil
+			})
 		}
 
 		if errors.Is(err, io.EOF) {

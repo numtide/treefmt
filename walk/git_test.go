@@ -40,7 +40,7 @@ func TestGitReader(t *testing.T) {
 
 	statz := stats.New()
 
-	reader, err := walk.NewGitReader(tempDir, nil, &statz, 1024)
+	reader, err := walk.NewGitReader(tempDir, "", &statz, 1024)
 	as.NoError(err)
 
 	count := 0

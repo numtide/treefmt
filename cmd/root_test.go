@@ -628,11 +628,11 @@ func TestGitWorktree(t *testing.T) {
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo.txt")
 	as.NoError(err)
-	assertStats(t, as, statz, 7, 7, 7, 0)
+	assertStats(t, as, statz, 8, 8, 8, 0)
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "foo.txt")
 	as.NoError(err)
-	assertStats(t, as, statz, 0, 0, 0, 0)
+	assertStats(t, as, statz, 1, 1, 1, 0)
 }
 
 func TestPathsArg(t *testing.T) {
