@@ -168,31 +168,31 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return fmt.Errorf("invalid walk type: %w", err)
 	}
 
-	if walkType == walk.Stdin {
+	if walkType == walk.Stdin && len(paths) != 1 {
 		// check we have only received one path arg which we use for the file extension / matching to formatters
-		if len(paths) != 1 {
-			return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+		return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+	}
+
+	// checks all paths are contained within the tree root and exist
+	// also "normalize" paths so they're relative to cfg.TreeRoot
+	for i, path := range paths {
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
 		}
-	} else {
-		// checks all paths are contained within the tree root and exist
-		// also "normalize" paths so they're relative to cfg.TreeRoot
-		for i, path := range paths {
-			absolutePath, err := filepath.Abs(path)
-			if err != nil {
-				return fmt.Errorf("error computing absolute path of %s: %w", path, err)
-			}
 
-			relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
-			if err != nil {
-				return fmt.Errorf("error computing relative path from %s to %s: %s", cfg.TreeRoot, absolutePath, err)
-			}
+		relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
+		if err != nil {
+			return fmt.Errorf("error computing relative path from %s to %s: %s", cfg.TreeRoot, absolutePath, err)
+		}
 
-			if strings.HasPrefix(relativePath, "..") {
-				return fmt.Errorf("path %s not inside the tree root %s", path, cfg.TreeRoot)
-			}
+		if strings.HasPrefix(relativePath, "..") {
+			return fmt.Errorf("path %s not inside the tree root %s", path, cfg.TreeRoot)
+		}
 
-			paths[i] = relativePath
+		paths[i] = relativePath
 
+		if walkType != walk.Stdin {
 			if _, err = os.Stat(absolutePath); err != nil {
 				return fmt.Errorf("path %s not found", path)
 			}

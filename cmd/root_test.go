@@ -748,6 +748,14 @@ func TestStdin(t *testing.T) {
 	as.Equal(`{ ...}: "hello"
 `, string(out))
 
+	// try a file that's outside of the project root
+	contents = `{ foo, ... }: "hello"`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "../test.nix")
+	as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
+	as.Equal("", string(out))
+
 	// try some markdown instead
 	contents = `
 | col1 | col2 |
