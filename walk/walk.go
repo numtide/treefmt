@@ -160,7 +160,7 @@ func NewReader(
 		}
 		return reader, err
 	case Git:
-		reader, err = NewGitReader(root, path, statz, BatchSize)
+		reader, err = NewGitWorktreeReader(root, path, statz)
 	case Filesystem:
 		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Stdin:

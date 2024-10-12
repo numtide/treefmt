@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGitReader(t *testing.T) {
+func TestGitWorktreeReader(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
@@ -40,7 +40,7 @@ func TestGitReader(t *testing.T) {
 
 	statz := stats.New()
 
-	reader, err := walk.NewGitReader(tempDir, "", &statz, 1024)
+	reader, err := walk.NewGitWorktreeReader(tempDir, "", &statz)
 	as.NoError(err)
 
 	count := 0
