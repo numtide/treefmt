@@ -122,8 +122,8 @@ func SetFlags(fs *pflag.FlagSet) {
 	)
 	fs.String(
 		"walk", "auto",
-		"The method used to traverse the files within the tree root. Currently supports 'auto', 'git' or "+
-			"'filesystem'. (env $TREEFMT_WALK)",
+		"The method used to traverse the files within the tree root. Currently supports "+
+			"<auto|git|filesystem>. (env $TREEFMT_WALK)",
 	)
 	fs.StringP(
 		"working-dir", "C", ".",
