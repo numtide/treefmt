@@ -25,11 +25,6 @@ import (
 
 	"github.com/numtide/treefmt/test"
 
-	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/cache"
-	"github.com/go-git/go-git/v5/storage/filesystem"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -537,7 +532,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, 32, 0, 0, 0)
 }
 
-func TestGitWorktree(t *testing.T) {
+func TestGit(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
@@ -555,36 +550,32 @@ func TestGitWorktree(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 
-	// init a git repo
-	repo, err := git.Init(
-		filesystem.NewStorage(
-			osfs.New(path.Join(tempDir, ".git")),
-			cache.NewObjectLRUDefault(),
-		),
-		osfs.New(tempDir),
-	)
-	as.NoError(err, "failed to init git repository")
-
-	// get worktree
-	wt, err := repo.Worktree()
-	as.NoError(err, "failed to get git worktree")
-
 	run := func(traversed int32, emitted int32, matched int32, formatted int32) {
 		_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
 		assertStats(t, as, statz, traversed, emitted, matched, formatted)
 	}
 
-	// run before adding anything to the worktree
+	// init a git repo
+	gitCmd := exec.Command("git", "init")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to init git repository")
+
+	// run before adding anything to the index
 	run(0, 0, 0, 0)
 
-	// add everything to the worktree
-	as.NoError(wt.AddGlob("."))
-	as.NoError(err)
+	// add everything to the index
+	gitCmd = exec.Command("git", "add", ".")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to add everything to the index")
+
 	run(32, 32, 32, 0)
 
-	// remove python directory from the worktree
-	as.NoError(wt.RemoveGlob("python/*"))
+	// remove python directory from the index
+	gitCmd = exec.Command("git", "rm", "--cached", "python/*")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to remove python directory from the index")
+
 	run(29, 29, 29, 0)
 
 	// remove nixpkgs.toml from the filesystem but leave it in the index
@@ -594,7 +585,7 @@ func TestGitWorktree(t *testing.T) {
 	// walk with filesystem instead of git
 	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	assertStats(t, as, statz, 60, 60, 60, 0)
+	assertStats(t, as, statz, 80, 80, 80, 0)
 
 	// capture current cwd, so we can replace it after the test is finished
 	cwd, err := os.Getwd()
@@ -633,6 +624,57 @@ func TestGitWorktree(t *testing.T) {
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "foo.txt")
 	as.NoError(err)
 	assertStats(t, as, statz, 1, 1, 1, 0)
+
+	// commit
+	gitCmd = exec.Command("git", "commit", "-m", "initial commit")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to commit")
+
+	// read staged changes
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "git_staged")
+	as.NoError(err)
+	assertStats(t, as, statz, 0, 0, 0, 0)
+
+	// create some changes
+	_, err = os.Create(filepath.Join(tempDir, "new.txt"))
+	as.NoError(err)
+
+	appendToFile := func(path string, content string) {
+		f, err := os.OpenFile(filepath.Join(tempDir, path), os.O_APPEND|os.O_WRONLY, 0644)
+		as.NoError(err)
+		defer f.Close()
+		_, err = f.WriteString(content)
+		as.NoError(err)
+	}
+
+	appendToFile("treefmt.toml", "\n")
+	appendToFile("rust/Cargo.toml", "\n")
+	appendToFile("nix/sources.nix", "\n")
+
+	// should still be empty
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "git_staged")
+	as.NoError(err)
+	assertStats(t, as, statz, 0, 0, 0, 0)
+
+	// stage changes
+	gitCmd = exec.Command("git", "add", "new.txt", "treefmt.toml", "rust/Cargo.toml", "nix/sources.nix")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to stage changes")
+
+	// read changes
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "git_staged")
+	as.NoError(err)
+	assertStats(t, as, statz, 4, 4, 4, 0)
+
+	// commit
+	gitCmd = exec.Command("git", "commit", "-m", "second commit")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to commit")
+
+	// should be empty
+	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "git_staged")
+	as.NoError(err)
+	assertStats(t, as, statz, 0, 0, 0, 0)
 }
 
 func TestPathsArg(t *testing.T) {

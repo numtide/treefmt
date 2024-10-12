@@ -20,9 +20,11 @@ type Type int
 
 const (
 	Auto Type = iota
-	Git
-	Filesystem
 	Stdin
+	Filesystem
+	Git
+	GitIndex
+	GitStaged
 
 	BatchSize = 1024
 )
@@ -159,12 +161,15 @@ func NewReader(
 			reader, err = NewReader(Filesystem, root, path, db, statz)
 		}
 		return reader, err
-	case Git:
-		reader, err = NewGitWorktreeReader(root, path, statz)
-	case Filesystem:
-		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Stdin:
 		return nil, fmt.Errorf("stdin walk type is not supported")
+	case Filesystem:
+		reader = NewFilesystemReader(root, path, statz, BatchSize)
+	case Git, GitIndex:
+		reader, err = NewGitIndexReader(root, path, statz)
+	case GitStaged:
+		reader, err = NewGitStagedReader(root, path, statz)
+
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)
 	}

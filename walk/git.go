@@ -4,14 +4,15 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/charmbracelet/log"
-	"github.com/numtide/treefmt/stats"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/stats"
+	"golang.org/x/sync/errgroup"
 )
 
 type GitReader struct {
@@ -99,12 +100,12 @@ func (g *GitReader) Close() error {
 	return g.eg.Wait()
 }
 
-func NewGitWorktreeReader(
+func newGitReader(
 	root string,
 	path string,
+	args []string,
 	statz *stats.Stats,
 ) (*GitReader, error) {
-
 	// check if the root is a git repository
 	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
 	cmd.Dir = root
@@ -118,9 +119,25 @@ func NewGitWorktreeReader(
 	return &GitReader{
 		root:  root,
 		path:  path,
-		args:  []string{"ls-files"},
+		args:  args,
 		stats: statz,
 		eg:    &errgroup.Group{},
 		log:   log.WithPrefix("walk[git]"),
 	}, nil
+}
+
+func NewGitStagedReader(
+	root string,
+	path string,
+	statz *stats.Stats,
+) (*GitReader, error) {
+	return newGitReader(root, path, []string{"diff", "--name-only", "--cached"}, statz)
+}
+
+func NewGitIndexReader(
+	root string,
+	path string,
+	statz *stats.Stats,
+) (*GitReader, error) {
+	return newGitReader(root, path, []string{"ls-files"}, statz)
 }

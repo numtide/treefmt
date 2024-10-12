@@ -47,12 +47,19 @@ in
     ];
 
     nativeBuildInputs =
+      [ pkgs.git ] ++
       # we need some formatters available for the tests
       import ./formatters.nix pkgs;
 
     preCheck = ''
+      HOME=$(mktemp -d)
       XDG_CACHE_HOME=$(mktemp -d)
-      export XDG_CACHE_HOME
+
+      export HOME XDG_CACHE_HOME
+
+      # setup a git user for committing during tests
+      git config --global user.email "<test@treefmt.com>"
+      git config --global user.name "Treefmt Test"
     '';
 
     meta = with lib; {
