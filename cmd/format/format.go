@@ -205,33 +205,34 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return fmt.Errorf("failed to create walker: %w", err)
 	}
 
+	// start traversing
 	files := make([]*walk.File, BatchSize)
-	for {
-		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 
+	for {
+		// read the next batch
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		n, err := reader.Read(ctx, files)
 
-		for idx := 0; idx < n; idx++ {
-			file := files[idx]
-
-			// check if this file is new or has changed when compared to the cache entry
-			if file.Cache == nil || file.Cache.HasChanged(file.Info) {
-				filesCh <- file
-				statz.Add(stats.Emitted, 1)
-			}
-		}
-
+		// ensure context is cancelled to release resources
 		cancel()
 
+		// pass each file into the file channel for processing
+		for idx := 0; idx < n; idx++ {
+			filesCh <- files[idx]
+		}
+
 		if errors.Is(err, io.EOF) {
+			// we have finished traversing
 			break
 		} else if err != nil {
+			// something went wrong
 			log.Errorf("failed to read files: %v", err)
 			cancel()
 			break
 		}
 	}
 
+	// indicate no further files for processing
 	close(filesCh)
 
 	// wait for everything to complete
@@ -263,6 +264,8 @@ func applyFormatters(
 	// formatters which should be applied to their respective files
 	batches := make(map[string][]*format.Task)
 
+	// apply check if the given batch key has enough tasks to trigger processing
+	// flush is used to force processing regardless of the number of tasks
 	apply := func(key string, flush bool) {
 		// lookup the batch and exit early if it's empty
 		batch := batches[key]
@@ -304,6 +307,7 @@ func applyFormatters(
 		}
 	}
 
+	// tryApply batches tasks by their batch key and processes the batch if there is enough ready
 	tryApply := func(task *format.Task) {
 		// append to batch
 		key := task.BatchKey
@@ -314,53 +318,68 @@ func applyFormatters(
 
 	return func() error {
 		defer func() {
-			// close processed channel
+			// indicate processing has finished
 			close(formattedCh)
 		}()
 
+		// parse unmatched log level
 		unmatchedLevel, err := log.ParseLevel(cfg.OnUnmatched)
 		if err != nil {
 			return fmt.Errorf("invalid on-unmatched value: %w", err)
 		}
 
-		// iterate the files channel
+		// iterate the file channel
 		for file := range filesCh {
+
+			// a list of formatters that match this file
+			var matches []*format.Formatter
 
 			// first check if this file has been globally excluded
 			if format.PathMatches(file.RelPath, globalExcludes) {
 				log.Debugf("path matched global excludes: %s", file.RelPath)
-				// mark it as processed and continue to the next
-				formattedCh <- &format.Task{
-					File: file,
-				}
-				continue
-			}
-
-			// check if any formatters are interested in this file
-			var matches []*format.Formatter
-			for _, formatter := range formatters {
-				if formatter.Wants(file) {
-					matches = append(matches, formatter)
+			} else {
+				// otherwise, check if any formatters are interested in it
+				for _, formatter := range formatters {
+					if formatter.Wants(file) {
+						matches = append(matches, formatter)
+					}
 				}
 			}
 
-			// see if any formatters matched
+			// indicates no further processing
+			var release bool
+
+			// check if there were no matches
 			if len(matches) == 0 {
-
+				// log that there was no match, exiting with an error if the unmatched level was set to fatal
 				if unmatchedLevel == log.FatalLevel {
 					return fmt.Errorf("no formatter for path: %s", file.RelPath)
 				}
+
 				log.Logf(unmatchedLevel, "no formatter for path: %s", file.RelPath)
-				// mark it as processed and continue to the next
-				formattedCh <- &format.Task{
-					File: file,
-				}
+
+				// no further processing
+				release = true
 			} else {
-				// record the match
+				// record there was a match
 				statz.Add(stats.Matched, 1)
-				// create a new format task, add it to a batch based on its batch key and try to apply if the batch is full
-				task := format.NewTask(file, matches)
-				tryApply(&task)
+
+				// check if the file is new or has changed when compared to the cache entry
+				if file.Cache == nil || file.Cache.HasChanged(file.Info) {
+					// if so, generate a format task, add it to the relevant batch (by batch key) and try to process
+					task := format.NewTask(file, matches)
+					tryApply(&task)
+				} else {
+					// indicate no further processing
+					release = true
+				}
+			}
+
+			if release {
+				// release the file as there is no more processing to be done on it
+				if err := file.Release(); err != nil {
+					return fmt.Errorf("failed to release file: %w", err)
+				}
 			}
 		}
 
@@ -398,16 +417,20 @@ func postProcessing(
 					break LOOP
 				}
 
-				// check if the file has changed
+				// grab the underlying file reference
 				file := task.File
+
+				// check if the file has changed
 				changed, newInfo, err := file.Stat()
 				if err != nil {
 					return err
 				}
 
+				statz.Add(stats.Formatted, 1)
+
 				if changed {
-					// record the change
-					statz.Add(stats.Formatted, 1)
+					// record that a change in the underlying file occurred
+					statz.Add(stats.Changed, 1)
 
 					logMethod := log.Debug
 					if cfg.FailOnChange {
@@ -434,8 +457,8 @@ func postProcessing(
 			}
 		}
 
-		// if fail on change has been enabled, check that no files were actually formatted, throwing an error if so
-		if cfg.FailOnChange && statz.Value(stats.Formatted) != 0 {
+		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
+		if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
 			return ErrFailOnChange
 		}
 

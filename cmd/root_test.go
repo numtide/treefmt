@@ -72,24 +72,24 @@ func TestOnUnmatched(t *testing.T) {
 	var out []byte
 
 	// default is warn
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
 	as.NoError(err)
 	checkOutput("WARN", out)
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "--on-unmatched", "warn")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "warn")
 	as.NoError(err)
 	checkOutput("WARN", out)
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-u", "error")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-u", "error")
 	as.NoError(err)
 	checkOutput("ERRO", out)
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-v", "--on-unmatched", "info")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-v", "--on-unmatched", "info")
 	as.NoError(err)
 	checkOutput("INFO", out)
 
 	t.Setenv("TREEFMT_ON_UNMATCHED", "debug")
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-c", "-vv")
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-vv")
 	as.NoError(err)
 	checkOutput("DEBU", out)
 }
@@ -182,25 +182,53 @@ func TestSpecifyingFormatters(t *testing.T) {
 	setup()
 	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 3, 3)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 3,
+		stats.Changed:   3,
+	})
 
 	setup()
+
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 2, 2)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   2,
+	})
 
 	setup()
+
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "ruby,nix")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 2, 2)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   2,
+	})
 
 	setup()
+
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 1, 1)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   1,
+	})
 
 	// test bad names
 	setup()
+
 	_, _, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
 	as.Errorf(err, "formatter not found in config: foo")
 
@@ -228,7 +256,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	// globally exclude nix files
 	cfg.Excludes = []string{"*.nix"}
@@ -236,7 +270,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 31, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   31,
+		stats.Formatted: 31,
+		stats.Changed:   0,
+	})
 
 	// add haskell files to the global exclude
 	cfg.Excludes = []string{"*.nix", "*.hs"}
@@ -244,7 +284,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 25, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   25,
+		stats.Formatted: 25,
+		stats.Changed:   0,
+	})
 
 	echo := cfg.FormatterConfigs["echo"]
 
@@ -254,7 +300,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 23, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   23,
+		stats.Formatted: 23,
+		stats.Changed:   0,
+	})
 
 	// remove go files from the echo formatter via env
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "*.py,*.go")
@@ -262,7 +314,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 22, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   22,
+		stats.Formatted: 22,
+		stats.Changed:   0,
+	})
 
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "") // reset
 
@@ -272,7 +330,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 1, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
 
 	// add js files to echo formatter via env
 	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
@@ -280,7 +344,13 @@ func TestIncludesAndExcludes(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 2, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   0,
+	})
 }
 
 func TestPrjRootEnvVariable(t *testing.T) {
@@ -303,7 +373,13 @@ func TestPrjRootEnvVariable(t *testing.T) {
 	t.Setenv("PRJ_ROOT", tempDir)
 	_, statz, err := treefmt(t, "--config-file", configPath)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 }
 
 func TestCache(t *testing.T) {
@@ -327,34 +403,76 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, statz, err := treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// clear cache
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// clear cache
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// no cache
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -388,13 +506,25 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	// this should fail if the working directory hasn't been changed first
 	_, statz, err := treefmt(t, "-C", tempDir)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	// use env
 	t.Setenv("TREEFMT_WORKING_DIR", tempDir)
 	_, statz, err = treefmt(t, "-c")
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 }
 
 func TestFailOnChange(t *testing.T) {
@@ -467,31 +597,61 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	args := []string{"--config-file", configPath, "--tree-root", tempDir}
 	_, statz, err := treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 3, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 3,
+		stats.Changed:   0,
+	})
 
 	// tweak mod time of elm formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 3, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 3,
+		stats.Changed:   0,
+	})
 
 	// check cache is working
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// tweak mod time of python formatter
 	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 3, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 3,
+		stats.Changed:   0,
+	})
 
 	// check cache is working
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// add go formatter
 	cfg.FormatterConfigs["go"] = &config.Formatter{
@@ -503,12 +663,24 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 4, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 4,
+		stats.Changed:   0,
+	})
 
 	// check cache is working
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// remove python formatter
 	delete(cfg.FormatterConfigs, "python")
@@ -516,12 +688,24 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 2, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   0,
+	})
 
 	// check cache is working
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   2,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 
 	// remove elm formatter
 	delete(cfg.FormatterConfigs, "elm")
@@ -529,12 +713,24 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 1, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
 
 	// check cache is working
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 0, 0, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
 }
 
 func TestGitWorktree(t *testing.T) {
@@ -569,10 +765,16 @@ func TestGitWorktree(t *testing.T) {
 	wt, err := repo.Worktree()
 	as.NoError(err, "failed to get git worktree")
 
-	run := func(traversed int32, emitted int32, matched int32, formatted int32) {
+	run := func(traversed int32, matched int32, formatted int32, changed int32) {
 		_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
-		assertStats(t, as, statz, traversed, emitted, matched, formatted)
+
+		assertStats(t, as, statz, map[stats.Type]int32{
+			stats.Traversed: traversed,
+			stats.Matched:   matched,
+			stats.Formatted: formatted,
+			stats.Changed:   changed,
+		})
 	}
 
 	// run before adding anything to the worktree
@@ -592,9 +794,15 @@ func TestGitWorktree(t *testing.T) {
 	run(28, 28, 28, 0)
 
 	// walk with filesystem instead of git
+	// we should traverse more files since we will look in the .git folder
 	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
-	assertStats(t, as, statz, 60, 60, 60, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 60,
+		stats.Matched:   60,
+		stats.Changed:   0,
+	})
 
 	// capture current cwd, so we can replace it after the test is finished
 	cwd, err := os.Getwd()
@@ -608,15 +816,30 @@ func TestGitWorktree(t *testing.T) {
 	// format specific sub paths
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "-vv")
 	as.NoError(err)
-	assertStats(t, as, statz, 2, 2, 2, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 2,
+		stats.Matched:   2,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell")
 	as.NoError(err)
-	assertStats(t, as, statz, 9, 9, 9, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 9,
+		stats.Matched:   9,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell", "ruby")
 	as.NoError(err)
-	assertStats(t, as, statz, 10, 10, 10, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 10,
+		stats.Matched:   10,
+		stats.Changed:   0,
+	})
 
 	// try with a bad path
 	_, _, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo")
@@ -628,11 +851,21 @@ func TestGitWorktree(t *testing.T) {
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo.txt")
 	as.NoError(err)
-	assertStats(t, as, statz, 8, 8, 8, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 8,
+		stats.Matched:   8,
+		stats.Changed:   0,
+	})
 
 	_, statz, err = treefmt(t, "-C", tempDir, "-c", "foo.txt")
 	as.NoError(err)
-	assertStats(t, as, statz, 1, 1, 1, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 1,
+		stats.Matched:   1,
+		stats.Changed:   0,
+	})
 }
 
 func TestPathsArg(t *testing.T) {
@@ -677,19 +910,38 @@ func TestPathsArg(t *testing.T) {
 	// without any path args
 	_, statz, err := treefmt(t)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	// specify some explicit paths
 	_, statz, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 	as.NoError(err)
-	assertStats(t, as, statz, 2, 2, 2, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 2,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   0,
+	})
 
 	// specify an absolute path
 	absoluteInternalPath, err := filepath.Abs("elm/elm.json")
 	as.NoError(err)
+
 	_, statz, err = treefmt(t, "-c", absoluteInternalPath)
 	as.NoError(err)
-	assertStats(t, as, statz, 1, 1, 1, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 1,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
 
 	// specify a bad path
 	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
@@ -742,7 +994,13 @@ func TestStdin(t *testing.T) {
 
 	out, statz, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
 	as.NoError(err)
-	assertStats(t, as, statz, 1, 1, 1, 1)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 1,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   1,
+	})
 
 	// the nix formatters should have reduced the example to the following
 	as.Equal(`{ ...}: "hello"
@@ -767,7 +1025,13 @@ func TestStdin(t *testing.T) {
 
 	out, statz, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.md")
 	as.NoError(err)
-	assertStats(t, as, statz, 1, 1, 1, 1)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 1,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   1,
+	})
 
 	as.Equal(`| col1   | col2      |
 | ------ | --------- |
@@ -881,7 +1145,13 @@ func TestRunInSubdir(t *testing.T) {
 	// without any path args, should reformat the whole tree
 	_, statz, err := treefmt(t)
 	as.NoError(err)
-	assertStats(t, as, statz, 32, 32, 32, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   32,
+		stats.Formatted: 32,
+		stats.Changed:   0,
+	})
 
 	// specify some explicit paths, relative to the tree root
 	// this should not work, as we're in a subdirectory
@@ -891,7 +1161,13 @@ func TestRunInSubdir(t *testing.T) {
 	// specify some explicit paths, relative to the current directory
 	_, statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
 	as.NoError(err)
-	assertStats(t, as, statz, 2, 2, 2, 0)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 2,
+		stats.Matched:   2,
+		stats.Formatted: 2,
+		stats.Changed:   0,
+	})
 }
 
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
@@ -945,10 +1221,15 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	return out, statz, nil
 }
 
-func assertStats(t *testing.T, as *require.Assertions, statz *stats.Stats, traversed int32, emitted int32, matched int32, formatted int32) {
+func assertStats(
+	t *testing.T,
+	as *require.Assertions,
+	statz *stats.Stats,
+	expected map[stats.Type]int32,
+) {
 	t.Helper()
-	as.Equal(traversed, statz.Value(stats.Traversed), "stats.traversed")
-	as.Equal(emitted, statz.Value(stats.Emitted), "stats.emitted")
-	as.Equal(matched, statz.Value(stats.Matched), "stats.matched")
-	as.Equal(formatted, statz.Value(stats.Formatted), "stats.formatted")
+
+	for k, v := range expected {
+		as.Equal(v, statz.Value(k), k.String())
+	}
 }
