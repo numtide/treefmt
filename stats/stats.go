@@ -7,13 +7,14 @@ import (
 	"time"
 )
 
+//go:generate enumer -type=Type -text -transform=snake -output=./stats_type.go
 type Type int
 
 const (
 	Traversed Type = iota
-	Emitted
 	Matched
 	Formatted
+	Changed
 )
 
 type Stats struct {
@@ -44,9 +45,9 @@ func (s *Stats) Print() {
 	fmt.Printf(
 		strings.Join(components, "\n"),
 		s.Value(Traversed),
-		s.Value(Emitted),
 		s.Value(Matched),
 		s.Value(Formatted),
+		s.Value(Changed),
 		s.Elapsed().Round(time.Millisecond),
 	)
 }
@@ -55,9 +56,9 @@ func New() Stats {
 	// init counters
 	counters := make(map[Type]*atomic.Int32)
 	counters[Traversed] = &atomic.Int32{}
-	counters[Emitted] = &atomic.Int32{}
 	counters[Matched] = &atomic.Int32{}
 	counters[Formatted] = &atomic.Int32{}
+	counters[Changed] = &atomic.Int32{}
 
 	return Stats{
 		start:    time.Now(),
