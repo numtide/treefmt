@@ -24,8 +24,9 @@ type CachedReader struct {
 	delegate Reader
 
 	eg *errgroup.Group
-	// releaseCh contains files which have been released after processing and can be updated in the cache.
-	releaseCh chan *File
+
+	// updateCh contains files which have been released after processing and should be updated in the cache.
+	updateCh chan *File
 }
 
 // process updates cached file entries by batching file updates and flushing them to the database periodically.
@@ -59,7 +60,7 @@ func (c *CachedReader) process() error {
 		})
 	}
 
-	for file := range c.releaseCh {
+	for file := range c.updateCh {
 		batch = append(batch, file)
 		if len(batch) == c.batchSize {
 			if err := flush(); err != nil {
@@ -94,9 +95,14 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 				return err
 			}
 
-			// set a release function which inserts this file into the release channel for updating
-			file.AddReleaseFunc(func() error {
-				c.releaseCh <- file
+			// set a release function which inserts this file into the update channel
+			file.AddReleaseFunc(func(formatErr error) error {
+				// in the event of a formatting error, we do not want to update this file in the cache
+				// this ensures later invocations will try and re-format this file
+				if formatErr == nil {
+					c.updateCh <- file
+				}
+
 				return nil
 			})
 		}
@@ -116,7 +122,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 // Close waits for any processing to complete.
 func (c *CachedReader) Close() error {
 	// close the release channel
-	close(c.releaseCh)
+	close(c.updateCh)
 
 	// wait for any pending releases to be processed
 	return c.eg.Wait()
@@ -138,7 +144,7 @@ func NewCachedReader(db *bolt.DB, batchSize int, delegate Reader) (*CachedReader
 		delegate:  delegate,
 		log:       log.WithPrefix("walk[cache]"),
 		eg:        eg,
-		releaseCh: make(chan *File, batchSize*runtime.NumCPU()),
+		updateCh:  make(chan *File, batchSize*runtime.NumCPU()),
 	}
 
 	// start the processing loop

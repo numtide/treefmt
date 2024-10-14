@@ -377,7 +377,7 @@ func applyFormatters(
 
 			if release {
 				// release the file as there is no more processing to be done on it
-				if err := file.Release(); err != nil {
+				if err := file.Release(nil); err != nil {
 					return fmt.Errorf("failed to release file: %w", err)
 				}
 			}
@@ -420,6 +420,20 @@ func postProcessing(
 				// grab the underlying file reference
 				file := task.File
 
+				// check if there were any errors processing the file
+				if len(task.Errors) > 0 {
+					// release the file, passing the first task error
+					// note: task errors are related to the batch in which a task was applied
+					// this does not necessarily indicate this file had a problem being formatted, but this approach
+					// serves our purpose for now of indicating some sort of error condition to the release hooks
+					if err := file.Release(task.Errors[0]); err != nil {
+						return fmt.Errorf("failed to release file: %w", err)
+					}
+
+					// continue processing next task
+					continue
+				}
+
 				// check if the file has changed
 				changed, newInfo, err := file.Stat()
 				if err != nil {
@@ -451,7 +465,7 @@ func postProcessing(
 					file.Info = newInfo
 				}
 
-				if err := file.Release(); err != nil {
+				if err := file.Release(nil); err != nil {
 					return fmt.Errorf("failed to release file: %w", err)
 				}
 			}
