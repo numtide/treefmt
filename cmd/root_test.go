@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -1239,6 +1240,8 @@ func TestRunInSubdir(t *testing.T) {
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	t.Helper()
 
+	t.Logf("treefmt %s", strings.Join(args, " "))
+
 	tempDir := t.TempDir()
 	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
 
@@ -1293,6 +1296,8 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	if readErr != nil {
 		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
 	}
+
+	t.Log(string(out))
 
 	return out, statz, cmdErr
 }
