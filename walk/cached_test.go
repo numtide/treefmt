@@ -50,7 +50,7 @@ func TestCachedReader(t *testing.T) {
 					changeCount++
 				}
 
-				as.NoError(file.Release())
+				as.NoError(file.Release(nil))
 			}
 
 			cancel()

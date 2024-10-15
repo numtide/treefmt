@@ -54,22 +54,26 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 	}
 
 	// dump the temp file to stdout and remove it once the file is finished being processed
-	files[0].AddReleaseFunc(func() error {
-		// open the temp file
-		file, err := os.Open(file.Name())
-		if err != nil {
-			return fmt.Errorf("failed to open temp file %s: %w", file.Name(), err)
+	files[0].AddReleaseFunc(func(formatErr error) error {
+		// if formatting was successful, we dump its contents into os.Stdout
+		if formatErr == nil {
+			// open the temp file
+			file, err := os.Open(file.Name())
+			if err != nil {
+				return fmt.Errorf("failed to open temp file %s: %w", file.Name(), err)
+			}
+
+			// dump file into stdout
+			if _, err = io.Copy(os.Stdout, file); err != nil {
+				return fmt.Errorf("failed to copy %s to stdout: %w", file.Name(), err)
+			}
+
+			if err = file.Close(); err != nil {
+				return fmt.Errorf("failed to close temp file %s: %w", file.Name(), err)
+			}
 		}
 
-		// dump file into stdout
-		if _, err = io.Copy(os.Stdout, file); err != nil {
-			return fmt.Errorf("failed to copy %s to stdout: %w", file.Name(), err)
-		}
-
-		if err = file.Close(); err != nil {
-			return fmt.Errorf("failed to close temp file %s: %w", file.Name(), err)
-		}
-
+		// clean up the temp file
 		if err = os.Remove(file.Name()); err != nil {
 			return fmt.Errorf("failed to remove temp file %s: %w", file.Name(), err)
 		}

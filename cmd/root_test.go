@@ -473,6 +473,58 @@ func TestCache(t *testing.T) {
 		stats.Formatted: 32,
 		stats.Changed:   0,
 	})
+
+	// test that formatting errors are not cached
+
+	// update the config with a failing formatter
+	cfg = &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			// fails to execute
+			"fail": {
+				Command:  "touch",
+				Options:  []string{"--bad-arg"},
+				Includes: []string{"*.hs"},
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, cfg)
+
+	// running should match but not format anything
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   6,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
+
+	// running again should provide the same result
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   6,
+		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
+
+	// let's fix the haskell config so it no longer fails
+	cfg.FormatterConfigs["fail"].Options = nil
+	test.WriteConfig(t, configPath, cfg)
+
+	// we should now format the haskell files
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int32{
+		stats.Traversed: 32,
+		stats.Matched:   6,
+		stats.Formatted: 6,
+		stats.Changed:   6,
+	})
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -546,9 +598,6 @@ func TestFailOnChange(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 	_, _, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
 	as.ErrorIs(err, format2.ErrFailOnChange)
-
-	// we have second precision mod time tracking
-	time.Sleep(time.Second)
 
 	// test with no cache
 	t.Setenv("TREEFMT_FAIL_ON_CHANGE", "true")
@@ -1203,6 +1252,16 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	root.SetArgs(args)
 	root.SetOut(tempOut)
 	root.SetErr(tempOut)
+
+	// record the start time
+	start := time.Now()
+
+	defer func() {
+		// Wait until we tick over into the next second before continuing.
+		// This ensures we correctly detect changes within tests as treefmt compares modtime at second level precision.
+		waitUntil := start.Truncate(time.Second).Add(time.Second)
+		time.Sleep(time.Until(waitUntil))
+	}()
 
 	if err := root.Execute(); err != nil {
 		return nil, nil, err
