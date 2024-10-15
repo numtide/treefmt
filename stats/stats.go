@@ -19,15 +19,15 @@ const (
 
 type Stats struct {
 	start    time.Time
-	counters map[Type]*atomic.Int32
+	counters map[Type]*atomic.Int64
 }
 
-func (s *Stats) Add(t Type, delta int32) int32 {
-	return s.counters[t].Add(delta)
+func (s *Stats) Add(t Type, delta int) int {
+	return int(s.counters[t].Add(int64(delta)))
 }
 
-func (s *Stats) Value(t Type) int32 {
-	return s.counters[t].Load()
+func (s *Stats) Value(t Type) int {
+	return int(s.counters[t].Load())
 }
 
 func (s *Stats) Elapsed() time.Duration {
@@ -53,12 +53,11 @@ func (s *Stats) Print() {
 }
 
 func New() Stats {
-	// init counters
-	counters := make(map[Type]*atomic.Int32)
-	counters[Traversed] = &atomic.Int32{}
-	counters[Matched] = &atomic.Int32{}
-	counters[Formatted] = &atomic.Int32{}
-	counters[Changed] = &atomic.Int32{}
+	counters := make(map[Type]*atomic.Int64)
+	counters[Traversed] = &atomic.Int64{}
+	counters[Matched] = &atomic.Int64{}
+	counters[Formatted] = &atomic.Int64{}
+	counters[Changed] = &atomic.Int64{}
 
 	return Stats{
 		start:    time.Now(),

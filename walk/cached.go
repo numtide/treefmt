@@ -31,7 +31,7 @@ type CachedReader struct {
 
 // process updates cached file entries by batching file updates and flushing them to the database periodically.
 func (c *CachedReader) process() error {
-	var batch []*File
+	batch := make([]*File, 0, c.batchSize)
 
 	flush := func() error {
 		// check for an empty batch
@@ -56,6 +56,7 @@ func (c *CachedReader) process() error {
 					return fmt.Errorf("failed to put entry for path %s: %w", file.RelPath, err)
 				}
 			}
+
 			return nil
 		})
 	}
@@ -66,6 +67,8 @@ func (c *CachedReader) process() error {
 			if err := flush(); err != nil {
 				return err
 			}
+
+			// reset the batch
 			batch = batch[:0]
 		}
 	}
@@ -90,9 +93,11 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 			file := files[i]
 
 			// lookup cache entry and append to the file
-			file.Cache, err = bucket.Get(file.RelPath)
-			if err != nil {
-				return err
+			var bucketErr error
+
+			file.Cache, bucketErr = bucket.Get(file.RelPath)
+			if !(bucketErr == nil || errors.Is(bucketErr, cache.ErrKeyNotFound)) {
+				return bucketErr
 			}
 
 			// set a release function which inserts this file into the update channel

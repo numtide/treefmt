@@ -8,13 +8,12 @@ import (
 	"time"
 
 	"github.com/numtide/treefmt/stats"
-
-	"github.com/numtide/treefmt/walk"
-
 	"github.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/walk"
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:gochecknoglobals
 var examplesPaths = []string{
 	"elm/elm.json",
 	"elm/src/Main.elm",
@@ -80,8 +79,8 @@ func TestFilesystemReader(t *testing.T) {
 	}
 
 	as.Equal(32, count)
-	as.Equal(int32(32), statz.Value(stats.Traversed))
-	as.Equal(int32(0), statz.Value(stats.Matched))
-	as.Equal(int32(0), statz.Value(stats.Formatted))
-	as.Equal(int32(0), statz.Value(stats.Changed))
+	as.Equal(32, statz.Value(stats.Traversed))
+	as.Equal(0, statz.Value(stats.Matched))
+	as.Equal(0, statz.Value(stats.Formatted))
+	as.Equal(0, statz.Value(stats.Changed))
 }

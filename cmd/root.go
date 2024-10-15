@@ -5,13 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/numtide/treefmt/stats"
-
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/build"
 	"github.com/numtide/treefmt/cmd/format"
 	_init "github.com/numtide/treefmt/cmd/init"
 	"github.com/numtide/treefmt/config"
+	"github.com/numtide/treefmt/stats"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,7 +32,7 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 
 	// create out root command
 	cmd := &cobra.Command{
-		Use:     "treefmt <paths...>",
+		Use:     fmt.Sprintf("%s <paths...>", build.Name),
 		Short:   "One CLI to format your repo",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,8 +54,15 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 	cmd.HelpTemplate()
 
 	// add a couple of special flags which don't have a corresponding entry in treefmt.toml
-	fs.StringVar(&configFile, "config-file", "", "Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).")
-	fs.BoolVarP(&treefmtInit, "init", "i", false, "Create a treefmt.toml file in the current directory.")
+	fs.StringVar(
+		&configFile, "config-file", "",
+		"Load the config file from the given path (defaults to searching upwards for treefmt.toml or "+
+			".treefmt.toml).",
+	)
+	fs.BoolVarP(
+		&treefmtInit, "init", "i", false,
+		"Create a treefmt.toml file in the current directory.",
+	)
 
 	// bind our command's flags to viper
 	if err := v.BindPFlags(fs); err != nil {
@@ -110,6 +116,7 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 
 	// read in the config
 	v.SetConfigFile(configFile)
+
 	if err := v.ReadInConfig(); err != nil {
 		cobra.CheckErr(fmt.Errorf("failed to read config file '%s': %w", configFile, err))
 	}

@@ -25,6 +25,7 @@ func NewTask(file *walk.File, formatters []*Formatter) Task {
 			// formatters with the same priority are sorted lexicographically to ensure a deterministic outcome
 			result = cmp.Compare(a.Name(), b.Name())
 		}
+
 		return result
 	})
 
@@ -33,6 +34,7 @@ func NewTask(file *walk.File, formatters []*Formatter) Task {
 	for _, f := range formatters {
 		key += f.name + ":"
 	}
+
 	key = key[:len(key)-1]
 
 	return Task{

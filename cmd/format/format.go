@@ -14,19 +14,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/numtide/treefmt/walk/cache"
-	bolt "go.etcd.io/bbolt"
-
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
 	"github.com/numtide/treefmt/config"
 	"github.com/numtide/treefmt/format"
 	"github.com/numtide/treefmt/stats"
 	"github.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/walk/cache"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	bolt "go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
-
 	"mvdan.cc/sh/v3/expand"
 )
 
@@ -60,20 +58,23 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		// Wait until we tick over into the next second before processing to ensure our EPOCH level modtime comparisons
 		// for change detection are accurate.
 		// This can fail in CI between checkout and running treefmt if everything happens too quickly.
-		// For humans, the second level precision should not be a problem as they are unlikely to run treefmt in sub-second succession.
+		// For humans, the second level precision should not be a problem as they are unlikely to run treefmt in
+		// sub-second succession.
 		<-time.After(time.Until(startAfter))
 	}
 
 	// cpu profiling
-	if cfg.CpuProfile != "" {
-		cpuProfile, err := os.Create(cfg.CpuProfile)
+	if cfg.CPUProfile != "" {
+		cpuProfile, err := os.Create(cfg.CPUProfile)
 		if err != nil {
 			return fmt.Errorf("failed to open file for writing cpu profile: %w", err)
 		} else if err = pprof.StartCPUProfile(cpuProfile); err != nil {
 			return fmt.Errorf("failed to start cpu profile: %w", err)
 		}
+
 		defer func() {
 			pprof.StopCPUProfile()
+
 			if err := cpuProfile.Close(); err != nil {
 				log.Errorf("failed to close cpu profile: %v", err)
 			}
@@ -99,6 +100,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		if errors.Is(err, format.ErrCommandNotFound) && cfg.AllowMissingFormatter {
 			log.Debugf("formatter command not found: %v", name)
+
 			continue
 		} else if err != nil {
 			return fmt.Errorf("%w: failed to initialise formatter: %v", err, name)
@@ -110,8 +112,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	var db *bolt.DB
 
+	// open the db unless --no-cache was specified
 	if !cfg.NoCache {
-		// open the db
 		db, err = cache.Open(cfg.TreeRoot)
 		if err != nil {
 			return fmt.Errorf("failed to open cache: %w", err)
@@ -123,7 +125,9 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 				log.Errorf("failed to close cache: %v", err)
 			}
 		}()
+	}
 
+	if db != nil {
 		// clear the cache if desired
 		if cfg.ClearCache {
 			if err = cache.Clear(db); err != nil {
@@ -226,9 +230,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 			break
 		} else if err != nil {
 			// something went wrong
-			log.Errorf("failed to read files: %v", err)
-			cancel()
-			break
+			return fmt.Errorf("failed to read files: %w", err)
 		}
 	}
 
@@ -243,7 +245,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	return reader.Close()
 }
 
-// applyFormatters
 func applyFormatters(
 	ctx context.Context,
 	cfg *config.Config,
@@ -275,7 +276,6 @@ func applyFormatters(
 
 		// process the batch if it's full, or we've been asked to flush partial batches
 		if flush || len(batch) == BatchSize {
-
 			// copy the batch as we re-use it for the next batch
 			tasks := make([]*format.Task, len(batch))
 			copy(tasks, batch)
@@ -287,6 +287,7 @@ func applyFormatters(
 				formatters := tasks[0].Formatters
 
 				var formatErrors []error
+
 				for idx := range formatters {
 					if err := formatters[idx].Apply(ctx, tasks); err != nil {
 						formatErrors = append(formatErrors, err)
@@ -330,7 +331,6 @@ func applyFormatters(
 
 		// iterate the file channel
 		for file := range filesCh {
-
 			// a list of formatters that match this file
 			var matches []*format.Formatter
 
@@ -392,6 +392,7 @@ func applyFormatters(
 		if err := fg.Wait(); err != nil {
 			return fmt.Errorf("formatting failure: %w", err)
 		}
+
 		return nil
 	}
 }
@@ -406,7 +407,6 @@ func postProcessing(
 	LOOP:
 		for {
 			select {
-
 			// detect ctx cancellation
 			case <-ctx.Done():
 				return ctx.Err()

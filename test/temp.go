@@ -1,24 +1,24 @@
 package test
 
 import (
-	"io"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/numtide/treefmt/config"
-
 	"github.com/BurntSushi/toml"
+	"github.com/numtide/treefmt/config"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
 )
 
 func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	t.Helper()
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("failed to create a new config file: %v", err)
 	}
+
 	encoder := toml.NewEncoder(f)
 	if err = encoder.Encode(cfg); err != nil {
 		t.Fatalf("failed to write to config file: %v", err)
@@ -28,6 +28,7 @@ func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 func TempExamples(t *testing.T) string {
 	tempDir := t.TempDir()
 	TempExamplesInDir(t, tempDir)
+
 	return tempDir
 }
 
@@ -35,7 +36,7 @@ func TempExamplesInDir(t *testing.T, dir string) {
 	require.NoError(t, cp.Copy("../test/examples", dir), "failed to copy test data to dir")
 
 	// we have second precision mod time tracking, so we wait a second before returning, so we don't trigger false
-	//positives for things like fail on change
+	// positives for things like fail on change
 	time.Sleep(time.Second)
 }
 
@@ -59,18 +60,13 @@ func TempFile(t *testing.T, dir string, pattern string, contents *string) *os.Fi
 	return file
 }
 
-func ReadStdout(t *testing.T) string {
-	_, err := os.Stdout.Seek(0, 0)
-	require.NoError(t, err, "failed to seek to 0")
-	bytes, err := io.ReadAll(os.Stdout)
-	require.NoError(t, err, "failed to read")
-	return string(bytes)
-}
-
 func RecreateSymlink(t *testing.T, path string) error {
 	t.Helper()
+
 	src, err := os.Readlink(path)
+
 	require.NoError(t, err, "failed to read symlink")
 	require.NoError(t, os.Remove(path), "failed to remove symlink")
+
 	return os.Symlink(src, path)
 }

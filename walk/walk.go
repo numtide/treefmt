@@ -49,6 +49,7 @@ func (f *File) Release(formatErr error) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -136,9 +137,11 @@ func (c *CompositeReader) Close() error {
 			return fmt.Errorf("failed to close reader: %w", err)
 		}
 	}
+
 	return nil
 }
 
+//nolint:ireturn
 func NewReader(
 	walkType Type,
 	root string,
@@ -158,6 +161,7 @@ func NewReader(
 		if err != nil {
 			reader, err = NewReader(Filesystem, root, path, db, statz)
 		}
+
 		return reader, err
 	case Stdin:
 		return nil, fmt.Errorf("stdin walk type is not supported")
@@ -183,6 +187,7 @@ func NewReader(
 	return reader, err
 }
 
+//nolint:ireturn
 func NewCompositeReader(
 	walkType Type,
 	root string,

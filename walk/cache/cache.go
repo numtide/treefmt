@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec
 	"encoding/hex"
 	"fmt"
 	"io/fs"
@@ -21,13 +21,15 @@ func (e *Entry) HasChanged(info fs.FileInfo) bool {
 }
 
 func Open(root string) (*bolt.DB, error) {
-	var err error
-	var path string
+	var (
+		err  error
+		path string
+	)
 
 	// Otherwise, the database will be located in `XDG_CACHE_DIR/treefmt/eval-cache/<name>.db`, where <name> is
 	// determined by hashing the treeRoot path.
 	// This associates a given treeRoot with a given instance of the cache.
-	digest := sha1.Sum([]byte(root))
+	digest := sha1.Sum([]byte(root)) //nolint:gosec
 
 	name := hex.EncodeToString(digest[:])
 	if path, err = xdg.CacheFile(fmt.Sprintf("treefmt/eval-cache/%v.db", name)); err != nil {
@@ -49,7 +51,9 @@ func EnsureBuckets(db *bolt.DB) error {
 		if _, err := BucketPaths(tx); err != nil {
 			return err
 		}
+
 		_, err := BucketFormatters(tx)
+
 		return err
 	})
 }
@@ -60,6 +64,7 @@ func Clear(db *bolt.DB) error {
 		if err != nil {
 			return fmt.Errorf("failed to get paths bucket: %w", err)
 		}
+
 		return bucket.DeleteAll()
 	})
 }

@@ -29,7 +29,7 @@ type GitReader struct {
 func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) {
 	// ensure we record how many files we traversed
 	defer func() {
-		g.stats.Add(stats.Traversed, int32(n))
+		g.stats.Add(stats.Traversed, n)
 	}()
 
 	if g.scanner == nil {
@@ -54,7 +54,6 @@ LOOP:
 
 	for n < len(files) {
 		select {
-
 		// exit early if the context was cancelled
 		case <-ctx.Done():
 			return n, ctx.Err()
@@ -72,6 +71,7 @@ LOOP:
 					g.log.Warnf(
 						"Path %s is in the worktree but appears to have been removed from the filesystem", path,
 					)
+
 					continue
 				} else if err != nil {
 					return n, fmt.Errorf("failed to stat %s: %w", path, err)
@@ -83,10 +83,10 @@ LOOP:
 					Info:    info,
 				}
 				n++
-
 			} else {
 				// nothing more to read
 				err = io.EOF
+
 				break LOOP
 			}
 		}

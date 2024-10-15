@@ -8,17 +8,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/numtide/treefmt/config"
-
 	"github.com/BurntSushi/toml"
+	"github.com/numtide/treefmt/config"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
 	"github.com/stretchr/testify/require"
 )
 
 func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	t.Helper()
+
 	v, err := config.NewViper()
 	if err != nil {
 		t.Fatal(err)
@@ -33,6 +32,7 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	if err := v.BindPFlags(flags); err != nil {
 		t.Fatal(err)
 	}
+
 	return v, flags
 }
 
@@ -41,6 +41,7 @@ func readValue(t *testing.T, v *viper.Viper, cfg *config.Config, test func(*conf
 
 	// serialise the config and read it into viper
 	buf := bytes.NewBuffer(nil)
+
 	encoder := toml.NewEncoder(buf)
 	if err := encoder.Encode(cfg); err != nil {
 		t.Fatal(fmt.Errorf("failed to marshal config: %w", err))
@@ -106,6 +107,7 @@ func TestCI(t *testing.T) {
 	// set config value and check that it has no effect
 	// you are not allowed to set ci in config
 	cfg.CI = true
+
 	checkValues(false, false, false, 0)
 
 	// env override
@@ -118,6 +120,7 @@ func TestCI(t *testing.T) {
 
 	// increase verbosity above 1 and check it isn't reset
 	cfg.Verbose = 2
+
 	checkValues(true, true, true, 2)
 }
 
@@ -139,6 +142,7 @@ func TestClearCache(t *testing.T) {
 	// set config value and check that it has no effect
 	// you are not allowed to set clear-cache in config
 	cfg.ClearCache = true
+
 	checkValue(false)
 
 	// env override
@@ -158,7 +162,7 @@ func TestCpuProfile(t *testing.T) {
 
 	checkValue := func(expected string) {
 		readValue(t, v, cfg, func(cfg *config.Config) {
-			as.Equal(expected, cfg.CpuProfile)
+			as.Equal(expected, cfg.CPUProfile)
 		})
 	}
 
@@ -166,7 +170,8 @@ func TestCpuProfile(t *testing.T) {
 	checkValue("")
 
 	// set config value
-	cfg.CpuProfile = "/foo/bar"
+	cfg.CPUProfile = "/foo/bar"
+
 	checkValue("/foo/bar")
 
 	// env override
@@ -195,11 +200,13 @@ func TestExcludes(t *testing.T) {
 
 	// set config value
 	cfg.Excludes = []string{"foo", "bar"}
+
 	checkValue([]string{"foo", "bar"})
 
 	// test global.excludes fallback
 	cfg.Excludes = nil
 	cfg.Global.Excludes = []string{"fizz", "buzz"}
+
 	checkValue([]string{"fizz", "buzz"})
 
 	// env override
@@ -268,6 +275,7 @@ func TestFormatters(t *testing.T) {
 	}
 
 	cfg.Formatters = []string{"echo", "touch"}
+
 	checkValue([]string{"echo", "touch"})
 
 	// env override
@@ -280,6 +288,7 @@ func TestFormatters(t *testing.T) {
 
 	// bad formatter name
 	as.NoError(flags.Set("formatters", "foo,echo,date"))
+
 	_, err := config.FromViper(v)
 	as.ErrorContains(err, "formatter foo not found in config")
 }
@@ -302,6 +311,7 @@ func TestNoCache(t *testing.T) {
 	// set config value and check that it has no effect
 	// you are not allowed to set no-cache in config
 	cfg.NoCache = true
+
 	checkValue(false)
 
 	// env override
@@ -330,6 +340,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	// set config value
 	cfg.OnUnmatched = "error"
+
 	checkValue("error")
 
 	// env override
@@ -359,6 +370,7 @@ func TestTreeRoot(t *testing.T) {
 
 	// set config value
 	cfg.TreeRoot = "/foo/bar"
+
 	checkValue("/foo/bar")
 
 	// env override
@@ -379,10 +391,10 @@ func TestTreeRootFile(t *testing.T) {
 	// create a directory structure with config files at various levels
 	tempDir := t.TempDir()
 	as.NoError(os.MkdirAll(filepath.Join(tempDir, "foo", "bar"), 0o755))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "bar", "a.txt"), []byte{}, 0o644))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "go.mod"), []byte{}, 0o644))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "bar", "a.txt"), []byte{}, 0o600))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "foo", "go.mod"), []byte{}, 0o600))
 	as.NoError(os.MkdirAll(filepath.Join(tempDir, ".git"), 0o755))
-	as.NoError(os.WriteFile(filepath.Join(tempDir, ".git", "config"), []byte{}, 0o644))
+	as.NoError(os.WriteFile(filepath.Join(tempDir, ".git", "config"), []byte{}, 0o600))
 
 	checkValue := func(treeRoot string, treeRootFile string) {
 		readValue(t, v, cfg, func(cfg *config.Config) {
@@ -401,6 +413,7 @@ func TestTreeRootFile(t *testing.T) {
 	// set config value
 	// should match the lowest directory
 	cfg.TreeRootFile = "a.txt"
+
 	checkValue(workDir, "a.txt")
 
 	// env override
@@ -431,16 +444,17 @@ func TestVerbosity(t *testing.T) {
 
 	// set config value
 	cfg.Verbose = 1
-	checkValue(1)
 
-	// env override
-	t.Setenv("TREEFMT_VERBOSE", "2")
-	checkValue(2)
+	checkValue(1)
 
 	// flag override
 	// todo unsure how to set a count flag via the flags api
 	// as.NoError(flags.Set("verbose", "v"))
 	// checkValue(1)
+
+	// env override
+	t.Setenv("TREEFMT_VERBOSE", "2")
+	checkValue(2)
 }
 
 func TestWalk(t *testing.T) {
@@ -460,6 +474,7 @@ func TestWalk(t *testing.T) {
 
 	// set config value
 	cfg.Walk = "git"
+
 	checkValue("git")
 
 	// env override
@@ -495,6 +510,7 @@ func TestWorkingDirectory(t *testing.T) {
 	// set config value and check that it has no effect
 	// you are not allowed to set working-dir in config
 	cfg.WorkingDirectory = "/foo/bar/baz/../fizz"
+
 	checkValue(cwd)
 
 	// env override
@@ -524,6 +540,7 @@ func TestStdin(t *testing.T) {
 	// set config value and check that it has no effect
 	// you are not allowed to set stdin in config
 	cfg.Stdin = true
+
 	checkValues(false)
 
 	// env override

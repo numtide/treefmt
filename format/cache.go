@@ -1,6 +1,7 @@
 package format
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -25,19 +26,18 @@ func CompareFormatters(db *bolt.DB, formatters map[string]*Formatter) error {
 
 		// check for any newly configured or modified formatters
 		for name, formatter := range formatters {
-
 			stat, err := os.Lstat(formatter.Executable())
 			if err != nil {
 				return fmt.Errorf("failed to stat formatter executable %v: %w", formatter.Executable(), err)
 			}
 
 			entry, err := formattersBucket.Get(name)
-			if err != nil {
+			if !(err == nil || errors.Is(err, cache.ErrKeyNotFound)) {
 				return fmt.Errorf("failed to retrieve cache entry for formatter %v: %w", name, err)
 			}
 
-			isNew := entry == nil
-			hasChanged := entry != nil && !(entry.Size == stat.Size() && entry.Modified == stat.ModTime())
+			isNew := errors.Is(err, cache.ErrKeyNotFound)
+			hasChanged := !(isNew || (entry.Size == stat.Size() && entry.Modified == stat.ModTime()))
 
 			if isNew {
 				log.Debugf("formatter '%s' is new", name)
@@ -76,6 +76,7 @@ func CompareFormatters(db *bolt.DB, formatters map[string]*Formatter) error {
 				// indicate a clean is required
 				clearPaths = true
 			}
+
 			return nil
 		}); err != nil {
 			return fmt.Errorf("failed to check cache for removed formatters: %w", err)

@@ -7,26 +7,16 @@ import (
 	"strings"
 
 	"github.com/numtide/treefmt/walk"
-
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
-
-// configReset is used to null out attempts to set certain values in the config file
-var configReset = map[string]any{
-	"ci":          false,
-	"clear-cache": false,
-	"no-cache":    false,
-	"stdin":       false,
-	"working-dir": ".",
-}
 
 // Config is used to represent the list of configured Formatters.
 type Config struct {
 	AllowMissingFormatter bool     `mapstructure:"allow-missing-formatter" toml:"allow-missing-formatter,omitempty"`
 	CI                    bool     `mapstructure:"ci" toml:"ci,omitempty"`
 	ClearCache            bool     `mapstructure:"clear-cache" toml:"-"` // not allowed in config
-	CpuProfile            string   `mapstructure:"cpu-profile" toml:"cpu-profile,omitempty"`
+	CPUProfile            string   `mapstructure:"cpu-profile" toml:"cpu-profile,omitempty"`
 	Excludes              []string `mapstructure:"excludes" toml:"excludes,omitempty"`
 	FailOnChange          bool     `mapstructure:"fail-on-change" toml:"fail-on-change,omitempty"`
 	Formatters            []string `mapstructure:"formatters" toml:"formatters,omitempty"`
@@ -63,7 +53,7 @@ type Formatter struct {
 // SetFlags appends our flags to the provided flag set.
 // We have a flag matching most entries in Config, taking care to ensure the name matches the field name defined in the
 // mapstructure tag.
-// We can rely on a flag's default value being provided in the event the same value was not specified in the config file.
+// We rely on a flag's default value being provided in the event the same value was not specified in the config file.
 func SetFlags(fs *pflag.FlagSet) {
 	fs.Bool(
 		"allow-missing-formatter", false,
@@ -136,7 +126,7 @@ func SetFlags(fs *pflag.FlagSet) {
 // * TOML config type
 // * automatic env enabled
 // * `TREEFMT_` env prefix for environment variables
-// * replacement of `-` and `.` with `_` when mapping from flags to env e.g. `global.excludes` => `TREEFMT_GLOBAL_EXCLUDES`
+// * replacement of `-` and `.` with `_` when mapping flags to env e.g. `global.excludes` => `TREEFMT_GLOBAL_EXCLUDES`.
 func NewViper() (*viper.Viper, error) {
 	v := viper.New()
 
@@ -158,6 +148,14 @@ func NewViper() (*viper.Viper, error) {
 
 // FromViper takes a viper instance and produces a Config instance.
 func FromViper(v *viper.Viper) (*Config, error) {
+	configReset := map[string]any{
+		"ci":          false,
+		"clear-cache": false,
+		"no-cache":    false,
+		"stdin":       false,
+		"working-dir": ".",
+	}
+
 	// reset certain values which are not allowed to be specified in the config file
 	if err := v.MergeConfigMap(configReset); err != nil {
 		return nil, fmt.Errorf("failed to overwrite config values: %w", err)
@@ -165,6 +163,7 @@ func FromViper(v *viper.Viper) (*Config, error) {
 
 	// read config from viper
 	var err error
+
 	cfg := &Config{}
 
 	if err = v.Unmarshal(cfg); err != nil {
@@ -217,6 +216,7 @@ func FromViper(v *viper.Viper) (*Config, error) {
 			if !ok {
 				return nil, fmt.Errorf("formatter %v not found in config", name)
 			}
+
 			filtered[name] = formatterCfg
 		}
 
@@ -247,6 +247,7 @@ func FindUp(searchDir string, fileNames ...string) (path string, dir string, err
 			}
 		}
 	}
+
 	return "", "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
 }
 
@@ -268,6 +269,7 @@ func eachDir(path string) (paths []string) {
 			if path == "" {
 				path = "/"
 			}
+
 			paths = append(paths, path)
 		}
 	}
