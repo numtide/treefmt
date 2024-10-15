@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/numtide/treefmt/walk"
+
 	"github.com/numtide/treefmt/cmd"
 
 	"github.com/numtide/treefmt/config"
@@ -24,11 +26,6 @@ import (
 	"github.com/numtide/treefmt/format"
 
 	"github.com/numtide/treefmt/test"
-
-	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/cache"
-	"github.com/go-git/go-git/v5/storage/filesystem"
 
 	"github.com/stretchr/testify/require"
 )
@@ -782,7 +779,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 }
 
-func TestGitWorktree(t *testing.T) {
+func TestGit(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
@@ -800,20 +797,6 @@ func TestGitWorktree(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 
-	// init a git repo
-	repo, err := git.Init(
-		filesystem.NewStorage(
-			osfs.New(path.Join(tempDir, ".git")),
-			cache.NewObjectLRUDefault(),
-		),
-		osfs.New(tempDir),
-	)
-	as.NoError(err, "failed to init git repository")
-
-	// get worktree
-	wt, err := repo.Worktree()
-	as.NoError(err, "failed to get git worktree")
-
 	run := func(traversed int32, matched int32, formatted int32, changed int32) {
 		_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 		as.NoError(err)
@@ -826,30 +809,43 @@ func TestGitWorktree(t *testing.T) {
 		})
 	}
 
-	// run before adding anything to the worktree
+	// init a git repo
+	gitCmd := exec.Command("git", "init")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to init git repository")
+
+	// run before adding anything to the index
 	run(0, 0, 0, 0)
 
-	// add everything to the worktree
-	as.NoError(wt.AddGlob("."))
-	as.NoError(err)
+	// add everything to the index
+	gitCmd = exec.Command("git", "add", ".")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to add everything to the index")
+
 	run(32, 32, 32, 0)
 
-	// remove python directory from the worktree
-	as.NoError(wt.RemoveGlob("python/*"))
+	// remove python directory from the index
+	gitCmd = exec.Command("git", "rm", "--cached", "python/*")
+	gitCmd.Dir = tempDir
+	as.NoError(gitCmd.Run(), "failed to remove python directory from the index")
+
 	run(29, 29, 29, 0)
 
 	// remove nixpkgs.toml from the filesystem but leave it in the index
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
 	run(28, 28, 28, 0)
 
-	// walk with filesystem instead of git
-	// we should traverse more files since we will look in the .git folder
+	// walk with filesystem instead of with git
+	// the .git folder contains 49 additional files
+	// when added to the 31 we started with (32 minus nixpkgs.toml which we removed from the filesystem), we should
+	// traverse 80 files.
 	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int32{
-		stats.Traversed: 60,
-		stats.Matched:   60,
+		stats.Traversed: 80,
+		stats.Matched:   80,
+		stats.Formatted: 80,
 		stats.Changed:   0,
 	})
 
@@ -1158,65 +1154,86 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 func TestRunInSubdir(t *testing.T) {
 	as := require.New(t)
 
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
+	// Run the same test for each walk type
+	for _, walkType := range walk.TypeValues() {
+		t.Run(walkType.String(), func(t *testing.T) {
+			// capture current cwd, so we can replace it after the test is finished
+			cwd, err := os.Getwd()
+			as.NoError(err)
 
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
+			t.Cleanup(func() {
+				// return to the previous working directory
+				as.NoError(os.Chdir(cwd))
+			})
 
-	tempDir := test.TempExamples(t)
-	configPath := filepath.Join(tempDir, "/treefmt.toml")
+			tempDir := test.TempExamples(t)
+			configPath := filepath.Join(tempDir, "/treefmt.toml")
 
-	// Also test that formatters are resolved relative to the treefmt root
-	echoPath, err := exec.LookPath("echo")
-	as.NoError(err)
-	echoRel := path.Join(tempDir, "echo")
-	err = os.Symlink(echoPath, echoRel)
-	as.NoError(err)
+			// set the walk type via environment variable
+			t.Setenv("TREEFMT_WALK_TYPE", walkType.String())
 
-	// change working directory to sub directory
-	as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
+			// if we are testing git walking, init a git repo before continuing
+			if walkType == walk.Git {
+				// init a git repo
+				gitCmd := exec.Command("git", "init")
+				gitCmd.Dir = tempDir
+				as.NoError(gitCmd.Run(), "failed to init git repository")
 
-	// basic config
-	cfg := &config.Config{
-		FormatterConfigs: map[string]*config.Formatter{
-			"echo": {
-				Command:  "./echo",
-				Includes: []string{"*"},
-			},
-		},
+				// add everything to the index
+				gitCmd = exec.Command("git", "add", ".")
+				gitCmd.Dir = tempDir
+				as.NoError(gitCmd.Run(), "failed to add everything to the index")
+			}
+
+			// test that formatters are resolved relative to the treefmt root
+			echoPath, err := exec.LookPath("echo")
+			as.NoError(err)
+			echoRel := path.Join(tempDir, "echo")
+			err = os.Symlink(echoPath, echoRel)
+			as.NoError(err)
+
+			// change working directory to subdirectory
+			as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
+
+			// basic config
+			cfg := &config.Config{
+				FormatterConfigs: map[string]*config.Formatter{
+					"echo": {
+						Command:  "./echo",
+						Includes: []string{"*"},
+					},
+				},
+			}
+			test.WriteConfig(t, configPath, cfg)
+
+			// without any path args, should reformat the whole tree
+			_, statz, err := treefmt(t)
+			as.NoError(err)
+
+			assertStats(t, as, statz, map[stats.Type]int32{
+				stats.Traversed: 32,
+				stats.Matched:   32,
+				stats.Formatted: 32,
+				stats.Changed:   0,
+			})
+
+			// specify some explicit paths, relative to the tree root
+			// this should not work, as we're in a subdirectory
+			_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+			as.ErrorContains(err, "path elm/elm.json not found")
+
+			// specify some explicit paths, relative to the current directory
+			_, statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
+			as.NoError(err)
+
+			assertStats(t, as, statz, map[stats.Type]int32{
+				stats.Traversed: 2,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   0,
+			})
+		})
 	}
-	test.WriteConfig(t, configPath, cfg)
-
-	// without any path args, should reformat the whole tree
-	_, statz, err := treefmt(t)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int32{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
-	})
-
-	// specify some explicit paths, relative to the tree root
-	// this should not work, as we're in a subdirectory
-	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
-	as.ErrorContains(err, "path elm/elm.json not found")
-
-	// specify some explicit paths, relative to the current directory
-	_, statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int32{
-		stats.Traversed: 2,
-		stats.Matched:   2,
-		stats.Formatted: 2,
-		stats.Changed:   0,
-	})
 }
 
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
