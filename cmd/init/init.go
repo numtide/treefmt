@@ -12,9 +12,11 @@ import (
 var initBytes []byte
 
 func Run() error {
-	if err := os.WriteFile("treefmt.toml", initBytes, 0o644); err != nil {
+	if err := os.WriteFile("treefmt.toml", initBytes, 0o600); err != nil {
 		return fmt.Errorf("failed to write treefmt.toml: %w", err)
 	}
+
 	fmt.Printf("Generated treefmt.toml. Now it's your turn to edit it.\n")
+
 	return nil
 }

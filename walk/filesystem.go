@@ -82,14 +82,13 @@ func (f *FilesystemReader) process() error {
 func (f *FilesystemReader) Read(ctx context.Context, files []*File) (n int, err error) {
 	// ensure we record how many files we traversed
 	defer func() {
-		f.stats.Add(stats.Traversed, int32(n))
+		f.stats.Add(stats.Traversed, n)
 	}()
 
 LOOP:
 	// keep filling files up to it's length
 	for n < len(files) {
 		select {
-
 		// exit early if the context was cancelled
 		case <-ctx.Done():
 			return n, ctx.Err()
@@ -99,6 +98,7 @@ LOOP:
 			if !ok {
 				// channel was closed, exit the loop
 				err = io.EOF
+
 				break LOOP
 			}
 

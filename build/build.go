@@ -1,6 +1,6 @@
 package build
 
 var (
-	Name    = "treefmt"
-	Version = "v0.0.1+dev"
+	Name    = "treefmt"    //nolint:gochecknoglobals
+	Version = "v0.0.1+dev" //nolint:gochecknoglobals
 )

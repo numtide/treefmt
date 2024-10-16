@@ -22,8 +22,8 @@ func TestCachedReader(t *testing.T) {
 	batchSize := 1024
 	tempDir := test.TempExamples(t)
 
-	readAll := func(path string) (totalCount, newCount, changeCount int, statz stats.Stats) {
-		statz = stats.New()
+	readAll := func(path string) (totalCount, newCount, changeCount int) {
+		statz := stats.New()
 
 		db, err := cache.Open(tempDir)
 		as.NoError(err)
@@ -62,16 +62,16 @@ func TestCachedReader(t *testing.T) {
 
 		as.NoError(reader.Close())
 
-		return totalCount, newCount, changeCount, statz
+		return totalCount, newCount, changeCount
 	}
 
-	totalCount, newCount, changeCount, _ := readAll("")
+	totalCount, newCount, changeCount := readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(32, newCount)
 	as.Equal(0, changeCount)
 
 	// read again, should be no changes
-	totalCount, newCount, changeCount, _ = readAll("")
+	totalCount, newCount, changeCount = readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)
@@ -84,7 +84,7 @@ func TestCachedReader(t *testing.T) {
 	as.NoError(os.Chtimes(filepath.Join(tempDir, "shell/foo.sh"), time.Now(), modTime))
 	as.NoError(os.Chtimes(filepath.Join(tempDir, "haskell/Nested/Foo.hs"), time.Now(), modTime))
 
-	totalCount, newCount, changeCount, _ = readAll("")
+	totalCount, newCount, changeCount = readAll("")
 	as.Equal(32, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(3, changeCount)
@@ -96,7 +96,7 @@ func TestCachedReader(t *testing.T) {
 	_, err = os.Create(filepath.Join(tempDir, "fizz.go"))
 	as.NoError(err)
 
-	totalCount, newCount, changeCount, _ = readAll("")
+	totalCount, newCount, changeCount = readAll("")
 	as.Equal(34, totalCount)
 	as.Equal(2, newCount)
 	as.Equal(0, changeCount)
@@ -114,23 +114,23 @@ func TestCachedReader(t *testing.T) {
 	as.NoError(err)
 	as.NoError(f.Close())
 
-	totalCount, newCount, changeCount, _ = readAll("")
+	totalCount, newCount, changeCount = readAll("")
 	as.Equal(34, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(2, changeCount)
 
 	// read some paths within the root
-	totalCount, newCount, changeCount, _ = readAll("go")
+	totalCount, newCount, changeCount = readAll("go")
 	as.Equal(2, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)
 
-	totalCount, newCount, changeCount, _ = readAll("elm/src")
+	totalCount, newCount, changeCount = readAll("elm/src")
 	as.Equal(1, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)
 
-	totalCount, newCount, changeCount, _ = readAll("haskell")
+	totalCount, newCount, changeCount = readAll("haskell")
 	as.Equal(7, totalCount)
 	as.Equal(0, newCount)
 	as.Equal(0, changeCount)

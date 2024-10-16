@@ -91,7 +91,7 @@ func (s StdinReader) Close() error {
 	return nil
 }
 
-func NewStdinReader(root string, path string, statz *stats.Stats) Reader {
+func NewStdinReader(root string, path string, statz *stats.Stats) StdinReader {
 	return StdinReader{
 		root:  root,
 		path:  path,

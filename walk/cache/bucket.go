@@ -12,6 +12,8 @@ const (
 	bucketFormatters = "formatters"
 )
 
+var ErrKeyNotFound = fmt.Errorf("key not found")
+
 type Bucket[V any] struct {
 	bucket *bolt.Bucket
 }
@@ -23,12 +25,14 @@ func (b *Bucket[V]) Size() int {
 func (b *Bucket[V]) Get(key string) (*V, error) {
 	bytes := b.bucket.Get([]byte(key))
 	if bytes == nil {
-		return nil, nil
+		return nil, ErrKeyNotFound
 	}
+
 	var value V
 	if err := msgpack.Unmarshal(bytes, &value); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal cache entry for key '%v': %w", key, err)
 	}
+
 	return &value, nil
 }
 
@@ -38,6 +42,7 @@ func (b *Bucket[V]) Put(key string, value *V) error {
 	} else if err = b.bucket.Put([]byte(key), bytes); err != nil {
 		return fmt.Errorf("failed to put cache entry for key %v: %w", key, err)
 	}
+
 	return nil
 }
 
@@ -52,6 +57,7 @@ func (b *Bucket[V]) DeleteAll() error {
 			return fmt.Errorf("failed to remove cache entry for key %s: %w", string(k), err)
 		}
 	}
+
 	return nil
 }
 
@@ -61,6 +67,7 @@ func (b *Bucket[V]) ForEach(f func(string, *V) error) error {
 		if err := msgpack.Unmarshal(bytes, &value); err != nil {
 			return fmt.Errorf("failed to unmarshal cache entry for key '%v': %w", key, err)
 		}
+
 		return f(string(key), &value)
 	})
 }
@@ -74,15 +81,20 @@ func BucketFormatters(tx *bolt.Tx) (*Bucket[Entry], error) {
 }
 
 func cacheBucket(name string, tx *bolt.Tx) (*Bucket[Entry], error) {
-	var b *bolt.Bucket
-	var err error
+	var (
+		err error
+		b   *bolt.Bucket
+	)
+
 	if tx.Writable() {
 		b, err = tx.CreateBucketIfNotExists([]byte(name))
 	} else {
 		b = tx.Bucket([]byte(name))
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get/create bucket %s: %w", bucketPaths, err)
 	}
+
 	return &Bucket[Entry]{b}, nil
 }
