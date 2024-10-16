@@ -9,12 +9,13 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/cmd"
-	format2 "github.com/numtide/treefmt/cmd/format"
+	formatCmd "github.com/numtide/treefmt/cmd/format"
 	"github.com/numtide/treefmt/config"
 	"github.com/numtide/treefmt/format"
 	"github.com/numtide/treefmt/stats"
@@ -482,7 +483,7 @@ func TestCache(t *testing.T) {
 
 	// running should match but not format anything
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
+	as.ErrorIs(err, formatCmd.ErrFormattingFailures)
 
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
@@ -492,8 +493,8 @@ func TestCache(t *testing.T) {
 	})
 
 	// running again should provide the same result
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
-	as.NoError(err)
+	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
+	as.ErrorIs(err, formatCmd.ErrFormattingFailures)
 
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
@@ -588,13 +589,13 @@ func TestFailOnChange(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 	_, _, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, format2.ErrFailOnChange)
+	as.ErrorIs(err, formatCmd.ErrFailOnChange)
 
 	// test with no cache
 	t.Setenv("TREEFMT_FAIL_ON_CHANGE", "true")
 	test.WriteConfig(t, configPath, cfg)
 	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
-	as.ErrorIs(err, format2.ErrFailOnChange)
+	as.ErrorIs(err, formatCmd.ErrFailOnChange)
 }
 
 func TestBustCacheOnFormatterChange(t *testing.T) {
@@ -1027,7 +1028,7 @@ func TestStdin(t *testing.T) {
 	// we get an error about the missing filename parameter.
 	out, _, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
 	as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
-	as.Equal("", string(out))
+	as.Equal("Error: exactly one path should be specified when using the --stdin flag\n", string(out))
 
 	// now pass along the filename parameter
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
@@ -1051,7 +1052,7 @@ func TestStdin(t *testing.T) {
 
 	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "../test.nix")
 	as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
-	as.Equal("", string(out))
+	as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
 
 	// try some markdown instead
 	contents = `
@@ -1239,6 +1240,8 @@ func TestRunInSubdir(t *testing.T) {
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	t.Helper()
 
+	t.Logf("treefmt %s", strings.Join(args, " "))
+
 	tempDir := t.TempDir()
 	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
 
@@ -1281,21 +1284,22 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 		time.Sleep(time.Until(waitUntil))
 	}()
 
-	if err := root.Execute(); err != nil {
-		return nil, nil, err
-	}
+	// execute the command
+	cmdErr := root.Execute()
 
 	// reset and read the temporary output
-	if _, err := tempOut.Seek(0, 0); err != nil {
-		return nil, nil, fmt.Errorf("failed to reset temp output for reading: %w", err)
+	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
+		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
 	}
 
-	out, err := io.ReadAll(tempOut)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read temp output: %w", err)
+	out, readErr := io.ReadAll(tempOut)
+	if readErr != nil {
+		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
 	}
 
-	return out, statz, nil
+	t.Log(string(out))
+
+	return out, statz, cmdErr
 }
 
 func assertStats(

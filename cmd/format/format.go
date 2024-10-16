@@ -32,7 +32,10 @@ const (
 	BatchSize = 1024
 )
 
-var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
+var (
+	ErrFailOnChange       = errors.New("unexpected changes detected, --fail-on-change is enabled")
+	ErrFormattingFailures = errors.New("formatting failures detected")
+)
 
 func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string) error {
 	cmd.SilenceUsage = true
@@ -404,6 +407,8 @@ func postProcessing(
 	formattedCh chan *format.Task,
 ) func() error {
 	return func() error {
+		var formattingFailures bool // track if there were any formatting failures
+
 	LOOP:
 		for {
 			select {
@@ -420,8 +425,9 @@ func postProcessing(
 				// grab the underlying file reference
 				file := task.File
 
-				// check if there were any errors processing the file
 				if len(task.Errors) > 0 {
+					formattingFailures = true
+
 					// release the file, passing the first task error
 					// note: task errors are related to the batch in which a task was applied
 					// this does not necessarily indicate this file had a problem being formatted, but this approach
@@ -471,14 +477,19 @@ func postProcessing(
 			}
 		}
 
-		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
-		if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
-			return ErrFailOnChange
-		}
-
 		// print stats to stdout unless we are processing stdin and printing the results to stdout
 		if !cfg.Stdin {
 			statz.Print()
+		}
+
+		// return an error if any formatting failures were detected
+		if formattingFailures {
+			return ErrFormattingFailures
+		}
+
+		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
+		if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
+			return ErrFailOnChange
 		}
 
 		return nil
