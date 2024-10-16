@@ -27,7 +27,7 @@ const (
 	BatchSize = 1024
 )
 
-type ReleaseFunc func(formatErr error) error
+type ReleaseFunc func(ctx context.Context) error
 
 // File represents a file object with its path, relative path, file info, and potential cache entry.
 type File struct {
@@ -42,10 +42,10 @@ type File struct {
 }
 
 // Release calls all registered release functions for the File and returns an error if any function fails.
-// Accepts formatErr, which indicates if an error occurred when formatting this file.
-func (f *File) Release(formatErr error) error {
+// Accepts a context which can be used to pass parameters to the release hooks.
+func (f *File) Release(ctx context.Context) error {
 	for _, fn := range f.releaseFuncs {
-		if err := fn(formatErr); err != nil {
+		if err := fn(ctx); err != nil {
 			return err
 		}
 	}

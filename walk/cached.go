@@ -13,6 +13,18 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type ctxKeyNoCache struct{}
+
+func SetNoCache(ctx context.Context, noCache bool) context.Context {
+	return context.WithValue(ctx, ctxKeyNoCache{}, noCache)
+}
+
+func GetNoCache(ctx context.Context) bool {
+	noCache, ok := ctx.Value(ctxKeyNoCache{}).(bool)
+
+	return ok && noCache
+}
+
 // CachedReader reads files from a delegate Reader, appending a cache Entry on read (if on exists) and updating the
 // cache after the file has been processed.
 type CachedReader struct {
@@ -101,10 +113,8 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 			}
 
 			// set a release function which inserts this file into the update channel
-			file.AddReleaseFunc(func(formatErr error) error {
-				// in the event of a formatting error, we do not want to update this file in the cache
-				// this ensures later invocations will try and re-format this file
-				if formatErr == nil {
+			file.AddReleaseFunc(func(ctx context.Context) error {
+				if !GetNoCache(ctx) {
 					c.updateCh <- file
 				}
 

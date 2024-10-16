@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -16,8 +17,13 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
-// ErrCommandNotFound is returned when the Command for a Formatter is not available.
-var ErrCommandNotFound = errors.New("formatter command not found in PATH")
+var (
+	ErrInvalidName = errors.New("formatter name must only contain alphanumeric characters, `_` or `-`")
+	// ErrCommandNotFound is returned when the Command for a Formatter is not available.
+	ErrCommandNotFound = errors.New("formatter command not found in PATH")
+
+	nameRegex = regexp.MustCompile("^[a-zA-Z0-9_-]+$")
+)
 
 // Formatter represents a command which should be applied to a filesystem.
 type Formatter struct {
@@ -28,14 +34,9 @@ type Formatter struct {
 	executable string // path to the executable described by Command
 	workingDir string
 
-	// internal compiled versions of Includes and Excludes.
+	// internal, compiled versions of Includes and Excludes.
 	includes []glob.Glob
 	excludes []glob.Glob
-}
-
-// Executable returns the path to the executable defined by Command.
-func (f *Formatter) Executable() string {
-	return f.executable
 }
 
 func (f *Formatter) Name() string {
@@ -46,20 +47,25 @@ func (f *Formatter) Priority() int {
 	return f.config.Priority
 }
 
-func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
+// Executable returns the path to the executable defined by Command.
+func (f *Formatter) Executable() string {
+	return f.executable
+}
+
+func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 	start := time.Now()
 
 	// construct args, starting with config
 	args := f.config.Options
 
 	// exit early if nothing to process
-	if len(tasks) == 0 {
+	if len(files) == 0 {
 		return nil
 	}
 
 	// append paths to the args
-	for _, task := range tasks {
-		args = append(args, task.File.RelPath)
+	for _, file := range files {
+		args = append(args, file.RelPath)
 	}
 
 	// execute the command
@@ -83,15 +89,16 @@ func (f *Formatter) Apply(ctx context.Context, tasks []*Task) error {
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
 	}
 
-	f.log.Infof("%v file(s) processed in %v", len(tasks), time.Since(start))
+	f.log.Infof("%v file(s) processed in %v", len(files), time.Since(start))
 
 	return nil
 }
 
-// Wants is used to test if a Formatter wants a path based on it's configured Includes and Excludes patterns.
-// Returns true if the Formatter should be applied to path, false otherwise.
+// Wants is used to determine if a Formatter wants to process a path based on it's configured Includes and Excludes
+// patterns.
+// Returns true if the Formatter should be applied to file, false otherwise.
 func (f *Formatter) Wants(file *walk.File) bool {
-	match := !PathMatches(file.RelPath, f.excludes) && PathMatches(file.RelPath, f.includes)
+	match := !pathMatches(file.RelPath, f.excludes) && pathMatches(file.RelPath, f.includes)
 	if match {
 		f.log.Debugf("match: %v", file)
 	}
@@ -99,14 +106,19 @@ func (f *Formatter) Wants(file *walk.File) bool {
 	return match
 }
 
-// NewFormatter is used to create a new Formatter.
-func NewFormatter(
+// newFormatter is used to create a new Formatter.
+func newFormatter(
 	name string,
 	treeRoot string,
 	env expand.Environ,
 	cfg *config.Formatter,
 ) (*Formatter, error) {
 	var err error
+
+	// check the name is valid
+	if !nameRegex.MatchString(name) {
+		return nil, ErrInvalidName
+	}
 
 	f := Formatter{}
 
@@ -130,12 +142,12 @@ func NewFormatter(
 		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
 	}
 
-	f.includes, err = CompileGlobs(cfg.Includes)
+	f.includes, err = compileGlobs(cfg.Includes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)
 	}
 
-	f.excludes, err = CompileGlobs(cfg.Excludes)
+	f.excludes, err = compileGlobs(cfg.Excludes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
 	}
