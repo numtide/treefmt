@@ -1,6 +1,7 @@
 package format
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"crypto/sha256"
@@ -19,8 +20,6 @@ import (
 	"github.com/numtide/treefmt/config"
 	"github.com/numtide/treefmt/stats"
 	"github.com/numtide/treefmt/walk"
-	"github.com/numtide/treefmt/walk/cache"
-	bolt "go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/expand"
 )
@@ -52,9 +51,68 @@ func newBatchKey(formatters []*Formatter) batchKey {
 	return batchKey(strings.Join(components, batchKeySeparator))
 }
 
-// batchMap maintains a mapping between batchKey and a slice of pointers to walk.File, used to organize files into
-// batches based on the sequence of formatters to be applied.
-type batchMap map[batchKey][]*walk.File
+type batcher struct {
+	batchSize  int
+	batches    map[batchKey][]*walk.File
+	formatters map[string]*Formatter
+
+	signatures map[batchKey][]byte
+}
+
+func (b *batcher) formatSignature(key batchKey, matches []*Formatter) ([]byte, error) {
+	signature, ok := b.signatures[key]
+	if ok {
+		return signature, nil
+	}
+
+	h := sha256.New()
+	for _, f := range matches {
+		if err := f.Hash(h); err != nil {
+			return nil, fmt.Errorf("failed to hash formatter %s: %w", f.Name(), err)
+		}
+	}
+
+	signature = h.Sum(nil)
+	b.signatures[key] = signature
+
+	return signature, nil
+}
+
+func (b *batcher) append(
+	file *walk.File,
+	matches []*Formatter,
+) (appended bool, key batchKey, batch []*walk.File, err error) {
+	slices.SortFunc(matches, formatterSortFunc)
+
+	// construct a batch key based on the sequence of formatters
+	key = newBatchKey(matches)
+
+	// get format signature
+	formatSignature, err := b.formatSignature(key, matches)
+	if err != nil {
+		return false, "", nil, err
+	}
+
+	//
+	h := sha256.New()
+	h.Write(formatSignature)
+	h.Write([]byte(fmt.Sprintf("%v %v", file.Info.ModTime().Unix(), file.Info.Size())))
+
+	file.FormatSignature = h.Sum(nil)
+
+	if bytes.Equal(file.FormatSignature, file.CachedFormatSignature) {
+		return false, key, b.batches[key], nil
+	}
+
+	// append to the batch
+	b.batches[key] = append(b.batches[key], file)
+
+	return true, key, b.batches[key], nil
+}
+
+func (b *batcher) reset(key batchKey) {
+	b.batches[key] = make([]*walk.File, 0, b.batchSize)
+}
 
 func formatterSortFunc(a, b *Formatter) int {
 	// sort by priority in ascending order
@@ -68,20 +126,6 @@ func formatterSortFunc(a, b *Formatter) int {
 	}
 
 	return result
-}
-
-// Append adds a file to the batch corresponding to the given sequence of formatters and returns the updated batch.
-func (b batchMap) Append(file *walk.File, matches []*Formatter) (key batchKey, batch []*walk.File) {
-	slices.SortFunc(matches, formatterSortFunc)
-
-	// construct a batch key based on the sequence of formatters
-	key = newBatchKey(matches)
-
-	// append to the batch
-	b[key] = append(b[key], file)
-
-	// return the batch
-	return key, b[key]
 }
 
 // CompositeFormatter handles the application of multiple Formatter instances based on global excludes and individual
@@ -99,7 +143,7 @@ type CompositeFormatter struct {
 	formatters map[string]*Formatter
 
 	eg      *errgroup.Group
-	batches batchMap
+	batcher *batcher
 
 	// formatError indicates if at least one formatting error occurred
 	formatError *atomic.Bool
@@ -216,16 +260,17 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 		// record there was a match
 		c.stats.Add(stats.Matched, 1)
 
-		// check if the file is new or has changed when compared to the cache entry
-		if file.Cache == nil || file.Cache.HasChanged(file.Info) {
-			// add this file to a batch and if it's full, apply formatters to the batch
-			if key, batch := c.batches.Append(file, matches); len(batch) == c.batchSize {
-				c.apply(ctx, newBatchKey(matches), batch)
-				// reset the batch
-				c.batches[key] = make([]*walk.File, 0, c.batchSize)
-			}
-		} else {
-			// no further processing to be done, append to the release list
+		appended, key, batch, batchErr := c.batcher.append(file, matches)
+		if batchErr != nil {
+			return fmt.Errorf("failed to append file to batch: %w", batchErr)
+		}
+
+		if len(batch) == c.batchSize {
+			c.apply(ctx, key, batch)
+			c.batcher.reset(key)
+		}
+
+		if !appended {
 			toRelease = append(toRelease, file)
 		}
 	}
@@ -247,7 +292,8 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 // all formatters have completed their tasks. It returns an error if any formatting failures were detected.
 func (c *CompositeFormatter) Close(ctx context.Context) error {
 	// flush any partial batches that remain
-	for key, batch := range c.batches {
+	// todo clean up
+	for key, batch := range c.batcher.batches {
 		if len(batch) > 0 {
 			c.apply(ctx, key, batch)
 		}
@@ -287,54 +333,6 @@ func (c *CompositeFormatter) Hash() (string, error) {
 
 	// finalize
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-// BustCache compares the current Hash() of this formatter with the last entry stored in the db.
-// If it has changed, we remove all the path entries, forcing a fresh cache state.
-func (c *CompositeFormatter) BustCache(db *bolt.DB) error {
-	// determine current hash
-	currentHash, err := c.Hash()
-	if err != nil {
-		return fmt.Errorf("failed to hash formatter: %w", err)
-	}
-
-	hashKey := []byte("sha256")
-	bucketKey := []byte("formatters")
-
-	return db.Update(func(tx *bolt.Tx) error {
-		// get or create the formatters bucket
-		bucket, err := tx.CreateBucketIfNotExists(bucketKey)
-		if err != nil {
-			return fmt.Errorf("failed to create formatters bucket: %w", err)
-		}
-
-		// load the previous hash which might be nil
-		prevHash := bucket.Get(hashKey)
-
-		c.log.Debug(
-			"comparing formatter hash with db",
-			"prev_hash", string(prevHash),
-			"current_hash", currentHash,
-		)
-
-		// compare with the previous hash
-		// if they are different, delete all the path entries
-		if string(prevHash) != currentHash {
-			c.log.Debug("hash has changed, deleting all paths")
-
-			paths, err := cache.BucketPaths(tx)
-			if err != nil {
-				return fmt.Errorf("failed to get paths bucket from cache: %w", err)
-			}
-
-			if err = paths.DeleteAll(); err != nil {
-				return fmt.Errorf("failed to delete paths bucket: %w", err)
-			}
-		}
-
-		// save the latest hash
-		return bucket.Put(hashKey, []byte(currentHash))
-	})
 }
 
 func NewCompositeFormatter(
@@ -380,6 +378,14 @@ func NewCompositeFormatter(
 		formatters[name] = formatter
 	}
 
+	//
+	batcher := batcher{
+		batchSize:  batchSize,
+		formatters: formatters,
+		batches:    make(map[batchKey][]*walk.File),
+		signatures: make(map[batchKey][]byte),
+	}
+
 	// create an errgroup for asynchronously formatting
 	eg := errgroup.Group{}
 	// we use a simple heuristic to avoid too much contention by limiting the concurrency to runtime.NumCPU()
@@ -396,8 +402,8 @@ func NewCompositeFormatter(
 		unmatchedLevel: unmatchedLevel,
 
 		eg:          &eg,
+		batcher:     &batcher,
 		formatters:  formatters,
-		batches:     make(batchMap),
 		formatError: new(atomic.Bool),
 	}, nil
 }

@@ -656,7 +656,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   3,
-		stats.Formatted: 3,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -680,7 +680,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   3,
-		stats.Formatted: 3,
+		stats.Formatted: 2,
 		stats.Changed:   0,
 	})
 
@@ -710,7 +710,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   4,
-		stats.Formatted: 4,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -736,7 +736,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   4,
-		stats.Formatted: 4,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -750,7 +750,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   4,
-		stats.Formatted: 4,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -764,7 +764,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   2,
-		stats.Formatted: 2,
+		stats.Formatted: 0,
 		stats.Changed:   0,
 	})
 
@@ -789,7 +789,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   1,
-		stats.Formatted: 1,
+		stats.Formatted: 0,
 		stats.Changed:   0,
 	})
 
