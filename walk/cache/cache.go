@@ -48,11 +48,7 @@ func Open(root string) (*bolt.DB, error) {
 func EnsureBuckets(db *bolt.DB) error {
 	// force creation of buckets if they don't already exist
 	return db.Update(func(tx *bolt.Tx) error {
-		if _, err := BucketPaths(tx); err != nil {
-			return err
-		}
-
-		_, err := BucketFormatters(tx)
+		_, err := BucketPaths(tx)
 
 		return err
 	})

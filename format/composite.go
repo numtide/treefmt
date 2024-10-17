@@ -3,6 +3,8 @@ package format
 import (
 	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -85,10 +87,12 @@ func (b batchMap) Append(file *walk.File, matches []*Formatter) (key batchKey, b
 // CompositeFormatter handles the application of multiple Formatter instances based on global excludes and individual
 // formatter configuration.
 type CompositeFormatter struct {
+	cfg            *config.Config
 	stats          *stats.Stats
 	batchSize      int
 	globalExcludes []glob.Glob
 
+	log            *log.Logger
 	changeLevel    log.Level
 	unmatchedLevel log.Level
 
@@ -141,7 +145,7 @@ func (c *CompositeFormatter) apply(ctx context.Context, key batchKey, batch []*w
 				// record that a change in the underlying file occurred
 				c.stats.Add(stats.Changed, 1)
 
-				log.Log(
+				c.log.Log(
 					c.changeLevel, "file has changed",
 					"path", file.RelPath,
 					"prev_size", file.Info.Size(),
@@ -168,7 +172,7 @@ func (c *CompositeFormatter) apply(ctx context.Context, key batchKey, batch []*w
 func (c *CompositeFormatter) match(file *walk.File) []*Formatter {
 	// first check if this file has been globally excluded
 	if pathMatches(file.RelPath, c.globalExcludes) {
-		log.Debugf("path matched global excludes: %s", file.RelPath)
+		c.log.Debugf("path matched global excludes: %s", file.RelPath)
 
 		return nil
 	}
@@ -200,7 +204,7 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 				return fmt.Errorf("no formatter for path: %s", file.RelPath)
 			}
 
-			log.Logf(c.unmatchedLevel, "no formatter for path: %s", file.RelPath)
+			c.log.Logf(c.unmatchedLevel, "no formatter for path: %s", file.RelPath)
 
 			// no further processing to be done, append to the release list
 			toRelease = append(toRelease, file)
@@ -239,92 +243,6 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 	return nil
 }
 
-// BustCache compares the currently configured formatters with their respective entries in the db.
-// If a formatter was added, removed or modified, we clear any path entries from the cache, ensuring that all paths
-// get formatted with the most recent formatter set.
-func (c *CompositeFormatter) BustCache(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		clearPaths := false
-
-		pathsBucket, err := cache.BucketPaths(tx)
-		if err != nil {
-			return fmt.Errorf("failed to get paths bucket from cache: %w", err)
-		}
-
-		formattersBucket, err := cache.BucketFormatters(tx)
-		if err != nil {
-			return fmt.Errorf("failed to get formatters bucket from cache: %w", err)
-		}
-
-		// check for any newly configured or modified formatters
-		for name, formatter := range c.formatters {
-			stat, err := os.Lstat(formatter.Executable())
-			if err != nil {
-				return fmt.Errorf("failed to stat formatter executable %v: %w", formatter.Executable(), err)
-			}
-
-			entry, err := formattersBucket.Get(name)
-			if !(err == nil || errors.Is(err, cache.ErrKeyNotFound)) {
-				return fmt.Errorf("failed to retrieve cache entry for formatter %v: %w", name, err)
-			}
-
-			isNew := errors.Is(err, cache.ErrKeyNotFound)
-			hasChanged := !(isNew || (entry.Size == stat.Size() && entry.Modified == stat.ModTime()))
-
-			if isNew {
-				log.Debugf("formatter '%s' is new", name)
-			} else if hasChanged {
-				log.Debug("formatter '%s' has changed",
-					name,
-					"size", stat.Size(),
-					"modTime", stat.ModTime(),
-					"cachedSize", entry.Size,
-					"cachedModTime", entry.Modified,
-				)
-			}
-
-			// update overall flag
-			clearPaths = clearPaths || isNew || hasChanged
-
-			// record formatters info
-			entry = &cache.Entry{
-				Size:     stat.Size(),
-				Modified: stat.ModTime(),
-			}
-
-			if err = formattersBucket.Put(name, entry); err != nil {
-				return fmt.Errorf("failed to write cache entry for formatter %v: %w", name, err)
-			}
-		}
-
-		// check for any removed formatters
-		if err = formattersBucket.ForEach(func(key string, _ *cache.Entry) error {
-			_, ok := c.formatters[key]
-			if !ok {
-				// remove the formatter entry from the cache
-				if err = formattersBucket.Delete(key); err != nil {
-					return fmt.Errorf("failed to remove cache entry for formatter %v: %w", key, err)
-				}
-				// indicate a clean is required
-				clearPaths = true
-			}
-
-			return nil
-		}); err != nil {
-			return fmt.Errorf("failed to check cache for removed formatters: %w", err)
-		}
-
-		if clearPaths {
-			// remove all path entries
-			if err := pathsBucket.DeleteAll(); err != nil {
-				return fmt.Errorf("failed to remove all path entries from cache: %w", err)
-			}
-		}
-
-		return nil
-	})
-}
-
 // Close finalizes the processing of the CompositeFormatter, ensuring that any remaining batches are applied and
 // all formatters have completed their tasks. It returns an error if any formatting failures were detected.
 func (c *CompositeFormatter) Close(ctx context.Context) error {
@@ -345,10 +263,87 @@ func (c *CompositeFormatter) Close(ctx context.Context) error {
 	return nil
 }
 
+// Hash takes anything that might affect the paths to be traversed, or how they are traversed, and adds it to a sha256
+// hash.
+// This can be used to determine if there has been a material change in config or setup that requires the cache
+// to be invalidated.
+func (c *CompositeFormatter) Hash() (string, error) {
+	h := sha256.New()
+
+	// start with the global excludes
+	h.Write([]byte(strings.Join(c.cfg.Excludes, " ")))
+	h.Write([]byte(strings.Join(c.cfg.Global.Excludes, " ")))
+
+	// sort formatters determinstically
+	formatters := make([]*Formatter, 0, len(c.formatters))
+	for _, f := range c.formatters {
+		formatters = append(formatters, f)
+	}
+
+	slices.SortFunc(formatters, formatterSortFunc)
+
+	// apply them to the hash
+	for _, f := range formatters {
+		if err := f.Hash(h); err != nil {
+			return "", fmt.Errorf("failed to hash formatter: %w", err)
+		}
+	}
+
+	// finalize
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// BustCache compares the current Hash() of this formatter with the last entry stored in the db.
+// If it has changed, we remove all the path entries, forcing a fresh cache state.
+func (c *CompositeFormatter) BustCache(db *bolt.DB) error {
+	// determine current hash
+	currentHash, err := c.Hash()
+	if err != nil {
+		return fmt.Errorf("failed to hash formatter: %w", err)
+	}
+
+	hashKey := []byte("sha256")
+	bucketKey := []byte("formatters")
+
+	return db.Update(func(tx *bolt.Tx) error {
+		// get or create the formatters bucket
+		bucket, err := tx.CreateBucketIfNotExists(bucketKey)
+		if err != nil {
+			return fmt.Errorf("failed to create formatters bucket: %w", err)
+		}
+
+		// load the previous hash which might be nil
+		prevHash := bucket.Get(hashKey)
+
+		c.log.Debug(
+			"comparising formatter hash with db",
+			"prev_hash", string(prevHash),
+			"current_hash", currentHash,
+		)
+
+		// compare with the previous hash
+		// if they are different, delete all the path entries
+		if string(prevHash) != currentHash {
+			c.log.Debug("hash has changed, deleting all paths")
+
+			paths, err := cache.BucketPaths(tx)
+			if err != nil {
+				return fmt.Errorf("failed to get paths bucket from cache: %w", err)
+			}
+
+			if err = paths.DeleteAll(); err != nil {
+				return fmt.Errorf("failed to delete paths bucket: %w", err)
+			}
+		}
+
+		// save the latest hash
+		return bucket.Put(hashKey, []byte(currentHash))
+	})
+}
+
 func NewCompositeFormatter(
 	cfg *config.Config,
 	statz *stats.Stats,
-	batchSize int,
 ) (*CompositeFormatter, error) {
 	// compile global exclude globs
 	globalExcludes, err := compileGlobs(cfg.Excludes)
@@ -394,14 +389,18 @@ func NewCompositeFormatter(
 	eg.SetLimit(runtime.NumCPU())
 
 	return &CompositeFormatter{
+		cfg:            cfg,
 		stats:          statz,
-		batchSize:      batchSize,
+		batchSize:      cfg.BatchSize,
 		globalExcludes: globalExcludes,
+
+		log:            log.WithPrefix("composite-formatter"),
 		changeLevel:    changeLevel,
 		unmatchedLevel: unmatchedLevel,
-		formatters:     formatters,
-		eg:             &eg,
-		batches:        make(batchMap),
-		formatError:    new(atomic.Bool),
+
+		eg:          &eg,
+		formatters:  formatters,
+		batches:     make(batchMap),
+		formatError: new(atomic.Bool),
 	}, nil
 }

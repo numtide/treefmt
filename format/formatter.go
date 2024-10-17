@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash"
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -50,6 +52,28 @@ func (f *Formatter) Priority() int {
 // Executable returns the path to the executable defined by Command.
 func (f *Formatter) Executable() string {
 	return f.executable
+}
+
+// Hash adds this formatter's config and executable info to the config hash being created.
+func (f *Formatter) Hash(h hash.Hash) error {
+	h.Write([]byte(f.name))
+	h.Write([]byte(strings.Join(f.config.Options, " ")))
+	h.Write([]byte(strings.Join(f.config.Includes, " ")))
+	h.Write([]byte(strings.Join(f.config.Excludes, " ")))
+	h.Write([]byte(fmt.Sprintf("%d", f.config.Priority)))
+
+	// stat the formatter's executable
+	info, err := os.Lstat(f.executable)
+	if err != nil {
+		return fmt.Errorf("failed to stat formatter executable: %w", err)
+	}
+
+	// include the executable's size and mod time
+	// if the formatter executable changes (e.g. new version) we should invalidate the cache
+	h.Write([]byte(fmt.Sprintf("%d", info.Size())))
+	h.Write([]byte(fmt.Sprintf("%d", info.ModTime().Unix())))
+
+	return nil
 }
 
 func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {

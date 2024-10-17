@@ -56,7 +56,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	checkOutput := func(level string, output []byte) {
 		for _, p := range paths {
-			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s", level, p))
+			as.Contains(string(output), fmt.Sprintf("%s composite-formatter: no formatter for path: %s", level, p))
 		}
 	}
 
@@ -110,6 +110,41 @@ func TestCpuProfile(t *testing.T) {
 	as.FileExists(filepath.Join(tempDir, "env.pprof"))
 	_, err = os.Stat(filepath.Join(tempDir, "env.pprof"))
 	as.NoError(err)
+}
+
+func TestBatchSize(t *testing.T) {
+	as := require.New(t)
+	tempDir := test.TempExamples(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "10241")
+	as.ErrorIs(err, config.ErrInvalidBatchSize)
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "-10241")
+	as.ErrorContains(err, "invalid argument")
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
+	as.NoError(err)
+
+	out, _, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "1", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 1))
+
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "4", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 4))
+
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "128", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 128))
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
@@ -605,7 +640,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// symlink some formatters into temp dir, so we can mess with their mod times
-	binPath := tempDir + "/bin"
+	binPath := filepath.Join(tempDir, "bin")
 	as.NoError(os.Mkdir(binPath, 0o755))
 
 	binaries := []string{"black", "elm-format", "gofmt"}
@@ -613,7 +648,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	for _, name := range binaries {
 		src, err := exec.LookPath(name)
 		as.NoError(err)
-		as.NoError(os.Symlink(src, binPath+"/"+name))
+		as.NoError(os.Symlink(src, filepath.Join(binPath, name)))
 	}
 
 	// prepend our test bin directory to PATH
@@ -647,7 +682,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// tweak mod time of elm formatter
-	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
+	newTime := time.Now().Add(-time.Minute)
+	as.NoError(test.Lutimes(t, filepath.Join(binPath, "elm-format"), newTime, newTime))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
@@ -671,7 +707,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// tweak mod time of python formatter
-	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
+	as.NoError(test.Lutimes(t, filepath.Join(binPath, "black"), newTime, newTime))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
@@ -695,11 +731,12 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// add go formatter
-	cfg.FormatterConfigs["go"] = &config.Formatter{
+	goFormatter := &config.Formatter{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
 	}
+	cfg.FormatterConfigs["go"] = goFormatter
 	test.WriteConfig(t, configPath, cfg)
 
 	_, statz, err = treefmt(t, args...)
@@ -720,6 +757,66 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 		stats.Traversed: 32,
 		stats.Matched:   4,
 		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
+
+	// tweak go formatter options
+	goFormatter.Options = []string{"-w", "-s"}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 4,
+		stats.Changed:   0,
+	})
+
+	// tweak go formatter includes
+	goFormatter.Includes = []string{"foo/*"}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   3,
+		stats.Formatted: 3,
+		stats.Changed:   0,
+	})
+
+	// tweak go formatter excludes
+	goFormatter.Includes = []string{"*.go"}
+	goFormatter.Excludes = []string{"foo/*"}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 4,
+		stats.Changed:   0,
+	})
+
+	// add a priority
+	cfg.FormatterConfigs["go"].Priority = 3
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 4,
 		stats.Changed:   0,
 	})
 
@@ -770,6 +867,35 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 		stats.Traversed: 32,
 		stats.Matched:   1,
 		stats.Formatted: 0,
+		stats.Changed:   0,
+	})
+
+	// change global excludes
+	cfg.Excludes = []string{"touch.toml"}
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
+
+	cfg.Excludes = nil
+	cfg.Global.Excludes = []string{"touch.toml", "yaml/test.yaml"}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   1,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 }

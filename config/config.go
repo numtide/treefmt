@@ -6,14 +6,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
+var ErrInvalidBatchSize = fmt.Errorf("batch size must be between 1 and 10,240")
+
 // Config is used to represent the list of configured Formatters.
 type Config struct {
 	AllowMissingFormatter bool     `mapstructure:"allow-missing-formatter" toml:"allow-missing-formatter,omitempty"`
+	BatchSize             int      `mapstructure:"batch-size" toml:"batch-size,omitempty"`
 	CI                    bool     `mapstructure:"ci" toml:"ci,omitempty"`
 	ClearCache            bool     `mapstructure:"clear-cache" toml:"-"` // not allowed in config
 	CPUProfile            string   `mapstructure:"cpu-profile" toml:"cpu-profile,omitempty"`
@@ -58,6 +62,9 @@ func SetFlags(fs *pflag.FlagSet) {
 	fs.Bool(
 		"allow-missing-formatter", false,
 		"Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)",
+	)
+	fs.Uint("batch-size", 1024,
+		"The maximum number of files to pass to a formatter at once. (env $TREEFMT_BATCH_SIZE)",
 	)
 	fs.Bool(
 		"ci", false,
@@ -234,6 +241,21 @@ func FromViper(v *viper.Viper) (*Config, error) {
 			cfg.Verbose = 1
 		}
 	}
+
+	// validate batch size
+	// todo what is a reasonable upper limit on this?
+
+	// default if it isn't set (e.g. in tests when using Config directly)
+	if cfg.BatchSize == 0 {
+		cfg.BatchSize = 1024
+	}
+
+	if !(1 <= cfg.BatchSize && cfg.BatchSize <= 10240) {
+		return nil, ErrInvalidBatchSize
+	}
+
+	l := log.WithPrefix("config")
+	l.Infof("batch size = %d", cfg.BatchSize)
 
 	return cfg, nil
 }

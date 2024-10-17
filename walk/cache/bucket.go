@@ -76,10 +76,6 @@ func BucketPaths(tx *bolt.Tx) (*Bucket[Entry], error) {
 	return cacheBucket(bucketPaths, tx)
 }
 
-func BucketFormatters(tx *bolt.Tx) (*Bucket[Entry], error) {
-	return cacheBucket(bucketFormatters, tx)
-}
-
 func cacheBucket(name string, tx *bolt.Tx) (*Bucket[Entry], error) {
 	var (
 		err error
