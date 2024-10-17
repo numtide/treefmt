@@ -344,7 +344,6 @@ func (c *CompositeFormatter) BustCache(db *bolt.DB) error {
 func NewCompositeFormatter(
 	cfg *config.Config,
 	statz *stats.Stats,
-	batchSize int,
 ) (*CompositeFormatter, error) {
 	// compile global exclude globs
 	globalExcludes, err := compileGlobs(cfg.Excludes)
@@ -392,7 +391,7 @@ func NewCompositeFormatter(
 	return &CompositeFormatter{
 		cfg:            cfg,
 		stats:          statz,
-		batchSize:      batchSize,
+		batchSize:      cfg.BatchSize,
 		globalExcludes: globalExcludes,
 
 		log:            log.WithPrefix("composite-formatter"),

@@ -17,15 +17,13 @@ import (
 func TestInvalidFormatterName(t *testing.T) {
 	as := require.New(t)
 
-	const batchSize = 1024
-
 	cfg := &config.Config{}
 	cfg.OnUnmatched = "info"
 
 	statz := stats.New()
 
 	// simple "empty" config
-	_, err := format.NewCompositeFormatter(cfg, &statz, batchSize)
+	_, err := format.NewCompositeFormatter(cfg, &statz)
 	as.NoError(err)
 
 	// valid name using all the acceptable characters
@@ -35,7 +33,7 @@ func TestInvalidFormatterName(t *testing.T) {
 		},
 	}
 
-	_, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+	_, err = format.NewCompositeFormatter(cfg, &statz)
 	as.NoError(err)
 
 	// test with some bad examples
@@ -48,7 +46,7 @@ func TestInvalidFormatterName(t *testing.T) {
 			},
 		}
 
-		_, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		_, err = format.NewCompositeFormatter(cfg, &statz)
 		as.ErrorIs(err, format.ErrInvalidName)
 	}
 }
@@ -56,10 +54,7 @@ func TestInvalidFormatterName(t *testing.T) {
 func TestFormatterHash(t *testing.T) {
 	as := require.New(t)
 
-	const batchSize = 1024
-
 	statz := stats.New()
-
 	tempDir := t.TempDir()
 
 	// symlink some formatters into temp dir, so we can mess with their mod times
@@ -93,7 +88,7 @@ func TestFormatterHash(t *testing.T) {
 		},
 	}
 
-	f, err := format.NewCompositeFormatter(cfg, &statz, batchSize)
+	f, err := format.NewCompositeFormatter(cfg, &statz)
 	as.NoError(err)
 
 	// hash for the first time
@@ -123,7 +118,7 @@ func TestFormatterHash(t *testing.T) {
 	})
 
 	t.Run("modify formatter options", func(_ *testing.T) {
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h3, err := f.Hash()
@@ -133,7 +128,7 @@ func TestFormatterHash(t *testing.T) {
 		python := cfg.FormatterConfigs["python"]
 		python.Includes = []string{"*.py", "*.pyi"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h4, err := f.Hash()
@@ -148,7 +143,7 @@ func TestFormatterHash(t *testing.T) {
 		// adjust python excludes
 		python.Excludes = []string{"*.pyi"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h6, err := f.Hash()
@@ -163,7 +158,7 @@ func TestFormatterHash(t *testing.T) {
 		// adjust python options
 		python.Options = []string{"-w", "-s"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h8, err := f.Hash()
@@ -178,7 +173,7 @@ func TestFormatterHash(t *testing.T) {
 		// adjust python priority
 		python.Priority = 100
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h10, err := f.Hash()
@@ -198,7 +193,7 @@ func TestFormatterHash(t *testing.T) {
 			Includes: []string{"*.go"},
 		}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h3, err := f.Hash()
@@ -208,7 +203,7 @@ func TestFormatterHash(t *testing.T) {
 		// remove python formatter
 		delete(cfg.FormatterConfigs, "python")
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h4, err := f.Hash()
@@ -223,7 +218,7 @@ func TestFormatterHash(t *testing.T) {
 		// remove elm formatter
 		delete(cfg.FormatterConfigs, "elm")
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h6, err := f.Hash()
@@ -239,7 +234,7 @@ func TestFormatterHash(t *testing.T) {
 	t.Run("modify global excludes", func(_ *testing.T) {
 		cfg.Excludes = []string{"*.go"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h3, err := f.Hash()
@@ -247,7 +242,7 @@ func TestFormatterHash(t *testing.T) {
 
 		cfg.Excludes = []string{"*.go", "*.hs"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h4, err := f.Hash()
@@ -263,7 +258,7 @@ func TestFormatterHash(t *testing.T) {
 		cfg.Excludes = nil
 		cfg.Global.Excludes = []string{"*.go", "*.hs"}
 
-		f, err = format.NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err = format.NewCompositeFormatter(cfg, &statz)
 		as.NoError(err)
 
 		h6, err := f.Hash()

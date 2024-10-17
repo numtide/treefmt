@@ -112,6 +112,41 @@ func TestCpuProfile(t *testing.T) {
 	as.NoError(err)
 }
 
+func TestBatchSize(t *testing.T) {
+	as := require.New(t)
+	tempDir := test.TempExamples(t)
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	as.NoError(err)
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		as.NoError(os.Chdir(cwd))
+	})
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "10241")
+	as.ErrorIs(err, config.ErrInvalidBatchSize)
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "-10241")
+	as.ErrorContains(err, "invalid argument")
+
+	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
+	as.NoError(err)
+
+	out, _, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "1", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 1))
+
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "4", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 4))
+
+	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--batch-size", "128", "-v")
+	as.NoError(err)
+	as.Contains(string(out), fmt.Sprintf("INFO config: batch size = %d", 128))
+}
+
 func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 

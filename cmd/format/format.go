@@ -24,10 +24,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-const (
-	BatchSize = 1024
-)
-
 var ErrFailOnChange = errors.New("unexpected changes detected, --fail-on-change is enabled")
 
 func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string) error {
@@ -156,7 +152,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	// create a composite formatter which will handle applying the correct formatters to each file we traverse
-	formatter, err := format.NewCompositeFormatter(cfg, statz, BatchSize)
+	formatter, err := format.NewCompositeFormatter(cfg, statz)
 	if err != nil {
 		return fmt.Errorf("failed to create composite formatter: %w", err)
 	}
@@ -175,7 +171,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	// start traversing
-	files := make([]*walk.File, BatchSize)
+	files := make([]*walk.File, cfg.BatchSize)
 
 	for {
 		// read the next batch
