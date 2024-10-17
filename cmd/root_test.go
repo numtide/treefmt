@@ -483,7 +483,7 @@ func TestCache(t *testing.T) {
 
 	// running should match but not format anything
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, formatCmd.ErrFormattingFailures)
+	as.ErrorIs(err, format.ErrFormattingFailures)
 
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
@@ -494,7 +494,7 @@ func TestCache(t *testing.T) {
 
 	// running again should provide the same result
 	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, formatCmd.ErrFormattingFailures)
+	as.ErrorIs(err, format.ErrFormattingFailures)
 
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
