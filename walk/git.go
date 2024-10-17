@@ -119,6 +119,6 @@ func NewGitReader(
 		path:  path,
 		stats: statz,
 		eg:    &errgroup.Group{},
-		log:   log.WithPrefix("walk[git]"),
+		log:   log.WithPrefix("walk | git"),
 	}, nil
 }
