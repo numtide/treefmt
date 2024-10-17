@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/numtide/treefmt/stats"
-	"github.com/numtide/treefmt/walk/cache"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -35,8 +34,8 @@ type File struct {
 	RelPath string
 	Info    fs.FileInfo
 
-	// Cache is the latest entry found for this file, if one exists.
-	Cache *cache.Entry
+	FormatSignature       []byte
+	CachedFormatSignature []byte
 
 	releaseFuncs []ReleaseFunc
 }

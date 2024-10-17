@@ -4,21 +4,15 @@ import (
 	"crypto/sha1" //nolint:gosec
 	"encoding/hex"
 	"fmt"
-	"io/fs"
 	"time"
 
 	"github.com/adrg/xdg"
 	bolt "go.etcd.io/bbolt"
 )
 
-type Entry struct {
-	Size     int64
-	Modified time.Time
-}
-
-func (e *Entry) HasChanged(info fs.FileInfo) bool {
-	return !(e.Modified == info.ModTime() && e.Size == info.Size())
-}
+const (
+	bucketPaths = "paths"
+)
 
 func Open(root string) (*bolt.DB, error) {
 	var (
@@ -42,29 +36,36 @@ func Open(root string) (*bolt.DB, error) {
 		return nil, err
 	}
 
-	return db, nil
-}
-
-func EnsureBuckets(db *bolt.DB) error {
-	// force creation of buckets if they don't already exist
-	return db.Update(func(tx *bolt.Tx) error {
-		if _, err := BucketPaths(tx); err != nil {
-			return err
-		}
-
-		_, err := BucketFormatters(tx)
+	// ensure bucket exist
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucketPaths))
 
 		return err
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bucket: %w", err)
+	}
+
+	return db, nil
+}
+
+func PathsBucket(tx *bolt.Tx) *bolt.Bucket {
+	return tx.Bucket([]byte("paths"))
+}
+
+func deleteAll(bucket *bolt.Bucket) error {
+	c := bucket.Cursor()
+	for k, v := c.First(); !(k == nil && v == nil); k, v = c.Next() {
+		if err := c.Delete(); err != nil {
+			return fmt.Errorf("failed to remove cache entry for key %s: %w", string(k), err)
+		}
+	}
+
+	return nil
 }
 
 func Clear(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		bucket, err := BucketPaths(tx)
-		if err != nil {
-			return fmt.Errorf("failed to get paths bucket: %w", err)
-		}
-
-		return bucket.DeleteAll()
+		return deleteAll(PathsBucket(tx))
 	})
 }

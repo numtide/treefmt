@@ -70,6 +70,9 @@ schema = 3
   [mod."github.com/rivo/uniseg"]
     version = "v0.4.7"
     hash = "sha256-rDcdNYH6ZD8KouyyiZCUEy8JrjOQoAkxHBhugrfHjFo="
+  [mod."github.com/rogpeppe/go-internal"]
+    version = "v1.12.0"
+    hash = "sha256-qvDNCe3l84/LgrA8X4O15e1FeDcazyX91m9LmXGXX6M="
   [mod."github.com/sagikazarmark/locafero"]
     version = "v0.4.0"
     hash = "sha256-7I1Oatc7GAaHgAqBFO6Tv4IbzFiYeU9bJAfJhXuWaXk="
@@ -100,12 +103,6 @@ schema = 3
   [mod."github.com/subosito/gotenv"]
     version = "v1.6.0"
     hash = "sha256-LspbjTniiq2xAICSXmgqP7carwlNaLqnCTQfw2pa80A="
-  [mod."github.com/vmihailenco/msgpack/v5"]
-    version = "v5.4.1"
-    hash = "sha256-pDplX6xU6UpNLcFbO1pRREW5vCnSPvSU+ojAwFDv3Hk="
-  [mod."github.com/vmihailenco/tagparser/v2"]
-    version = "v2.0.0"
-    hash = "sha256-M9QyaKhSmmYwsJk7gkjtqu9PuiqZHSmTkous8VWkWY0="
   [mod."go.etcd.io/bbolt"]
     version = "v1.3.11"
     hash = "sha256-SVWYZtE9TBgAo8xJSmo9DtSwuNa056N3zGvPLDJgiA8="

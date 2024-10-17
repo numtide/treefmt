@@ -161,13 +161,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return fmt.Errorf("failed to create composite formatter: %w", err)
 	}
 
-	if db != nil {
-		// compare formatters with the db, busting the cache if the formatters have changed
-		if err := formatter.BustCache(db); err != nil {
-			return fmt.Errorf("failed to compare formatters: %w", err)
-		}
-	}
-
 	// create a new walker for traversing the paths
 	walker, err := walk.NewCompositeReader(walkType, cfg.TreeRoot, paths, db, statz)
 	if err != nil {
