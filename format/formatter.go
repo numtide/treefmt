@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash"
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -50,6 +52,29 @@ func (f *Formatter) Priority() int {
 // Executable returns the path to the executable defined by Command.
 func (f *Formatter) Executable() string {
 	return f.executable
+}
+
+// Hash adds this formatter's config and executable info to the config hash being created.
+func (f *Formatter) Hash(h hash.Hash) error {
+	// including the name helps us to easily detect when formatters have been added/removed
+	h.Write([]byte(f.name))
+	// if options change, the outcome of applying the formatter might be different
+	h.Write([]byte(strings.Join(f.config.Options, " ")))
+	// if priority changes, the outcome of applying a sequence of formatters might be different
+	h.Write([]byte(fmt.Sprintf("%d", f.config.Priority)))
+
+	// stat the formatter's executable
+	info, err := os.Lstat(f.executable)
+	if err != nil {
+		return fmt.Errorf("failed to stat formatter executable: %w", err)
+	}
+
+	// include the executable's size and mod time
+	// if the formatter executable changes (e.g. new version) the outcome of applying the formatter might differ
+	h.Write([]byte(fmt.Sprintf("%d", info.Size())))
+	h.Write([]byte(fmt.Sprintf("%d", info.ModTime().Unix())))
+
+	return nil
 }
 
 func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
@@ -137,9 +162,9 @@ func newFormatter(
 
 	// initialise internal state
 	if cfg.Priority > 0 {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s[%d]", name, cfg.Priority))
+		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s[%d]", name, cfg.Priority))
 	} else {
-		f.log = log.WithPrefix(fmt.Sprintf("format | %s", name))
+		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s", name))
 	}
 
 	f.includes, err = compileGlobs(cfg.Includes)

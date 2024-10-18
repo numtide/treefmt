@@ -18,9 +18,9 @@ with pkgs; [
   opentofu
   dos2unix
   yamlfmt
-  # util for unit testing
+  # utils for unit testing
   (pkgs.writeShellApplication {
-    name = "test-fmt";
+    name = "test-fmt-append";
     text = ''
       VALUE="$1"
       shift
@@ -28,6 +28,18 @@ with pkgs; [
       # append value to each file
       for FILE in "$@"; do
           echo "$VALUE" >> "$FILE"
+      done
+    '';
+  })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-modtime";
+    text = ''
+      VALUE="$1"
+      shift
+
+      # append value to each file
+      for FILE in "$@"; do
+          touch -t "$VALUE" "$FILE"
       done
     '';
   })

@@ -2,16 +2,15 @@ package walk
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/numtide/treefmt/stats"
-	"github.com/numtide/treefmt/walk/cache"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -35,10 +34,57 @@ type File struct {
 	RelPath string
 	Info    fs.FileInfo
 
-	// Cache is the latest entry found for this file, if one exists.
-	Cache *cache.Entry
+	// FormattedInfo is the result of os.stat after formatting the file.
+	FormattedInfo fs.FileInfo
+
+	// FormattersSignature represents the sequence of formatters and their config that was applied to this file.
+	FormattersSignature []byte
+
+	// CachedFormatSignature is the last FormatSignature generated for this file, retrieved from the cache.
+	CachedFormatSignature []byte
 
 	releaseFuncs []ReleaseFunc
+}
+
+func formatSignature(formattersSig []byte, info fs.FileInfo) []byte {
+	h := md5.New() //nolint:gosec
+	h.Write(formattersSig)
+	// add mod time and size
+	h.Write([]byte(fmt.Sprintf("%v %v", info.ModTime().Unix(), info.Size())))
+
+	return h.Sum(nil)
+}
+
+// FormatSignature takes the file's info from when it was traversed and appends it to formattersSig, generating
+// a unique format signature which encapsulates the sequence of formatters that were applied to this file and the
+// outcome.
+func (f *File) FormatSignature(formattersSig []byte) ([]byte, error) {
+	if f.Info == nil {
+		return nil, fmt.Errorf("file has no info")
+	}
+
+	return formatSignature(formattersSig, f.Info), nil
+}
+
+// NewFormatSignature takes the file's info after being formatted and appends it to FormattersSignature, generating
+// a unique format signature which encapsulates the sequence of formatters that were applied to this file and the
+// outcome.
+func (f *File) NewFormatSignature() ([]byte, error) {
+	info := f.FormattedInfo // we start by assuming the file was formatted
+	if info == nil {
+		// if it wasn't, we fall back to the original file info from when it was first read
+		info = f.Info
+	}
+
+	if info == nil {
+		// ensure info is not nil
+		return nil, fmt.Errorf("file has no info")
+	} else if f.FormattersSignature == nil {
+		// ensure we have a formatters signature
+		return nil, fmt.Errorf("file has no formatters signature")
+	}
+
+	return formatSignature(f.FormattersSignature, info), nil
 }
 
 // Release calls all registered release functions for the File and returns an error if any function fails.
@@ -76,7 +122,7 @@ func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
 	// Some formatters mess with the mod time (e.g. dos2unix) but not to the same precision,
 	// triggering false positives.
 	// We truncate everything below a second.
-	if f.Info.ModTime().Truncate(time.Second) != current.ModTime().Truncate(time.Second) {
+	if f.Info.ModTime().Unix() != current.ModTime().Unix() {
 		return true, current, nil
 	}
 

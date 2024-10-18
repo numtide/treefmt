@@ -128,7 +128,7 @@ func NewFilesystemReader(
 	eg := errgroup.Group{}
 
 	r := FilesystemReader{
-		log:       log.WithPrefix("walk[filesystem]"),
+		log:       log.WithPrefix("walk | filesystem"),
 		root:      root,
 		path:      path,
 		batchSize: batchSize,

@@ -77,9 +77,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		}()
 	}
 
-	// set a prefix on the default logger
-	log.SetPrefix("format")
-
 	var db *bolt.DB
 
 	// open the db unless --no-cache was specified
@@ -159,13 +156,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	formatter, err := format.NewCompositeFormatter(cfg, statz, BatchSize)
 	if err != nil {
 		return fmt.Errorf("failed to create composite formatter: %w", err)
-	}
-
-	if db != nil {
-		// compare formatters with the db, busting the cache if the formatters have changed
-		if err := formatter.BustCache(db); err != nil {
-			return fmt.Errorf("failed to compare formatters: %w", err)
-		}
 	}
 
 	// create a new walker for traversing the paths

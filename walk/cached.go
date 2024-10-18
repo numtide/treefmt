@@ -52,20 +52,17 @@ func (c *CachedReader) process() error {
 		}
 
 		return c.db.Update(func(tx *bolt.Tx) error {
-			// get the paths bucket
-			bucket, err := cache.BucketPaths(tx)
-			if err != nil {
-				return fmt.Errorf("failed to get bucket: %w", err)
-			}
+			bucket := cache.PathsBucket(tx)
 
-			// for each file in the batch, add a new cache entry with update size and mod time.
+			// for each file in the batch, calculate its new format signature and update the bucket entry
 			for _, file := range batch {
-				entry := &cache.Entry{
-					Size:     file.Info.Size(),
-					Modified: file.Info.ModTime(),
+				signature, err := file.NewFormatSignature()
+				if err != nil {
+					return fmt.Errorf("failed to calculate signature for path %s: %w", file.RelPath, err)
 				}
-				if err = bucket.Put(file.RelPath, entry); err != nil {
-					return fmt.Errorf("failed to put entry for path %s: %w", file.RelPath, err)
+
+				if err := bucket.Put([]byte(file.RelPath), signature); err != nil {
+					return fmt.Errorf("failed to put format signature for path %s: %w", file.RelPath, err)
 				}
 			}
 
@@ -92,7 +89,8 @@ func (c *CachedReader) process() error {
 func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err error) {
 	err = c.db.View(func(tx *bolt.Tx) error {
 		// get paths bucket
-		bucket, err := cache.BucketPaths(tx)
+		bucket := cache.PathsBucket(tx)
+
 		if err != nil {
 			return fmt.Errorf("failed to get bucket: %w", err)
 		}
@@ -104,13 +102,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		for i := 0; i < n; i++ {
 			file := files[i]
 
-			// lookup cache entry and append to the file
-			var bucketErr error
-
-			file.Cache, bucketErr = bucket.Get(file.RelPath)
-			if !(bucketErr == nil || errors.Is(bucketErr, cache.ErrKeyNotFound)) {
-				return bucketErr
-			}
+			file.CachedFormatSignature = bucket.Get([]byte(file.RelPath))
 
 			// set a release function which inserts this file into the update channel
 			file.AddReleaseFunc(func(ctx context.Context) error {
@@ -145,19 +137,13 @@ func (c *CachedReader) Close() error {
 
 // NewCachedReader creates a cache Reader instance, backed by a bolt DB and delegating reads to delegate.
 func NewCachedReader(db *bolt.DB, batchSize int, delegate Reader) (*CachedReader, error) {
-	// force the creation of the necessary buckets if we're dealing with an empty db
-	if err := cache.EnsureBuckets(db); err != nil {
-		return nil, fmt.Errorf("failed to create cache buckets: %w", err)
-	}
-
-	// create an error group for managing the processing loop
-	eg := &errgroup.Group{}
+	eg := &errgroup.Group{} // create an error group for managing the processing loop
 
 	r := &CachedReader{
 		db:        db,
 		batchSize: batchSize,
 		delegate:  delegate,
-		log:       log.WithPrefix("walk[cache]"),
+		log:       log.WithPrefix("walk | cache"),
 		eg:        eg,
 		updateCh:  make(chan *File, batchSize*runtime.NumCPU()),
 	}
