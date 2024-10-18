@@ -80,7 +80,7 @@ func (s *scheduler) formattersSignature(key batchKey, formatters []*Formatter) (
 
 	sig = h.Sum(nil)
 
-	// store we don't have to re-compute for each file
+	// store the signature so we don't have to re-compute for each file
 	s.signatures[key] = sig
 
 	return sig, nil

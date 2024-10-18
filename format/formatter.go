@@ -56,7 +56,7 @@ func (f *Formatter) Executable() string {
 
 // Hash adds this formatter's config and executable info to the config hash being created.
 func (f *Formatter) Hash(h hash.Hash) error {
-	// including the name helps us to easily detect when formatter's have been added/removed
+	// including the name helps us to easily detect when formatters have been added/removed
 	h.Write([]byte(f.name))
 	// if options change, the outcome of applying the formatter might be different
 	h.Write([]byte(strings.Join(f.config.Options, " ")))

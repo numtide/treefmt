@@ -63,7 +63,7 @@ func TempFile(t *testing.T, dir string, pattern string, contents *string) *os.Fi
 }
 
 // Lutimes is a convenience wrapper for using unix.Lutimes
-// TODO: this will need adapted if we support Windows.
+// TODO: this will need to be adapted if we support Windows.
 func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error {
 	t.Helper()
 

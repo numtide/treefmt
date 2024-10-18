@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1305,15 +1306,20 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	root.SetOut(tempOut)
 	root.SetErr(tempOut)
 
-	// record the start time
-	start := time.Now()
+	failOnChange := os.Getenv("TREEFMT_FAIL_ON_CHANGE") == "true" ||
+		slices.Index(args, "--fail-on-change") != -1
 
-	defer func() {
-		// Wait until we tick over into the next second before continuing.
-		// This ensures we correctly detect changes within tests as treefmt compares modtime at second level precision.
-		waitUntil := start.Truncate(time.Second).Add(time.Second)
-		time.Sleep(time.Until(waitUntil))
-	}()
+	if failOnChange {
+		// record the start time
+		start := time.Now()
+
+		defer func() {
+			// Wait until we tick over into the next second before continuing.
+			// This ensures we correctly detect changes as treefmt compares modtime at second level precision.
+			waitUntil := start.Truncate(time.Second).Add(time.Second)
+			time.Sleep(time.Until(waitUntil))
+		}()
+	}
 
 	// execute the command
 	cmdErr := root.Execute()

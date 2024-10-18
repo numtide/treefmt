@@ -104,9 +104,8 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 	return nil
 }
 
-// signature takes anything that might affect the paths to be traversed,
-// or how they are traversed, and adds it to a sha256 hash.
-// This can be used to determine if there has been a material change in config.
+// signature generates a formatting signature, which is a combination of the signatures for each of the formatters
+// we delegate to.
 func (c *CompositeFormatter) signature() (signature, error) {
 	h := sha256.New()
 
