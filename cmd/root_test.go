@@ -38,6 +38,8 @@ func TestOnUnmatched(t *testing.T) {
 
 	tempDir := test.TempExamples(t)
 
+	as.NoError(os.Chdir(tempDir), "failed to change to temp dir")
+
 	paths := []string{
 		"go/go.mod",
 		"haskell/haskell.cabal",
@@ -51,38 +53,77 @@ func TestOnUnmatched(t *testing.T) {
 		// - "haskell/treefmt.toml"
 	}
 
-	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "fatal")
-	as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
+	// allow missing formatter
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
-	checkOutput := func(level string, output []byte) {
-		for _, p := range paths {
-			as.Contains(string(output), fmt.Sprintf("%s no formatter for path: %s", level, p))
+	checkOutput := func(level log.Level) func([]byte, *stats.Stats, error) {
+		logPrefix := strings.ToUpper(level.String())[:4]
+
+		return func(out []byte, _ *stats.Stats, err error) {
+			as.NoError(err)
+
+			for _, p := range paths {
+				as.Contains(string(out), fmt.Sprintf("%s no formatter for path: %s", logPrefix, p))
+			}
 		}
 	}
 
-	var out []byte
+	// default is WARN
+	t.Run("default", func(t *testing.T) {
+		treefmt2(t, args(), checkOutput(log.WarnLevel))
+	})
 
-	// default is warn
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
-	as.NoError(err)
-	checkOutput("WARN", out)
+	// should exit with error when using fatal
+	t.Run("fatal", func(t *testing.T) {
+		treefmt2(
+			t, args("--on-unmatched", "fatal"),
+			func(_ []byte, _ *stats.Stats, err error) {
+				as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
+			},
+		)
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--on-unmatched", "warn")
-	as.NoError(err)
-	checkOutput("WARN", out)
+		t.Setenv("TREEFMT_ON_UNMATCHED", "fatal")
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-u", "error")
-	as.NoError(err)
-	checkOutput("ERRO", out)
+		treefmt2(
+			t, args(),
+			func(_ []byte, _ *stats.Stats, err error) {
+				as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
+			},
+		)
+	})
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-v", "--on-unmatched", "info")
-	as.NoError(err)
-	checkOutput("INFO", out)
+	// test other levels
+	for _, levelStr := range []string{"debug", "info", "warn", "error"} {
+		t.Run(levelStr, func(t *testing.T) {
+			level, err := log.ParseLevel(levelStr)
+			as.NoError(err, "failed to parse log level: %s", level)
 
-	t.Setenv("TREEFMT_ON_UNMATCHED", "debug")
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "-vv")
-	as.NoError(err)
-	checkOutput("DEBU", out)
+			// otherwise, we check the log output
+			treefmt2(t, args("-vv", "--on-unmatched", levelStr), checkOutput(level))
+
+			t.Setenv("TREEFMT_ON_UNMATCHED", levelStr)
+			treefmt2(t, args("-vv"), checkOutput(level))
+		})
+	}
+
+	t.Run("invalid", func(t *testing.T) {
+		// test bad value
+		treefmt2(
+			t, args("--on-unmatched", "foo"),
+			func(_ []byte, _ *stats.Stats, err error) {
+				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, "foo"))
+			},
+		)
+
+		t.Setenv("TREEFMT_ON_UNMATCHED", "bar")
+
+		treefmt2(
+			t, args(),
+			func(_ []byte, _ *stats.Stats, err error) {
+				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, "bar"))
+			},
+		)
+	})
 }
 
 func TestCpuProfile(t *testing.T) {
@@ -1338,6 +1379,65 @@ func TestRunInSubdir(t *testing.T) {
 			})
 		})
 	}
+}
+
+func args(args ...string) []string {
+	return args
+}
+
+func treefmt2(t *testing.T, args []string, fn func(out []byte, statz *stats.Stats, err error)) {
+	t.Helper()
+
+	t.Logf("treefmt %s", strings.Join(args, " "))
+
+	tempDir := t.TempDir()
+	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
+
+	// capture standard outputs before swapping them
+	stdout := os.Stdout
+	stderr := os.Stderr
+
+	// swap them temporarily
+	os.Stdout = tempOut
+	os.Stderr = tempOut
+
+	log.SetOutput(tempOut)
+
+	defer func() {
+		// swap outputs back
+		os.Stdout = stdout
+		os.Stderr = stderr
+		log.SetOutput(stderr)
+	}()
+
+	// run the command
+	root, statz := cmd.NewRoot()
+
+	if args == nil {
+		// we must pass an empty array otherwise cobra with use os.Args[1:]
+		args = []string{}
+	}
+
+	root.SetArgs(args)
+	root.SetOut(tempOut)
+	root.SetErr(tempOut)
+
+	// execute the command
+	cmdErr := root.Execute()
+
+	// reset and read the temporary output
+	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
+		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
+	}
+
+	out, readErr := io.ReadAll(tempOut)
+	if readErr != nil {
+		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
+	}
+
+	t.Log("\n" + string(out))
+
+	fn(out, statz, cmdErr)
 }
 
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
