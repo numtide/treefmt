@@ -139,18 +139,31 @@ func TestCpuProfile(t *testing.T) {
 		as.NoError(os.Chdir(cwd))
 	})
 
-	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--cpu-profile", "cpu.pprof")
-	as.NoError(err)
-	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
-	_, err = os.Stat(filepath.Join(tempDir, "cpu.pprof"))
-	as.NoError(err)
+	// change to temp dir
+	as.NoError(os.Chdir(tempDir), "failed to change to temp dir")
+	// allow missing formatter
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
+	treefmt2(
+		t, args("--cpu-profile", "cpu.pprof"),
+		func(_ []byte, _ *stats.Stats, err error) {
+			// check the profile exists
+			as.NoError(err)
+			as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
+		},
+	)
+
+	// test with env
 	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
-	_, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter")
-	as.NoError(err)
-	as.FileExists(filepath.Join(tempDir, "env.pprof"))
-	_, err = os.Stat(filepath.Join(tempDir, "env.pprof"))
-	as.NoError(err)
+
+	treefmt2(
+		t, args(),
+		func(_ []byte, _ *stats.Stats, err error) {
+			// check the profile exists
+			as.NoError(err)
+			as.FileExists(filepath.Join(tempDir, "env.pprof"))
+		},
+	)
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
