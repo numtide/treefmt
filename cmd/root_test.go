@@ -47,12 +47,10 @@ func TestOnUnmatched(t *testing.T) {
 	// allow missing formatter
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
-	checkOutput := func(level log.Level) func([]byte, *stats.Stats, error) {
+	checkOutput := func(level log.Level) func([]byte) {
 		logPrefix := strings.ToUpper(level.String())[:4]
 
-		return func(out []byte, _ *stats.Stats, err error) {
-			as.NoError(err)
-
+		return func(out []byte) {
 			for _, p := range paths {
 				as.Contains(string(out), fmt.Sprintf("%s no formatter for path: %s", logPrefix, p))
 			}
@@ -61,26 +59,20 @@ func TestOnUnmatched(t *testing.T) {
 
 	// default is WARN
 	t.Run("default", func(t *testing.T) {
-		treefmt2(t, args(), checkOutput(log.WarnLevel))
+		treefmt2(t, withNoError(as), withOutput(checkOutput(log.WarnLevel)))
 	})
 
 	// should exit with error when using fatal
 	t.Run("fatal", func(t *testing.T) {
-		treefmt2(
-			t, args("--on-unmatched", "fatal"),
-			func(_ []byte, _ *stats.Stats, err error) {
-				as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
-			},
-		)
+		errorFn := func(err error) {
+			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
+		}
+
+		treefmt2(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))
 
 		t.Setenv("TREEFMT_ON_UNMATCHED", "fatal")
 
-		treefmt2(
-			t, args(),
-			func(_ []byte, _ *stats.Stats, err error) {
-				as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
-			},
-		)
+		treefmt2(t, withError(errorFn))
 	})
 
 	// test other levels
@@ -89,31 +81,38 @@ func TestOnUnmatched(t *testing.T) {
 			level, err := log.ParseLevel(levelStr)
 			as.NoError(err, "failed to parse log level: %s", level)
 
-			// otherwise, we check the log output
-			treefmt2(t, args("-vv", "--on-unmatched", levelStr), checkOutput(level))
+			treefmt2(t,
+				withArgs("-vv", "--on-unmatched", levelStr),
+				withNoError(as),
+				withOutput(checkOutput(level)),
+			)
 
 			t.Setenv("TREEFMT_ON_UNMATCHED", levelStr)
-			treefmt2(t, args("-vv"), checkOutput(level))
+
+			treefmt2(t,
+				withArgs("-vv"),
+				withNoError(as),
+				withOutput(checkOutput(level)),
+			)
 		})
 	}
 
 	t.Run("invalid", func(t *testing.T) {
 		// test bad value
-		treefmt2(
-			t, args("--on-unmatched", "foo"),
-			func(_ []byte, _ *stats.Stats, err error) {
-				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, "foo"))
-			},
+		errorFn := func(arg string) func(err error) {
+			return func(err error) {
+				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, arg))
+			}
+		}
+
+		treefmt2(t,
+			withArgs("--on-unmatched", "foo"),
+			withError(errorFn("foo")),
 		)
 
 		t.Setenv("TREEFMT_ON_UNMATCHED", "bar")
 
-		treefmt2(
-			t, args(),
-			func(_ []byte, _ *stats.Stats, err error) {
-				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, "bar"))
-			},
-		)
+		treefmt2(t, withError(errorFn("bar")))
 	})
 }
 
@@ -126,26 +125,19 @@ func TestCpuProfile(t *testing.T) {
 	// allow missing formatter
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
-	treefmt2(
-		t, args("--cpu-profile", "cpu.pprof"),
-		func(_ []byte, _ *stats.Stats, err error) {
-			// check the profile exists
-			as.NoError(err)
-			as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
-		},
+	treefmt2(t,
+		withArgs("--cpu-profile", "cpu.pprof"),
+		withNoError(as),
 	)
+
+	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
 
 	// test with env
 	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
 
-	treefmt2(
-		t, args(),
-		func(_ []byte, _ *stats.Stats, err error) {
-			// check the profile exists
-			as.NoError(err)
-			as.FileExists(filepath.Join(tempDir, "env.pprof"))
-		},
-	)
+	treefmt2(t, withNoError(as))
+
+	as.FileExists(filepath.Join(tempDir, "env.pprof"))
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
@@ -165,20 +157,21 @@ func TestAllowMissingFormatter(t *testing.T) {
 	})
 
 	// default
-	treefmt2(t, args(), func(_ []byte, _ *stats.Stats, err error) {
-		as.ErrorIs(err, format.ErrCommandNotFound)
-	})
+	treefmt2(t,
+		withError(func(err error) {
+			as.ErrorIs(err, format.ErrCommandNotFound)
+		}),
+	)
 
 	// arg
-	treefmt2(t, args("--allow-missing-formatter"), func(_ []byte, _ *stats.Stats, err error) {
-		as.NoError(err)
-	})
+	treefmt2(t,
+		withArgs("--allow-missing-formatter"),
+		withNoError(as),
+	)
 
 	// env
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-	treefmt2(t, args(), func(_ []byte, _ *stats.Stats, err error) {
-		as.NoError(err)
-	})
+	treefmt2(t, withNoError(as))
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
@@ -212,87 +205,85 @@ func TestSpecifyingFormatters(t *testing.T) {
 	test.ChangeWorkDir(t, tempDir)
 
 	t.Run("default", func(t *testing.T) {
-		test.BumpModtimes(t, tempDir, 0, time.Second)
-
-		treefmt2(t, args(), func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
+		treefmt2(t,
+			withNoError(as),
+			withModtimeBump(tempDir, time.Second),
+			withStats(as, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 3,
 				stats.Changed:   3,
-			})
-		})
+			}),
+		)
 	})
 
 	t.Run("args", func(t *testing.T) {
-		test.BumpModtimes(t, tempDir, 0, time.Second)
-
-		treefmt2(t, args("--formatters", "elm,nix"), func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
+		treefmt2(t,
+			withArgs("--formatters", "elm,nix"),
+			withModtimeBump(tempDir, time.Second),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
-			})
-		})
+			}),
+		)
 
-		test.BumpModtimes(t, tempDir, 0, time.Second)
-
-		treefmt2(t, args("--formatters", "ruby,nix"), func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
+		treefmt2(t,
+			withArgs("--formatters", "ruby,nix"),
+			withModtimeBump(tempDir, time.Second),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
-			})
-		})
+			}),
+		)
 
-		test.BumpModtimes(t, tempDir, 0, time.Second)
-
-		treefmt2(t, args("--formatters", "nix"), func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
+		treefmt2(t,
+			withArgs("--formatters", "nix"),
+			withModtimeBump(tempDir, time.Second),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   1,
 				stats.Formatted: 1,
 				stats.Changed:   1,
-			})
-		})
+			}),
+		)
 
 		// bad name
-		treefmt2(t, args("--formatters", "foo"), func(_ []byte, _ *stats.Stats, err error) {
-			as.Errorf(err, "formatter not found in config: foo")
-		})
+		treefmt2(t,
+			withArgs("--formatters", "foo"),
+			withError(func(err error) {
+				as.Errorf(err, "formatter not found in config: foo")
+			}),
+		)
 	})
 
 	t.Run("env", func(t *testing.T) {
-		test.BumpModtimes(t, tempDir, 0, time.Second)
-
 		t.Setenv("TREEFMT_FORMATTERS", "ruby,nix")
 
-		treefmt2(t, args("--formatters", "ruby,nix"), func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
+		treefmt2(t,
+			withNoError(as),
+			withModtimeBump(tempDir, time.Second),
+			withStats(as, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
-			})
-		})
+			}),
+		)
 
 		t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
 
-		treefmt2(t, args("--formatters", "bar,foo"), func(_ []byte, _ *stats.Stats, err error) {
-			as.Errorf(err, "formatter not found in config: bar")
-		})
+		treefmt2(t,
+			withError(func(err error) {
+				as.Errorf(err, "formatter not found in config: bar")
+			}),
+		)
 	})
 }
 
@@ -462,64 +453,74 @@ func TestCache(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 
-	execute := func(args []string, bump bool, expected map[stats.Type]int) {
-		if bump {
-			test.BumpModtimes(t, tempDir, 0, time.Second)
-		}
-
-		treefmt2(t, args, func(_ []byte, statz *stats.Stats, err error) {
-			as.NoError(err)
-			assertStats(t, as, statz, expected)
-		})
-	}
-
 	// first run
-	execute(nil, false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   32,
-	})
+	treefmt2(t,
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   32,
+		}),
+	)
 
 	// cached run with no changes to underlying files
-	execute(nil, false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// clear cache
-	execute(args("-c"), false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   32,
-	})
+	treefmt2(t,
+		withArgs("-c"),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   32,
+		}),
+	)
 
 	// cached run with no changes to underlying files
-	execute(nil, false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// bump underlying files
-	execute(nil, true, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   32,
-	})
+	treefmt2(t,
+		withNoError(as),
+		withModtimeBump(tempDir, time.Second),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   32,
+		}),
+	)
 
 	// no cache
-	execute(args("--no-cache"), false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   32,
-	})
+	treefmt2(t,
+		withArgs("--no-cache"),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   32,
+		}),
+	)
 
 	// update the config with a failing formatter
 	cfg = &config.Config{
@@ -537,31 +538,30 @@ func TestCache(t *testing.T) {
 	// test that formatting errors are not cached
 
 	// running should match but not format anything
-	treefmt2(t, args(),
-		func(_ []byte, statz *stats.Stats, err error) {
-			as.ErrorIs(err, format.ErrFormattingFailures)
 
-			assertStats(t, as, statz, map[stats.Type]int{
-				stats.Traversed: 32,
-				stats.Matched:   6,
-				stats.Formatted: 0,
-				stats.Changed:   0,
-			})
-		},
+	treefmt2(t,
+		withError(func(err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
+		}),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   6,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
 	)
 
 	// running again should provide the same result
-	treefmt2(t, args(),
-		func(_ []byte, statz *stats.Stats, err error) {
+	treefmt2(t,
+		withError(func(err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
-
-			assertStats(t, as, statz, map[stats.Type]int{
-				stats.Traversed: 32,
-				stats.Matched:   6,
-				stats.Formatted: 0,
-				stats.Changed:   0,
-			})
-		},
+		}),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   6,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
 	)
 
 	// let's fix the haskell config so it no longer fails
@@ -574,12 +574,15 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// we should now format the haskell files
-	execute(args(), false, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   6,
-		stats.Formatted: 6,
-		stats.Changed:   6,
-	})
+	treefmt2(t,
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   6,
+			stats.Formatted: 6,
+			stats.Changed:   6,
+		}),
+	)
 }
 
 func TestChangeWorkingDirectory(t *testing.T) {
@@ -1403,65 +1406,6 @@ func TestRunInSubdir(t *testing.T) {
 	}
 }
 
-func args(args ...string) []string {
-	return args
-}
-
-func treefmt2(t *testing.T, args []string, fn func(out []byte, statz *stats.Stats, err error)) {
-	t.Helper()
-
-	t.Logf("treefmt %s", strings.Join(args, " "))
-
-	tempDir := t.TempDir()
-	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
-
-	// capture standard outputs before swapping them
-	stdout := os.Stdout
-	stderr := os.Stderr
-
-	// swap them temporarily
-	os.Stdout = tempOut
-	os.Stderr = tempOut
-
-	log.SetOutput(tempOut)
-
-	defer func() {
-		// swap outputs back
-		os.Stdout = stdout
-		os.Stderr = stderr
-		log.SetOutput(stderr)
-	}()
-
-	// run the command
-	root, statz := cmd.NewRoot()
-
-	if args == nil {
-		// we must pass an empty array otherwise cobra with use os.Args[1:]
-		args = []string{}
-	}
-
-	root.SetArgs(args)
-	root.SetOut(tempOut)
-	root.SetErr(tempOut)
-
-	// execute the command
-	cmdErr := root.Execute()
-
-	// reset and read the temporary output
-	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
-		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
-	}
-
-	out, readErr := io.ReadAll(tempOut)
-	if readErr != nil {
-		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
-	}
-
-	t.Log("\n" + string(out))
-
-	fn(out, statz, cmdErr)
-}
-
 func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	t.Helper()
 
@@ -1527,5 +1471,145 @@ func assertStats(
 
 	for k, v := range expected {
 		as.Equal(v, statz.Value(k), k.String())
+	}
+}
+
+type options struct {
+	args        []string
+	assertOut   func([]byte)
+	assertError func(error)
+	assertStats func(*stats.Stats)
+
+	bump struct {
+		path    string
+		atime   time.Duration
+		modtime time.Duration
+	}
+}
+
+type option func(*options)
+
+func withArgs(args ...string) option {
+	return func(o *options) {
+		o.args = args
+	}
+}
+
+func withStats(as *require.Assertions, expected map[stats.Type]int) option {
+	return func(o *options) {
+		o.assertStats = func(s *stats.Stats) {
+			for k, v := range expected {
+				as.Equal(v, s.Value(k), k.String())
+			}
+		}
+	}
+}
+
+func withError(fn func(error)) option {
+	return func(o *options) {
+		o.assertError = fn
+	}
+}
+
+func withNoError(as *require.Assertions) option {
+	return func(o *options) {
+		o.assertError = func(err error) {
+			as.NoError(err)
+		}
+	}
+}
+
+func withOutput(fn func([]byte)) option {
+	return func(o *options) {
+		o.assertOut = fn
+	}
+}
+
+//nolint:unparam
+func withModtimeBump(path string, bump time.Duration) option {
+	return func(o *options) {
+		o.bump.path = path
+		o.bump.modtime = bump
+	}
+}
+
+func treefmt2(
+	t *testing.T,
+	opt ...option,
+) {
+	t.Helper()
+
+	// build options
+	opts := &options{}
+	for _, option := range opt {
+		option(opts)
+	}
+
+	// default args if nil
+	// we must pass an empty array otherwise cobra with use os.Args[1:]
+	args := opts.args
+	if args == nil {
+		args = []string{}
+	}
+
+	// bump mod times before running
+	if opts.bump.path != "" {
+		test.LutimesBump(t, opts.bump.path, opts.bump.atime, opts.bump.modtime)
+	}
+
+	t.Logf("treefmt %s", strings.Join(args, " "))
+
+	tempDir := t.TempDir()
+	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
+
+	// capture standard outputs before swapping them
+	stdout := os.Stdout
+	stderr := os.Stderr
+
+	// swap them temporarily
+	os.Stdout = tempOut
+	os.Stderr = tempOut
+
+	log.SetOutput(tempOut)
+
+	defer func() {
+		// swap outputs back
+		os.Stdout = stdout
+		os.Stderr = stderr
+		log.SetOutput(stderr)
+	}()
+
+	// run the command
+	root, statz := cmd.NewRoot()
+
+	root.SetArgs(args)
+	root.SetOut(tempOut)
+	root.SetErr(tempOut)
+
+	// execute the command
+	cmdErr := root.Execute()
+
+	// reset and read the temporary output
+	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
+		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
+	}
+
+	out, readErr := io.ReadAll(tempOut)
+	if readErr != nil {
+		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
+	}
+
+	t.Log("\n" + string(out))
+
+	if opts.assertStats != nil {
+		opts.assertStats(statz)
+	}
+
+	if opts.assertOut != nil {
+		opts.assertOut(out)
+	}
+
+	if opts.assertError != nil {
+		opts.assertError(cmdErr)
 	}
 }

@@ -81,7 +81,7 @@ func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error 
 	return nil
 }
 
-func BumpModtimes(t *testing.T, path string, atime time.Duration, mtime time.Duration) {
+func LutimesBump(t *testing.T, path string, atime time.Duration, mtime time.Duration) {
 	t.Helper()
 
 	now := time.Now()
