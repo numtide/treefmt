@@ -167,6 +167,11 @@ func newFormatter(
 		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s", name))
 	}
 
+	// check there is at least one include
+	if len(cfg.Includes) == 0 {
+		return nil, fmt.Errorf("formatter '%v' has no includes", f.name)
+	}
+
 	f.includes, err = compileGlobs(cfg.Includes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)

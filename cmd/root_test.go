@@ -294,7 +294,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/touch.toml"
+	configPath := tempDir + "/treefmt.toml"
+
+	test.ChangeWorkDir(t, tempDir)
 
 	// test without any excludes
 	cfg := &config.Config{
@@ -410,29 +412,28 @@ func TestPrjRootEnvVariable(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/treefmt.toml"
+	configPath := filepath.Join(tempDir, "treefmt.toml")
 
-	// test without any excludes
-	cfg := &config.Config{
-		FormatterConfigs: map[string]*config.Formatter{
-			"echo": {
-				Command:  "echo",
-				Includes: []string{"*"},
-			},
-		},
-	}
-
-	test.WriteConfig(t, configPath, cfg)
 	t.Setenv("PRJ_ROOT", tempDir)
-	_, statz, err := treefmt(t, "--config-file", configPath)
-	as.NoError(err)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withConfig(configPath, &config.Config{
+			FormatterConfigs: map[string]*config.Formatter{
+				"echo": {
+					Command:  "echo",
+					Includes: []string{"*"},
+				},
+			},
+		}),
+		withArgs("--config-file", configPath),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
 }
 
 func TestCache(t *testing.T) {
@@ -1478,7 +1479,13 @@ func assertStats(
 }
 
 type options struct {
-	args        []string
+	args []string
+
+	config struct {
+		path  string
+		value *config.Config
+	}
+
 	assertOut   func([]byte)
 	assertError func(error)
 	assertStats func(*stats.Stats)
@@ -1495,6 +1502,13 @@ type option func(*options)
 func withArgs(args ...string) option {
 	return func(o *options) {
 		o.args = args
+	}
+}
+
+func withConfig(path string, cfg *config.Config) option {
+	return func(o *options) {
+		o.config.path = path
+		o.config.value = cfg
 	}
 }
 
@@ -1553,6 +1567,11 @@ func treefmt2(
 	args := opts.args
 	if args == nil {
 		args = []string{}
+	}
+
+	// write config
+	if opts.config.value != nil {
+		test.WriteConfig(t, opts.config.path, opts.config.value)
 	}
 
 	// bump mod times before running
