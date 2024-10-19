@@ -152,7 +152,9 @@ func TestAllowMissingFormatter(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/treefmt.toml"
+	configPath := filepath.Join(tempDir, "treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
 
 	test.WriteConfig(t, configPath, &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
@@ -162,15 +164,21 @@ func TestAllowMissingFormatter(t *testing.T) {
 		},
 	})
 
-	_, _, err := treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-vv")
-	as.ErrorIs(err, format.ErrCommandNotFound)
+	// default
+	treefmt2(t, args(), func(_ []byte, _ *stats.Stats, err error) {
+		as.ErrorIs(err, format.ErrCommandNotFound)
+	})
 
-	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--allow-missing-formatter")
-	as.NoError(err)
+	// arg
+	treefmt2(t, args("--allow-missing-formatter"), func(_ []byte, _ *stats.Stats, err error) {
+		as.NoError(err)
+	})
 
+	// env
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
+	treefmt2(t, args(), func(_ []byte, _ *stats.Stats, err error) {
+		as.NoError(err)
+	})
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
