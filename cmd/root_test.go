@@ -445,35 +445,44 @@ func TestCache(t *testing.T) {
 	as := require.New(t)
 
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/touch.toml"
+	configPath := filepath.Join(tempDir, "treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
 
 	// test without any excludes
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
-			"echo": {
-				Command:  "echo",
+			"append": {
+				Command:  "test-fmt-append",
+				Options:  []string{"   "},
 				Includes: []string{"*"},
 			},
 		},
 	}
 
-	var err error
-
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err := treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
 
-	assertStats(t, as, statz, map[stats.Type]int{
+	execute := func(args []string, bump bool, expected map[stats.Type]int) {
+		if bump {
+			test.BumpModtimes(t, tempDir, 0, time.Second)
+		}
+
+		treefmt2(t, args, func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
+			assertStats(t, as, statz, expected)
+		})
+	}
+
+	// first run
+	execute(nil, false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 32,
-		stats.Changed:   0,
+		stats.Changed:   32,
 	})
 
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	// cached run with no changes to underlying files
+	execute(nil, false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 0,
@@ -481,59 +490,36 @@ func TestCache(t *testing.T) {
 	})
 
 	// clear cache
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	execute(args("-c"), false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 32,
-		stats.Changed:   0,
+		stats.Changed:   32,
 	})
 
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	// cached run with no changes to underlying files
+	execute(nil, false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 0,
 		stats.Changed:   0,
 	})
 
-	// clear cache
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "-c")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	// bump underlying files
+	execute(nil, true, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 32,
-		stats.Changed:   0,
-	})
-
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 0,
-		stats.Changed:   0,
+		stats.Changed:   32,
 	})
 
 	// no cache
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	execute(args("--no-cache"), false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   32,
 		stats.Formatted: 32,
-		stats.Changed:   0,
+		stats.Changed:   32,
 	})
-
-	// test that formatting errors are not cached
 
 	// update the config with a failing formatter
 	cfg = &config.Config{
@@ -548,37 +534,47 @@ func TestCache(t *testing.T) {
 	}
 	test.WriteConfig(t, configPath, cfg)
 
-	// running should match but not format anything
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, format.ErrFormattingFailures)
+	// test that formatting errors are not cached
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   6,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+	// running should match but not format anything
+	treefmt2(t, args(),
+		func(_ []byte, statz *stats.Stats, err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
+
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   6,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			})
+		},
+	)
 
 	// running again should provide the same result
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, format.ErrFormattingFailures)
+	treefmt2(t, args(),
+		func(_ []byte, statz *stats.Stats, err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   6,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   6,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			})
+		},
+	)
 
 	// let's fix the haskell config so it no longer fails
-	cfg.FormatterConfigs["fail"].Options = nil
+	cfg.FormatterConfigs["fail"] = &config.Formatter{
+		Command:  "test-fmt-append",
+		Options:  []string{"   "},
+		Includes: []string{"*.hs"},
+	}
+
 	test.WriteConfig(t, configPath, cfg)
 
 	// we should now format the haskell files
-	_, statz, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
+	execute(args(), false, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   6,
 		stats.Formatted: 6,
