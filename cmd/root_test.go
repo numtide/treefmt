@@ -27,18 +27,9 @@ import (
 func TestOnUnmatched(t *testing.T) {
 	as := require.New(t)
 
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
-
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
-
 	tempDir := test.TempExamples(t)
 
-	as.NoError(os.Chdir(tempDir), "failed to change to temp dir")
+	test.ChangeWorkDir(t, tempDir)
 
 	paths := []string{
 		"go/go.mod",
@@ -130,17 +121,8 @@ func TestCpuProfile(t *testing.T) {
 	as := require.New(t)
 	tempDir := test.TempExamples(t)
 
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
+	test.ChangeWorkDir(t, tempDir)
 
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
-
-	// change to temp dir
-	as.NoError(os.Chdir(tempDir), "failed to change to temp dir")
 	// allow missing formatter
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 

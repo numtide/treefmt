@@ -79,3 +79,27 @@ func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error 
 
 	return nil
 }
+
+// ChangeWorkDir changes the current working directory for the duration of the test.
+// The original directory is restored when the test ends.
+func ChangeWorkDir(t *testing.T, dir string) {
+	t.Helper()
+
+	// capture current cwd, so we can replace it after the test is finished
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to get current working directory: %w", err))
+	}
+
+	t.Cleanup(func() {
+		// return to the previous working directory
+		if err := os.Chdir(cwd); err != nil {
+			t.Fatal(fmt.Errorf("failed to return to the previous working directory: %w", err))
+		}
+	})
+
+	// change to the new directory
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(fmt.Errorf("failed to change working directory to %s: %w", dir, err))
+	}
+}
