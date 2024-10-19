@@ -156,22 +156,25 @@ func TestAllowMissingFormatter(t *testing.T) {
 		},
 	})
 
-	// default
-	treefmt2(t,
-		withError(func(err error) {
-			as.ErrorIs(err, format.ErrCommandNotFound)
-		}),
-	)
+	t.Run("default", func(t *testing.T) {
+		treefmt2(t,
+			withError(func(err error) {
+				as.ErrorIs(err, format.ErrCommandNotFound)
+			}),
+		)
+	})
 
-	// arg
-	treefmt2(t,
-		withArgs("--allow-missing-formatter"),
-		withNoError(as),
-	)
+	t.Run("arg", func(t *testing.T) {
+		treefmt2(t,
+			withArgs("--allow-missing-formatter"),
+			withNoError(as),
+		)
+	})
 
-	// env
-	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-	treefmt2(t, withNoError(as))
+	t.Run("env", func(t *testing.T) {
+		t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
+		treefmt2(t, withNoError(as))
+	})
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
