@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -78,6 +79,25 @@ func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error 
 	}
 
 	return nil
+}
+
+func BumpModtimes(t *testing.T, path string, atime time.Duration, mtime time.Duration) {
+	t.Helper()
+
+	now := time.Now()
+	newAtime := now.Add(atime)
+	newMtime := now.Add(mtime)
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+
+		return Lutimes(t, path, newAtime, newMtime)
+	})
+	if err != nil {
+		t.Fatalf("failed to bump modtimes: %v", err)
+	}
 }
 
 // ChangeWorkDir changes the current working directory for the duration of the test.

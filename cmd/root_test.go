@@ -184,93 +184,116 @@ func TestAllowMissingFormatter(t *testing.T) {
 func TestSpecifyingFormatters(t *testing.T) {
 	as := require.New(t)
 
+	// we use the test formatter to append some whitespace
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
 			"elm": {
-				Command:  "touch",
-				Options:  []string{"-m"},
+				Command:  "test-fmt-append",
+				Options:  []string{"   "},
 				Includes: []string{"*.elm"},
 			},
 			"nix": {
-				Command:  "touch",
-				Options:  []string{"-m"},
+				Command:  "test-fmt-append",
+				Options:  []string{"   "},
 				Includes: []string{"*.nix"},
 			},
 			"ruby": {
-				Command:  "touch",
-				Options:  []string{"-m"},
+				Command:  "test-fmt-append",
+				Options:  []string{"   "},
 				Includes: []string{"*.rb"},
 			},
 		},
 	}
 
-	var tempDir, configPath string
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "treefmt.toml")
 
-	// we reset the temp dir between successive runs as it appears that touching the file and modifying the mtime can
-	// is not granular enough between assertions in quick succession
-	setup := func() {
-		tempDir = test.TempExamples(t)
-		configPath = tempDir + "/treefmt.toml"
-		test.WriteConfig(t, configPath, cfg)
-	}
+	test.WriteConfig(t, configPath, cfg)
+	test.ChangeWorkDir(t, tempDir)
 
-	setup()
+	t.Run("default", func(t *testing.T) {
+		test.BumpModtimes(t, tempDir, 0, time.Second)
 
-	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
+		treefmt2(t, args(), func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 3,
-		stats.Changed:   3,
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 3,
+				stats.Changed:   3,
+			})
+		})
 	})
 
-	setup()
+	t.Run("args", func(t *testing.T) {
+		test.BumpModtimes(t, tempDir, 0, time.Second)
 
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "elm,nix")
-	as.NoError(err)
+		treefmt2(t, args("--formatters", "elm,nix"), func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   2,
-		stats.Formatted: 2,
-		stats.Changed:   2,
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			})
+		})
+
+		test.BumpModtimes(t, tempDir, 0, time.Second)
+
+		treefmt2(t, args("--formatters", "ruby,nix"), func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
+
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			})
+		})
+
+		test.BumpModtimes(t, tempDir, 0, time.Second)
+
+		treefmt2(t, args("--formatters", "nix"), func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
+
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   1,
+				stats.Formatted: 1,
+				stats.Changed:   1,
+			})
+		})
+
+		// bad name
+		treefmt2(t, args("--formatters", "foo"), func(_ []byte, _ *stats.Stats, err error) {
+			as.Errorf(err, "formatter not found in config: foo")
+		})
 	})
 
-	setup()
+	t.Run("env", func(t *testing.T) {
+		test.BumpModtimes(t, tempDir, 0, time.Second)
 
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "-f", "ruby,nix")
-	as.NoError(err)
+		t.Setenv("TREEFMT_FORMATTERS", "ruby,nix")
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   2,
-		stats.Formatted: 2,
-		stats.Changed:   2,
+		treefmt2(t, args("--formatters", "ruby,nix"), func(_ []byte, statz *stats.Stats, err error) {
+			as.NoError(err)
+
+			assertStats(t, as, statz, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			})
+		})
+
+		t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
+
+		treefmt2(t, args("--formatters", "bar,foo"), func(_ []byte, _ *stats.Stats, err error) {
+			as.Errorf(err, "formatter not found in config: bar")
+		})
 	})
-
-	setup()
-
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "nix")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   1,
-		stats.Formatted: 1,
-		stats.Changed:   1,
-	})
-
-	// test bad names
-	setup()
-
-	_, _, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--formatters", "foo")
-	as.Errorf(err, "formatter not found in config: foo")
-
-	t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
-	_, _, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.Errorf(err, "formatter not found in config: bar")
 }
 
 func TestIncludesAndExcludes(t *testing.T) {
