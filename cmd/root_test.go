@@ -696,6 +696,8 @@ func TestFailOnChange(t *testing.T) {
 		tempDir := test.TempExamples(t)
 		configPath := filepath.Join(tempDir, "treefmt.toml")
 
+		test.ChangeWorkDir(t, tempDir)
+
 		cfg := &config.Config{
 			FormatterConfigs: map[string]*config.Formatter{
 				"append": {
@@ -707,33 +709,42 @@ func TestFailOnChange(t *testing.T) {
 				},
 			},
 		}
-		test.WriteConfig(t, configPath, cfg)
 
-		_, statz, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-		as.ErrorIs(err, formatCmd.ErrFailOnChange)
+		// running with a cold cache, we should see the elm files being formatted, resulting in changes, which should
+		// trigger an error
+		treefmt2(t,
+			withArgs("--fail-on-change"),
+			withConfig(configPath, cfg),
+			withError(func(err error) {
+				as.ErrorIs(err, formatCmd.ErrFailOnChange)
+			}),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			}),
+		)
 
-		assertStats(t, as, statz, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   2,
-			stats.Formatted: 2,
-			stats.Changed:   2,
-		})
-
-		// cached
-		_, statz, err = treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-		as.NoError(err)
-
-		assertStats(t, as, statz, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   2,
-			stats.Formatted: 0,
-			stats.Changed:   0,
-		})
+		// running with a hot cache, we should see matches for the elm files, but no attempt to format them as the
+		// underlying files have not changed since we last ran
+		treefmt2(t,
+			withArgs("--fail-on-change"),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 	})
 
 	t.Run("change modtime", func(t *testing.T) {
 		tempDir := test.TempExamples(t)
 		configPath := filepath.Join(tempDir, "treefmt.toml")
+
+		test.ChangeWorkDir(t, tempDir)
 
 		dateFormat := "2006 01 02 15:04.05"
 		replacer := strings.NewReplacer(" ", "", ":", "")
@@ -743,48 +754,51 @@ func TestFailOnChange(t *testing.T) {
 			return replacer.Replace(t.Format(dateFormat))
 		}
 
-		writeConfig := func() {
-			// new mod time is in the next second
-			modTime := time.Now().Truncate(time.Second).Add(time.Second)
+		// running with a cold cache, we should see the haskell files being formatted, resulting in changes, which should
+		// trigger an error
+		treefmt2(t,
+			withArgs("--fail-on-change"),
+			withConfigFunc(configPath, func() *config.Config {
+				// new mod time is in the next second
+				modTime := time.Now().Truncate(time.Second).Add(time.Second)
 
-			cfg := &config.Config{
-				FormatterConfigs: map[string]*config.Formatter{
-					"append": {
-						// test-fmt-modtime is a helper defined in nix/packages/treefmt/formatters.nix which lets us set
-						// a file's modtime to an arbitrary date.
-						// in this case, we move it forward more than a second so that our second level modtime comparison
-						// will detect it as a change.
-						Command:  "test-fmt-modtime",
-						Options:  []string{formatTime(modTime)},
-						Includes: []string{"haskell/*"},
+				return &config.Config{
+					FormatterConfigs: map[string]*config.Formatter{
+						"append": {
+							// test-fmt-modtime is a helper defined in nix/packages/treefmt/formatters.nix which lets us set
+							// a file's modtime to an arbitrary date.
+							// in this case, we move it forward more than a second so that our second level modtime comparison
+							// will detect it as a change.
+							Command:  "test-fmt-modtime",
+							Options:  []string{formatTime(modTime)},
+							Includes: []string{"haskell/*"},
+						},
 					},
-				},
-			}
-			test.WriteConfig(t, configPath, cfg)
-		}
+				}
+			}),
+			withError(func(err error) {
+				as.ErrorIs(err, formatCmd.ErrFailOnChange)
+			}),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   7,
+				stats.Formatted: 7,
+				stats.Changed:   7,
+			}),
+		)
 
-		writeConfig()
-
-		_, statz, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-		as.ErrorIs(err, formatCmd.ErrFailOnChange)
-
-		assertStats(t, as, statz, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   7,
-			stats.Formatted: 7,
-			stats.Changed:   7,
-		})
-
-		// cached
-		_, statz, err = treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-		as.NoError(err)
-
-		assertStats(t, as, statz, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   7,
-			stats.Formatted: 0,
-			stats.Changed:   0,
-		})
+		// running with a hot cache, we should see matches for the haskell files, but no attempt to format them as the
+		// underlying files have not changed since we last ran
+		treefmt2(t,
+			withArgs("--fail-on-change"),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   7,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 	})
 }
 
@@ -1557,6 +1571,13 @@ func withConfig(path string, cfg *config.Config) option {
 	return func(o *options) {
 		o.config.path = path
 		o.config.value = cfg
+	}
+}
+
+func withConfigFunc(path string, fn func() *config.Config) option {
+	return func(o *options) {
+		o.config.path = path
+		o.config.value = fn()
 	}
 }
 
