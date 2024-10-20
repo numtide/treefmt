@@ -592,52 +592,100 @@ func TestCache(t *testing.T) {
 func TestChangeWorkingDirectory(t *testing.T) {
 	as := require.New(t)
 
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
-
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
-
-	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/treefmt.toml"
-
-	// test without any excludes
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
-			"echo": {
-				Command:  "echo",
+			"append": {
+				Command:  "test-fmt-append",
+				Options:  []string{"   "},
 				Includes: []string{"*"},
 			},
 		},
 	}
 
-	test.WriteConfig(t, configPath, cfg)
+	t.Run("default", func(t *testing.T) {
+		// capture current cwd, so we can replace it after the test is finished
+		cwd, err := os.Getwd()
+		as.NoError(err)
 
-	// by default, we look for ./treefmt.toml and use the cwd for the tree root
-	// this should fail if the working directory hasn't been changed first
-	_, statz, err := treefmt(t, "-C", tempDir)
-	as.NoError(err)
+		t.Cleanup(func() {
+			// return to the previous working directory
+			as.NoError(os.Chdir(cwd))
+		})
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
+
+		// change to an empty temp dir and try running without specifying a working directory
+		as.NoError(os.Chdir(t.TempDir()))
+
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withError(func(err error) {
+				as.ErrorContains(err, "failed to find treefmt config file")
+			}),
+		)
+
+		// now change to the examples temp directory
+		as.NoError(os.Chdir(tempDir), "failed to change to temp directory")
+
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+			}),
+		)
 	})
 
-	// use env
-	t.Setenv("TREEFMT_WORKING_DIR", tempDir)
-	_, statz, err = treefmt(t, "-c")
-	as.NoError(err)
+	execute := func(t *testing.T, configFile string, env bool) {
+		t.Run(configFile, func(t *testing.T) {
+			// capture current cwd, so we can replace it after the test is finished
+			cwd, err := os.Getwd()
+			as.NoError(err)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
+			t.Cleanup(func() {
+				// return to the previous working directory
+				as.NoError(os.Chdir(cwd))
+			})
+
+			tempDir := test.TempExamples(t)
+			configPath := filepath.Join(tempDir, configFile)
+
+			// delete treefmt.toml that comes with the example folder
+			as.NoError(os.Remove(filepath.Join(tempDir, "treefmt.toml")))
+
+			var args []string
+
+			if env {
+				t.Setenv("TREEFMT_WORKING_DIR", tempDir)
+			} else {
+				args = []string{"-C", tempDir}
+			}
+
+			treefmt2(t,
+				withArgs(args...),
+				withConfig(configPath, cfg),
+				withNoError(as),
+				withStats(as, map[stats.Type]int{
+					stats.Traversed: 32,
+				}),
+			)
+		})
+	}
+
+	// by default, we look for a config file at ./treefmt.toml or ./.treefmt.toml in the current working directory
+	configFiles := []string{"treefmt.toml", ".treefmt.toml"}
+
+	t.Run("arg", func(t *testing.T) {
+		for _, configFile := range configFiles {
+			execute(t, configFile, false)
+		}
+	})
+
+	t.Run("env", func(t *testing.T) {
+		for _, configFile := range configFiles {
+			execute(t, configFile, true)
+		}
 	})
 }
 
