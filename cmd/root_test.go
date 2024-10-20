@@ -56,7 +56,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	checkOutput := func(level string, output []byte) {
 		for _, p := range paths {
-			as.Contains(string(output), fmt.Sprintf("%s format: no formatter for path: %s", level, p))
+			as.Contains(string(output), fmt.Sprintf("%s no formatter for path: %s", level, p))
 		}
 	}
 
@@ -574,28 +574,100 @@ func TestChangeWorkingDirectory(t *testing.T) {
 func TestFailOnChange(t *testing.T) {
 	as := require.New(t)
 
-	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/touch.toml"
+	t.Run("change size", func(t *testing.T) {
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
 
-	// test without any excludes
-	cfg := &config.Config{
-		FormatterConfigs: map[string]*config.Formatter{
-			"touch": {
-				Command:  "touch",
-				Includes: []string{"*"},
+		cfg := &config.Config{
+			FormatterConfigs: map[string]*config.Formatter{
+				"append": {
+					// test-fmt-append is a helper defined in nix/packages/treefmt/formatters.nix which lets us append
+					// an arbitrary value to a list of files
+					Command:  "test-fmt-append",
+					Options:  []string{"hello"},
+					Includes: []string{"elm/*"},
+				},
 			},
-		},
-	}
+		}
+		test.WriteConfig(t, configPath, cfg)
 
-	test.WriteConfig(t, configPath, cfg)
-	_, _, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
-	as.ErrorIs(err, formatCmd.ErrFailOnChange)
+		_, statz, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+		as.ErrorIs(err, formatCmd.ErrFailOnChange)
 
-	// test with no cache
-	t.Setenv("TREEFMT_FAIL_ON_CHANGE", "true")
-	test.WriteConfig(t, configPath, cfg)
-	_, _, err = treefmt(t, "--config-file", configPath, "--tree-root", tempDir, "--no-cache")
-	as.ErrorIs(err, formatCmd.ErrFailOnChange)
+		assertStats(t, as, statz, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   2,
+			stats.Formatted: 2,
+			stats.Changed:   2,
+		})
+
+		// cached
+		_, statz, err = treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+		as.NoError(err)
+
+		assertStats(t, as, statz, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   2,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		})
+	})
+
+	t.Run("change modtime", func(t *testing.T) {
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
+
+		dateFormat := "2006 01 02 15:04.05"
+		replacer := strings.NewReplacer(" ", "", ":", "")
+
+		formatTime := func(t time.Time) string {
+			// go date formats are stupid
+			return replacer.Replace(t.Format(dateFormat))
+		}
+
+		writeConfig := func() {
+			// new mod time is in the next second
+			modTime := time.Now().Truncate(time.Second).Add(time.Second)
+
+			cfg := &config.Config{
+				FormatterConfigs: map[string]*config.Formatter{
+					"append": {
+						// test-fmt-modtime is a helper defined in nix/packages/treefmt/formatters.nix which lets us set
+						// a file's modtime to an arbitrary date.
+						// in this case, we move it forward more than a second so that our second level modtime comparison
+						// will detect it as a change.
+						Command:  "test-fmt-modtime",
+						Options:  []string{formatTime(modTime)},
+						Includes: []string{"haskell/*"},
+					},
+				},
+			}
+			test.WriteConfig(t, configPath, cfg)
+		}
+
+		writeConfig()
+
+		_, statz, err := treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+		as.ErrorIs(err, formatCmd.ErrFailOnChange)
+
+		assertStats(t, as, statz, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   7,
+			stats.Formatted: 7,
+			stats.Changed:   7,
+		})
+
+		// cached
+		_, statz, err = treefmt(t, "--fail-on-change", "--config-file", configPath, "--tree-root", tempDir)
+		as.NoError(err)
+
+		assertStats(t, as, statz, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   7,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		})
+	})
 }
 
 func TestBustCacheOnFormatterChange(t *testing.T) {
@@ -605,7 +677,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	configPath := tempDir + "/touch.toml"
 
 	// symlink some formatters into temp dir, so we can mess with their mod times
-	binPath := tempDir + "/bin"
+	binPath := filepath.Join(tempDir, "bin")
 	as.NoError(os.Mkdir(binPath, 0o755))
 
 	binaries := []string{"black", "elm-format", "gofmt"}
@@ -613,7 +685,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	for _, name := range binaries {
 		src, err := exec.LookPath(name)
 		as.NoError(err)
-		as.NoError(os.Symlink(src, binPath+"/"+name))
+		as.NoError(os.Symlink(src, filepath.Join(binPath, name)))
 	}
 
 	// prepend our test bin directory to PATH
@@ -647,7 +719,8 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// tweak mod time of elm formatter
-	as.NoError(test.RecreateSymlink(t, binPath+"/"+"elm-format"))
+	newTime := time.Now().Add(-time.Minute)
+	as.NoError(test.Lutimes(t, filepath.Join(binPath, "elm-format"), newTime, newTime))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
@@ -655,7 +728,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   3,
-		stats.Formatted: 3,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -671,7 +744,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// tweak mod time of python formatter
-	as.NoError(test.RecreateSymlink(t, binPath+"/"+"black"))
+	as.NoError(test.Lutimes(t, filepath.Join(binPath, "black"), newTime, newTime))
 
 	_, statz, err = treefmt(t, args...)
 	as.NoError(err)
@@ -679,7 +752,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   3,
-		stats.Formatted: 3,
+		stats.Formatted: 2,
 		stats.Changed:   0,
 	})
 
@@ -695,11 +768,12 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	})
 
 	// add go formatter
-	cfg.FormatterConfigs["go"] = &config.Formatter{
+	goFormatter := &config.Formatter{
 		Command:  "gofmt",
 		Options:  []string{"-w"},
 		Includes: []string{"*.go"},
 	}
+	cfg.FormatterConfigs["go"] = goFormatter
 	test.WriteConfig(t, configPath, cfg)
 
 	_, statz, err = treefmt(t, args...)
@@ -708,7 +782,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   4,
-		stats.Formatted: 4,
+		stats.Formatted: 1,
 		stats.Changed:   0,
 	})
 
@@ -723,6 +797,35 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 		stats.Changed:   0,
 	})
 
+	// tweak go formatter options
+	goFormatter.Options = []string{"-w", "-s"}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
+
+	// add a priority
+	cfg.FormatterConfigs["go"].Priority = 3
+	test.WriteConfig(t, configPath, cfg)
+
+	_, statz, err = treefmt(t, args...)
+	as.NoError(err)
+
+	assertStats(t, as, statz, map[stats.Type]int{
+		stats.Traversed: 32,
+		stats.Matched:   4,
+		stats.Formatted: 1,
+		stats.Changed:   0,
+	})
+
 	// remove python formatter
 	delete(cfg.FormatterConfigs, "python")
 	test.WriteConfig(t, configPath, cfg)
@@ -733,7 +836,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   2,
-		stats.Formatted: 2,
+		stats.Formatted: 0,
 		stats.Changed:   0,
 	})
 
@@ -758,7 +861,7 @@ func TestBustCacheOnFormatterChange(t *testing.T) {
 	assertStats(t, as, statz, map[stats.Type]int{
 		stats.Traversed: 32,
 		stats.Matched:   1,
-		stats.Formatted: 1,
+		stats.Formatted: 0,
 		stats.Changed:   0,
 	})
 
@@ -1101,17 +1204,17 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 			// a and b should execute in lexicographical order
 			// c should execute first since it has a priority of 1
 			"fmt-a": {
-				Command:  "test-fmt",
+				Command:  "test-fmt-append",
 				Options:  []string{"fmt-a"},
 				Includes: []string{"*.py"},
 			},
 			"fmt-b": {
-				Command:  "test-fmt",
+				Command:  "test-fmt-append",
 				Options:  []string{"fmt-b"},
 				Includes: []string{"*.py"},
 			},
 			"fmt-c": {
-				Command:  "test-fmt",
+				Command:  "test-fmt-append",
 				Options:  []string{"fmt-c"},
 				Includes: []string{"*.py"},
 				Priority: 1,
@@ -1273,16 +1376,6 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 	root.SetArgs(args)
 	root.SetOut(tempOut)
 	root.SetErr(tempOut)
-
-	// record the start time
-	start := time.Now()
-
-	defer func() {
-		// Wait until we tick over into the next second before continuing.
-		// This ensures we correctly detect changes within tests as treefmt compares modtime at second level precision.
-		waitUntil := start.Truncate(time.Second).Add(time.Second)
-		time.Sleep(time.Until(waitUntil))
-	}()
 
 	// execute the command
 	cmdErr := root.Execute()

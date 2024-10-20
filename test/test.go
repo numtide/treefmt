@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/numtide/treefmt/config"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/unix"
 )
 
 func WriteConfig(t *testing.T, path string, cfg *config.Config) {
@@ -60,13 +62,20 @@ func TempFile(t *testing.T, dir string, pattern string, contents *string) *os.Fi
 	return file
 }
 
-func RecreateSymlink(t *testing.T, path string) error {
+// Lutimes is a convenience wrapper for using unix.Lutimes
+// TODO: this will need to be adapted if we support Windows.
+func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error {
 	t.Helper()
 
-	src, err := os.Readlink(path)
+	var utimes [2]unix.Timeval
+	utimes[0] = unix.NsecToTimeval(atime.UnixNano())
+	utimes[1] = unix.NsecToTimeval(mtime.UnixNano())
 
-	require.NoError(t, err, "failed to read symlink")
-	require.NoError(t, os.Remove(path), "failed to remove symlink")
+	// Change the timestamps of the path. If it's a symlink, it updates the symlink's timestamps, not the target's.
+	err := unix.Lutimes(path, utimes[0:])
+	if err != nil {
+		return fmt.Errorf("failed to change times: %w", err)
+	}
 
-	return os.Symlink(src, path)
+	return nil
 }
