@@ -1194,11 +1194,13 @@ func TestGit(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
+	test.ChangeWorkDir(t, tempDir)
+
 	// basic config
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
-				Command:  "echo",
+				Command:  "echo", // will not generate any underlying changes in the file
 				Includes: []string{"*"},
 			},
 		},
@@ -1206,120 +1208,158 @@ func TestGit(t *testing.T) {
 
 	test.WriteConfig(t, configPath, cfg)
 
-	run := func(traversed int, matched int, formatted int, changed int) {
-		_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-		as.NoError(err)
-
-		assertStats(t, as, statz, map[stats.Type]int{
-			stats.Traversed: traversed,
-			stats.Matched:   matched,
-			stats.Formatted: formatted,
-			stats.Changed:   changed,
-		})
-	}
-
 	// init a git repo
 	gitCmd := exec.Command("git", "init")
-	gitCmd.Dir = tempDir
 	as.NoError(gitCmd.Run(), "failed to init git repository")
 
 	// run before adding anything to the index
-	run(0, 0, 0, 0)
+	treefmt2(t,
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 0,
+		}),
+	)
 
 	// add everything to the index
 	gitCmd = exec.Command("git", "add", ".")
-	gitCmd.Dir = tempDir
 	as.NoError(gitCmd.Run(), "failed to add everything to the index")
 
-	run(32, 32, 32, 0)
+	treefmt2(t,
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
 
 	// remove python directory from the index
 	gitCmd = exec.Command("git", "rm", "--cached", "python/*")
-	gitCmd.Dir = tempDir
 	as.NoError(gitCmd.Run(), "failed to remove python directory from the index")
 
-	run(29, 29, 29, 0)
+	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
+	// are impacted
+	treefmt2(t,
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 29,
+			stats.Matched:   29,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// remove nixpkgs.toml from the filesystem but leave it in the index
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
-	run(28, 28, 28, 0)
 
 	// walk with filesystem instead of with git
 	// the .git folder contains 49 additional files
 	// when added to the 31 we started with (32 minus nixpkgs.toml which we removed from the filesystem), we should
 	// traverse 80 files.
-	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir, "--walk", "filesystem")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 80,
-		stats.Matched:   80,
-		stats.Formatted: 80,
-		stats.Changed:   0,
-	})
-
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
-
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
+	treefmt2(t,
+		withArgs("--walk", "filesystem"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 80,
+			stats.Matched:   80,
+			stats.Formatted: 49, // the echo formatter should only be applied to the new files
+			stats.Changed:   0,
+		}),
+	)
 
 	// format specific sub paths
-	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "-vv")
-	as.NoError(err)
+	// we should traverse and match against those files, but without any underlying change to their files or their
+	// formatting config, we will not format them
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 2,
-		stats.Matched:   2,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs("go"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
-	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell")
-	as.NoError(err)
+	treefmt2(t,
+		withArgs("go", "haskell"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 9,
+			stats.Matched:   9,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 9,
-		stats.Matched:   9,
-		stats.Changed:   0,
-	})
-
-	_, statz, err = treefmt(t, "-C", tempDir, "-c", "go", "haskell", "ruby")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 10,
-		stats.Matched:   10,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs("-C", tempDir, "go", "haskell", "ruby"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 10,
+			stats.Matched:   10,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// try with a bad path
-	_, _, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo")
-	as.ErrorContains(err, "path foo not found")
+	treefmt2(t,
+		withArgs("-C", tempDir, "haskell", "foo"),
+		withConfig(configPath, cfg),
+		withError(func(err error) {
+			as.ErrorContains(err, "path foo not found")
+		}),
+	)
 
 	// try with a path not in the git index, e.g. it is skipped
-	_, err = os.Create(filepath.Join(tempDir, "foo.txt"))
+	_, err := os.Create(filepath.Join(tempDir, "foo.txt"))
 	as.NoError(err)
 
-	_, statz, err = treefmt(t, "-C", tempDir, "-c", "haskell", "foo.txt")
-	as.NoError(err)
+	treefmt2(t,
+		withArgs("haskell", "foo.txt"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 8,
+			stats.Matched:   8,
+			stats.Formatted: 1, // we only format foo.txt, which is new to the cache
+			stats.Changed:   0,
+		}),
+	)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 8,
-		stats.Matched:   8,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs("go", "foo.txt"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 3,
+			stats.Matched:   3,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
-	_, statz, err = treefmt(t, "-C", tempDir, "-c", "foo.txt")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 1,
-		stats.Matched:   1,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs("foo.txt"),
+		withConfig(configPath, cfg),
+		withNoError(as),
+		withStats(as, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 }
 
 func TestPathsArg(t *testing.T) {
