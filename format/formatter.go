@@ -71,8 +71,7 @@ func (f *Formatter) Hash(h hash.Hash) error {
 
 	// include the executable's size and mod time
 	// if the formatter executable changes (e.g. new version) the outcome of applying the formatter might differ
-	h.Write([]byte(fmt.Sprintf("%d", info.Size())))
-	h.Write([]byte(fmt.Sprintf("%d", info.ModTime().Unix())))
+	h.Write([]byte(fmt.Sprintf("%d %d", info.Size(), info.ModTime().Unix())))
 
 	return nil
 }

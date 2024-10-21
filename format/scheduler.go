@@ -83,6 +83,8 @@ func (s *scheduler) formattersSignature(key batchKey, formatters []*Formatter) (
 	// store the signature so we don't have to re-compute for each file
 	s.signatures[key] = sig
 
+	log.Debugf("formatters signature for key %s: %x", key, sig)
+
 	return sig, nil
 }
 

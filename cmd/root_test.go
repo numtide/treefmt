@@ -802,210 +802,389 @@ func TestFailOnChange(t *testing.T) {
 	})
 }
 
-func TestBustCacheOnFormatterChange(t *testing.T) {
+func TestCacheBusting(t *testing.T) {
 	as := require.New(t)
 
-	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/touch.toml"
+	t.Run("formatter_change_config", func(t *testing.T) {
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
 
-	// symlink some formatters into temp dir, so we can mess with their mod times
-	binPath := filepath.Join(tempDir, "bin")
-	as.NoError(os.Mkdir(binPath, 0o755))
+		test.ChangeWorkDir(t, tempDir)
 
-	binaries := []string{"black", "elm-format", "gofmt"}
-
-	for _, name := range binaries {
-		src, err := exec.LookPath(name)
-		as.NoError(err)
-		as.NoError(os.Symlink(src, filepath.Join(binPath, name)))
-	}
-
-	// prepend our test bin directory to PATH
-	t.Setenv("PATH", binPath+":"+os.Getenv("PATH"))
-
-	// start with 2 formatters
-	cfg := &config.Config{
-		FormatterConfigs: map[string]*config.Formatter{
-			"python": {
-				Command:  "black",
-				Includes: []string{"*.py"},
+		// basic config
+		cfg := &config.Config{
+			FormatterConfigs: map[string]*config.Formatter{
+				"python": {
+					Command:  "echo", // this is non-destructive, will match but cause no changes
+					Includes: []string{"*.py"},
+				},
+				"haskell": {
+					Command:  "test-fmt-append",
+					Options:  []string{"   "},
+					Includes: []string{"*.hs"},
+				},
 			},
-			"elm": {
-				Command:  "elm-format",
-				Options:  []string{"--yes"},
-				Includes: []string{"*.elm"},
+		}
+
+		// initial run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   8,
+				stats.Formatted: 8,
+				stats.Changed:   6,
+			}))
+
+		// change formatter options
+		cfg.FormatterConfigs["haskell"].Options = []string{""}
+
+		// cache entries for haskell files should be invalidated
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   8,
+				stats.Formatted: 6,
+				stats.Changed:   6,
+			}))
+
+		// run again, nothing should be formatted
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   8,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}))
+
+		// change the formatter's command
+		cfg.FormatterConfigs["haskell"].Command = "echo"
+
+		// cache entries for haskell files should be invalidated
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   8,
+				stats.Formatted: 6,
+				stats.Changed:   0, // echo doesn't affect the files so no changes expected
+			}))
+
+		// run again, nothing should be formatted
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   8,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}))
+
+		// change the formatters includes
+		cfg.FormatterConfigs["haskell"].Includes = []string{"haskell/*.hs"}
+
+		// we should match on fewer files, but no formatting should occur as includes are not part of the formatting
+		// signature
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   6,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}))
+
+		// change the formatters excludes
+		cfg.FormatterConfigs["haskell"].Excludes = []string{"haskell/Foo.hs"}
+
+		// we should match on fewer files, but no formatting should occur as excludes are not part of the formatting
+		// signature
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   5,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}))
+	})
+
+	t.Run("formatter_change_binary", func(t *testing.T) {
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
+
+		test.ChangeWorkDir(t, tempDir)
+
+		// find test-fmt-append in PATH
+		sourcePath, err := exec.LookPath("test-fmt-append")
+		as.NoError(err, "failed to find test-fmt-append in PATH")
+
+		// copy it into the temp dir so we can mess with its size and modtime
+		binPath := filepath.Join(tempDir, "bin")
+		as.NoError(os.Mkdir(binPath, 0o755))
+
+		scriptPath := filepath.Join(binPath, "test-fmt-append")
+
+		test.CopyFile(t, sourcePath, scriptPath)
+		as.NoError(os.Chmod(scriptPath, 0o755))
+
+		// prepend our test bin directory to PATH
+		t.Setenv("PATH", binPath+":"+os.Getenv("PATH"))
+
+		// basic config
+		cfg := &config.Config{
+			FormatterConfigs: map[string]*config.Formatter{
+				"python": {
+					Command:  "echo", // this is non-destructive, will match but cause no changes
+					Includes: []string{"*.py"},
+				},
+				"elm": {
+					Command:  "test-fmt-append",
+					Options:  []string{"   "},
+					Includes: []string{"*.elm"},
+				},
 			},
-		},
-	}
+		}
 
-	test.WriteConfig(t, configPath, cfg)
-	args := []string{"--config-file", configPath, "--tree-root", tempDir}
-	_, statz, err := treefmt(t, args...)
-	as.NoError(err)
+		// initial run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   3,
+				stats.Formatted: 3,
+				stats.Changed:   1,
+			}))
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 3,
-		stats.Changed:   0,
+		// tweak mod time of elm formatter
+		newTime := time.Now().Add(-time.Minute)
+		as.NoError(os.Chtimes(scriptPath, newTime, newTime))
+
+		// cache entries for elm files should be invalidated
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   3,
+				stats.Formatted: 1,
+				stats.Changed:   1,
+			}))
+
+		// running again with a hot cache, we should see nothing be formatted
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   3,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
+
+		// tweak the size of elm formatter
+		formatter, err := os.OpenFile(scriptPath, os.O_WRONLY|os.O_APPEND, 0o755)
+		as.NoError(err, "failed to open elm formatter")
+
+		_, err = formatter.Write([]byte(" ")) // add some whitespace
+		as.NoError(err, "failed to append to elm formatter")
+		as.NoError(formatter.Close(), "failed to close elm formatter")
+
+		// cache entries for elm files should be invalidated
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   3,
+				stats.Formatted: 1,
+				stats.Changed:   1,
+			}))
+
+		// running again with a hot cache, we should see nothing be formatted
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   3,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 	})
 
-	// tweak mod time of elm formatter
-	newTime := time.Now().Add(-time.Minute)
-	as.NoError(test.Lutimes(t, filepath.Join(binPath, "elm-format"), newTime, newTime))
+	t.Run("formatter_add_remove", func(t *testing.T) {
+		tempDir := test.TempExamples(t)
+		configPath := filepath.Join(tempDir, "treefmt.toml")
 
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		test.ChangeWorkDir(t, tempDir)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
+		cfg := &config.Config{
+			FormatterConfigs: map[string]*config.Formatter{
+				"python": {
+					Command:  "test-fmt-append",
+					Options:  []string{"   "},
+					Includes: []string{"*.py"},
+				},
+			},
+		}
 
-	// check cache is working
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		// initial run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			}),
+		)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+		// cached run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 
-	// tweak mod time of python formatter
-	as.NoError(test.Lutimes(t, filepath.Join(binPath, "black"), newTime, newTime))
+		// add a formatter
+		cfg.FormatterConfigs["elm"] = &config.Formatter{
+			Command:  "test-fmt-append",
+			Options:  []string{"   "},
+			Includes: []string{"*.elm"},
+		}
 
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		// only the elm files should be formatted
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 1,
+				stats.Changed:   1,
+			}),
+		)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 2,
-		stats.Changed:   0,
-	})
+		// let's add a second python formatter
+		cfg.FormatterConfigs["python_secondary"] = &config.Formatter{
+			Command:  "test-fmt-append",
+			Options:  []string{" "},
+			Includes: []string{"*.py"},
+		}
 
-	// check cache is working
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		// python files should be formatted as their pipeline has changed
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			}),
+		)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   3,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+		// cached run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 
-	// add go formatter
-	goFormatter := &config.Formatter{
-		Command:  "gofmt",
-		Options:  []string{"-w"},
-		Includes: []string{"*.go"},
-	}
-	cfg.FormatterConfigs["go"] = goFormatter
-	test.WriteConfig(t, configPath, cfg)
+		// change ordering within a pipeline
+		cfg.FormatterConfigs["python"].Priority = 2
+		cfg.FormatterConfigs["python_secondary"].Priority = 1
 
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		// python files should be formatted as their pipeline has changed
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			}),
+		)
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   4,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
+		// cached run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 
-	// check cache is working
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
+		// remove secondary python formatter
+		delete(cfg.FormatterConfigs, "python_secondary")
 
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   4,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
+		// python files should be formatted as their pipeline has changed
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 2,
+				stats.Changed:   2,
+			}),
+		)
 
-	// tweak go formatter options
-	goFormatter.Options = []string{"-w", "-s"}
+		// cached run
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   3,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 
-	test.WriteConfig(t, configPath, cfg)
+		// remove the elm formatter
+		delete(cfg.FormatterConfigs, "elm")
 
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   4,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
-
-	// add a priority
-	cfg.FormatterConfigs["go"].Priority = 3
-	test.WriteConfig(t, configPath, cfg)
-
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   4,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
-
-	// remove python formatter
-	delete(cfg.FormatterConfigs, "python")
-	test.WriteConfig(t, configPath, cfg)
-
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   2,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
-
-	// check cache is working
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   2,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
-
-	// remove elm formatter
-	delete(cfg.FormatterConfigs, "elm")
-	test.WriteConfig(t, configPath, cfg)
-
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   1,
-		stats.Formatted: 0,
-		stats.Changed:   0,
-	})
-
-	// check cache is working
-	_, statz, err = treefmt(t, args...)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   1,
-		stats.Formatted: 0,
-		stats.Changed:   0,
+		// only python files should match, but no formatting should occur as not formatting signatures have been
+		// affected
+		treefmt2(t,
+			withConfig(configPath, cfg),
+			withNoError(as),
+			withStats(as, map[stats.Type]int{
+				stats.Traversed: 32,
+				stats.Matched:   2,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
+		)
 	})
 }
 
