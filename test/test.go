@@ -2,7 +2,6 @@ package test
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -122,25 +121,5 @@ func ChangeWorkDir(t *testing.T, dir string) {
 	// change to the new directory
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(fmt.Errorf("failed to change working directory to %s: %w", dir, err))
-	}
-}
-
-func CopyFile(t *testing.T, sourcePath string, destPath string) {
-	t.Helper()
-
-	source, err := os.Open(sourcePath)
-	if err != nil {
-		t.Fatal(err, fmt.Sprintf("failed to open %s", sourcePath))
-	}
-	defer source.Close()
-
-	dest, err := os.Create(destPath)
-	if err != nil {
-		t.Fatal(err, fmt.Sprintf("failed to create %s", sourcePath))
-	}
-	defer dest.Close()
-
-	if _, err = io.Copy(dest, source); err != nil {
-		t.Fatal(err, fmt.Sprintf("failed to copy %s to %s", sourcePath, destPath))
 	}
 }

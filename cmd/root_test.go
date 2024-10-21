@@ -21,6 +21,7 @@ import (
 	"github.com/numtide/treefmt/stats"
 	"github.com/numtide/treefmt/test"
 	"github.com/numtide/treefmt/walk"
+	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -933,9 +934,7 @@ func TestCacheBusting(t *testing.T) {
 		as.NoError(os.Mkdir(binPath, 0o755))
 
 		scriptPath := filepath.Join(binPath, "test-fmt-append")
-
-		test.CopyFile(t, sourcePath, scriptPath)
-		as.NoError(os.Chmod(scriptPath, 0o755))
+		as.NoError(cp.Copy(sourcePath, scriptPath, cp.Options{AddPermission: 0o755}))
 
 		// prepend our test bin directory to PATH
 		t.Setenv("PATH", binPath+":"+os.Getenv("PATH"))
