@@ -60,7 +60,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	// default is WARN
 	t.Run("default", func(t *testing.T) {
-		treefmt2(t, withNoError(as), withOutput(checkOutput(log.WarnLevel)))
+		treefmt2(t, withNoError(t), withOutput(checkOutput(log.WarnLevel)))
 	})
 
 	// should exit with error when using fatal
@@ -84,7 +84,7 @@ func TestOnUnmatched(t *testing.T) {
 
 			treefmt2(t,
 				withArgs("-vv", "--on-unmatched", levelStr),
-				withNoError(as),
+				withNoError(t),
 				withOutput(checkOutput(level)),
 			)
 
@@ -92,7 +92,7 @@ func TestOnUnmatched(t *testing.T) {
 
 			treefmt2(t,
 				withArgs("-vv"),
-				withNoError(as),
+				withNoError(t),
 				withOutput(checkOutput(level)),
 			)
 		})
@@ -128,7 +128,7 @@ func TestCpuProfile(t *testing.T) {
 
 	treefmt2(t,
 		withArgs("--cpu-profile", "cpu.pprof"),
-		withNoError(as),
+		withNoError(t),
 	)
 
 	as.FileExists(filepath.Join(tempDir, "cpu.pprof"))
@@ -136,7 +136,7 @@ func TestCpuProfile(t *testing.T) {
 	// test with env
 	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
 
-	treefmt2(t, withNoError(as))
+	treefmt2(t, withNoError(t))
 
 	as.FileExists(filepath.Join(tempDir, "env.pprof"))
 }
@@ -168,13 +168,13 @@ func TestAllowMissingFormatter(t *testing.T) {
 	t.Run("arg", func(t *testing.T) {
 		treefmt2(t,
 			withArgs("--allow-missing-formatter"),
-			withNoError(as),
+			withNoError(t),
 		)
 	})
 
 	t.Run("env", func(t *testing.T) {
 		t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-		treefmt2(t, withNoError(as))
+		treefmt2(t, withNoError(t))
 	})
 }
 
@@ -210,9 +210,9 @@ func TestSpecifyingFormatters(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		treefmt2(t,
-			withNoError(as),
+			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
-			withStats(as, map[stats.Type]int{
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 3,
@@ -225,8 +225,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 		treefmt2(t,
 			withArgs("--formatters", "elm,nix"),
 			withModtimeBump(tempDir, time.Second),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
@@ -237,8 +237,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 		treefmt2(t,
 			withArgs("--formatters", "ruby,nix"),
 			withModtimeBump(tempDir, time.Second),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
@@ -249,8 +249,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 		treefmt2(t,
 			withArgs("--formatters", "nix"),
 			withModtimeBump(tempDir, time.Second),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   1,
 				stats.Formatted: 1,
@@ -271,9 +271,9 @@ func TestSpecifyingFormatters(t *testing.T) {
 		t.Setenv("TREEFMT_FORMATTERS", "ruby,nix")
 
 		treefmt2(t,
-			withNoError(as),
+			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
-			withStats(as, map[stats.Type]int{
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
@@ -410,8 +410,6 @@ func TestIncludesAndExcludes(t *testing.T) {
 }
 
 func TestPrjRootEnvVariable(t *testing.T) {
-	as := require.New(t)
-
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "treefmt.toml")
 
@@ -427,8 +425,8 @@ func TestPrjRootEnvVariable(t *testing.T) {
 			},
 		}),
 		withArgs("--config-file", configPath),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -460,8 +458,8 @@ func TestCache(t *testing.T) {
 
 	// first run
 	treefmt2(t,
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -471,8 +469,8 @@ func TestCache(t *testing.T) {
 
 	// cached run with no changes to underlying files
 	treefmt2(t,
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 0,
@@ -483,8 +481,8 @@ func TestCache(t *testing.T) {
 	// clear cache
 	treefmt2(t,
 		withArgs("-c"),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -494,8 +492,8 @@ func TestCache(t *testing.T) {
 
 	// cached run with no changes to underlying files
 	treefmt2(t,
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 0,
@@ -505,9 +503,9 @@ func TestCache(t *testing.T) {
 
 	// bump underlying files
 	treefmt2(t,
-		withNoError(as),
+		withNoError(t),
 		withModtimeBump(tempDir, time.Second),
-		withStats(as, map[stats.Type]int{
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -518,8 +516,8 @@ func TestCache(t *testing.T) {
 	// no cache
 	treefmt2(t,
 		withArgs("--no-cache"),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -548,7 +546,7 @@ func TestCache(t *testing.T) {
 		withError(func(err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
-		withStats(as, map[stats.Type]int{
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   6,
 			stats.Formatted: 0,
@@ -561,7 +559,7 @@ func TestCache(t *testing.T) {
 		withError(func(err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
-		withStats(as, map[stats.Type]int{
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   6,
 			stats.Formatted: 0,
@@ -580,8 +578,8 @@ func TestCache(t *testing.T) {
 
 	// we should now format the haskell files
 	treefmt2(t,
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   6,
 			stats.Formatted: 6,
@@ -631,8 +629,8 @@ func TestChangeWorkingDirectory(t *testing.T) {
 
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 			}),
 		)
@@ -666,8 +664,8 @@ func TestChangeWorkingDirectory(t *testing.T) {
 			treefmt2(t,
 				withArgs(args...),
 				withConfig(configPath, cfg),
-				withNoError(as),
-				withStats(as, map[stats.Type]int{
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
 					stats.Traversed: 32,
 				}),
 			)
@@ -719,7 +717,7 @@ func TestFailOnChange(t *testing.T) {
 			withError(func(err error) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
-			withStats(as, map[stats.Type]int{
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
@@ -731,8 +729,8 @@ func TestFailOnChange(t *testing.T) {
 		// underlying files have not changed since we last ran
 		treefmt2(t,
 			withArgs("--fail-on-change"),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 0,
@@ -780,7 +778,7 @@ func TestFailOnChange(t *testing.T) {
 			withError(func(err error) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
-			withStats(as, map[stats.Type]int{
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   7,
 				stats.Formatted: 7,
@@ -792,8 +790,8 @@ func TestFailOnChange(t *testing.T) {
 		// underlying files have not changed since we last ran
 		treefmt2(t,
 			withArgs("--fail-on-change"),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   7,
 				stats.Formatted: 0,
@@ -830,8 +828,8 @@ func TestCacheBusting(t *testing.T) {
 		// initial run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   8,
 				stats.Formatted: 8,
@@ -844,8 +842,8 @@ func TestCacheBusting(t *testing.T) {
 		// cache entries for haskell files should be invalidated
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   8,
 				stats.Formatted: 6,
@@ -855,8 +853,8 @@ func TestCacheBusting(t *testing.T) {
 		// run again, nothing should be formatted
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   8,
 				stats.Formatted: 0,
@@ -869,8 +867,8 @@ func TestCacheBusting(t *testing.T) {
 		// cache entries for haskell files should be invalidated
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   8,
 				stats.Formatted: 6,
@@ -880,8 +878,8 @@ func TestCacheBusting(t *testing.T) {
 		// run again, nothing should be formatted
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   8,
 				stats.Formatted: 0,
@@ -895,8 +893,8 @@ func TestCacheBusting(t *testing.T) {
 		// signature
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   6,
 				stats.Formatted: 0,
@@ -910,8 +908,8 @@ func TestCacheBusting(t *testing.T) {
 		// signature
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   5,
 				stats.Formatted: 0,
@@ -957,8 +955,8 @@ func TestCacheBusting(t *testing.T) {
 		// initial run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 3,
@@ -972,8 +970,8 @@ func TestCacheBusting(t *testing.T) {
 		// cache entries for elm files should be invalidated
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 1,
@@ -983,8 +981,8 @@ func TestCacheBusting(t *testing.T) {
 		// running again with a hot cache, we should see nothing be formatted
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 0,
@@ -1003,8 +1001,8 @@ func TestCacheBusting(t *testing.T) {
 		// cache entries for elm files should be invalidated
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 1,
@@ -1014,8 +1012,8 @@ func TestCacheBusting(t *testing.T) {
 		// running again with a hot cache, we should see nothing be formatted
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 0,
@@ -1043,8 +1041,8 @@ func TestCacheBusting(t *testing.T) {
 		// initial run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 2,
@@ -1055,8 +1053,8 @@ func TestCacheBusting(t *testing.T) {
 		// cached run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 0,
@@ -1074,8 +1072,8 @@ func TestCacheBusting(t *testing.T) {
 		// only the elm files should be formatted
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 1,
@@ -1093,8 +1091,8 @@ func TestCacheBusting(t *testing.T) {
 		// python files should be formatted as their pipeline has changed
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 2,
@@ -1105,8 +1103,8 @@ func TestCacheBusting(t *testing.T) {
 		// cached run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 0,
@@ -1121,8 +1119,8 @@ func TestCacheBusting(t *testing.T) {
 		// python files should be formatted as their pipeline has changed
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 2,
@@ -1133,8 +1131,8 @@ func TestCacheBusting(t *testing.T) {
 		// cached run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 0,
@@ -1148,8 +1146,8 @@ func TestCacheBusting(t *testing.T) {
 		// python files should be formatted as their pipeline has changed
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 2,
@@ -1160,8 +1158,8 @@ func TestCacheBusting(t *testing.T) {
 		// cached run
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 0,
@@ -1176,8 +1174,8 @@ func TestCacheBusting(t *testing.T) {
 		// affected
 		treefmt2(t,
 			withConfig(configPath, cfg),
-			withNoError(as),
-			withStats(as, map[stats.Type]int{
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
 				stats.Traversed: 32,
 				stats.Matched:   2,
 				stats.Formatted: 0,
@@ -1214,8 +1212,8 @@ func TestGit(t *testing.T) {
 	// run before adding anything to the index
 	treefmt2(t,
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 0,
 		}),
 	)
@@ -1226,8 +1224,8 @@ func TestGit(t *testing.T) {
 
 	treefmt2(t,
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
 			stats.Matched:   32,
 			stats.Formatted: 32,
@@ -1243,8 +1241,8 @@ func TestGit(t *testing.T) {
 	// are impacted
 	treefmt2(t,
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 29,
 			stats.Matched:   29,
 			stats.Formatted: 0,
@@ -1262,8 +1260,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("--walk", "filesystem"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 80,
 			stats.Matched:   80,
 			stats.Formatted: 49, // the echo formatter should only be applied to the new files
@@ -1278,8 +1276,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("go"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 2,
 			stats.Matched:   2,
 			stats.Formatted: 0,
@@ -1290,8 +1288,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("go", "haskell"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 9,
 			stats.Matched:   9,
 			stats.Formatted: 0,
@@ -1302,8 +1300,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("-C", tempDir, "go", "haskell", "ruby"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 10,
 			stats.Matched:   10,
 			stats.Formatted: 0,
@@ -1327,8 +1325,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("haskell", "foo.txt"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 8,
 			stats.Matched:   8,
 			stats.Formatted: 1, // we only format foo.txt, which is new to the cache
@@ -1339,8 +1337,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("go", "foo.txt"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 3,
 			stats.Matched:   3,
 			stats.Formatted: 0,
@@ -1351,8 +1349,8 @@ func TestGit(t *testing.T) {
 	treefmt2(t,
 		withArgs("foo.txt"),
 		withConfig(configPath, cfg),
-		withNoError(as),
-		withStats(as, map[stats.Type]int{
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
 			stats.Traversed: 1,
 			stats.Matched:   1,
 			stats.Formatted: 0,
@@ -1799,11 +1797,11 @@ func withConfigFunc(path string, fn func() *config.Config) option {
 	}
 }
 
-func withStats(as *require.Assertions, expected map[stats.Type]int) option {
+func withStats(t *testing.T, expected map[stats.Type]int) option {
 	return func(o *options) {
 		o.assertStats = func(s *stats.Stats) {
 			for k, v := range expected {
-				as.Equal(v, s.Value(k), k.String())
+				require.Equal(t, v, s.Value(k), k.String())
 			}
 		}
 	}
@@ -1815,10 +1813,10 @@ func withError(fn func(error)) option {
 	}
 }
 
-func withNoError(as *require.Assertions) option {
+func withNoError(t *testing.T) option {
 	return func(o *options) {
 		o.assertError = func(err error) {
-			as.NoError(err)
+			require.NoError(t, err)
 		}
 	}
 }
