@@ -310,7 +310,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -324,7 +324,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	cfg.Excludes = []string{"*.nix"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -338,7 +338,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	cfg.Excludes = []string{"*.nix", "*.hs"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -354,7 +354,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Excludes = []string{"*.py"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -368,7 +368,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "*.py,*.go")
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -384,7 +384,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Includes = []string{"*.elm"}
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -398,7 +398,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
 
 	test.WriteConfig(t, configPath, cfg)
-	_, statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
+	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
 	as.NoError(err)
 
 	assertStats(t, as, statz, map[stats.Type]int{
@@ -1467,23 +1467,13 @@ func TestPathsArg(t *testing.T) {
 			as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
 		}),
 	)
-
-	_, _, err = treefmt(t, "-c", relativeExternalPath)
-	as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
 }
 
 func TestStdin(t *testing.T) {
 	as := require.New(t)
-
-	// capture current cwd, so we can replace it after the test is finished
-	cwd, err := os.Getwd()
-	as.NoError(err)
-	t.Cleanup(func() {
-		// return to the previous working directory
-		as.NoError(os.Chdir(cwd))
-	})
-
 	tempDir := test.TempExamples(t)
+
+	test.ChangeWorkDir(t, tempDir)
 
 	// capture current stdin and replace it on test cleanup
 	prevStdIn := os.Stdin
@@ -1496,34 +1486,52 @@ func TestStdin(t *testing.T) {
 	contents := `{ foo, ... }: "hello"`
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
+	// for convenience so we don't have to specify it in the args
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
+
 	// we get an error about the missing filename parameter.
-	out, _, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin")
-	as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
-	as.Equal("Error: exactly one path should be specified when using the --stdin flag\n", string(out))
+	treefmt2(t,
+		withArgs("--stdin"),
+		withError(func(err error) {
+			as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
+		}),
+		withOutput(func(out []byte) {
+			as.Equal("Error: exactly one path should be specified when using the --stdin flag\n", string(out))
+		}),
+	)
 
 	// now pass along the filename parameter
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	out, statz, err := treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.nix")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 1,
-		stats.Matched:   1,
-		stats.Formatted: 1,
-		stats.Changed:   1,
-	})
+	treefmt2(t,
+		withArgs("--stdin", "test.nix"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withOutput(func(out []byte) {
+			as.Equal(`{ ...}: "hello"
+`, string(out))
+		}),
+	)
 
 	// the nix formatters should have reduced the example to the following
-	as.Equal(`{ ...}: "hello"
-`, string(out))
 
 	// try a file that's outside of the project root
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	out, _, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "../test.nix")
-	as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
-	as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
+	treefmt2(t,
+		withArgs("--stdin", "../test.nix"),
+		withError(func(err error) {
+			as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
+		}),
+		withOutput(func(out []byte) {
+			as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
+		}),
+	)
 
 	// try some markdown instead
 	contents = `
@@ -1534,21 +1542,23 @@ func TestStdin(t *testing.T) {
 `
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	out, statz, err = treefmt(t, "-C", tempDir, "--allow-missing-formatter", "--stdin", "test.md")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 1,
-		stats.Matched:   1,
-		stats.Formatted: 1,
-		stats.Changed:   1,
-	})
-
-	as.Equal(`| col1   | col2      |
+	treefmt2(t,
+		withArgs("--stdin", "test.md"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withOutput(func(out []byte) {
+			as.Equal(`| col1   | col2      |
 | ------ | --------- |
 | nice   | fits      |
 | oh no! | it's ugly |
 `, string(out))
+		}),
+	)
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {
@@ -1590,7 +1600,7 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 		},
 	})
 
-	_, _, err = treefmt(t, "-C", tempDir)
+	_, err = treefmt(t, "-C", tempDir)
 	as.NoError(err)
 
 	matcher := regexp.MustCompile("^fmt-(.*)")
@@ -1679,7 +1689,7 @@ func TestRunInSubdir(t *testing.T) {
 			test.WriteConfig(t, configPath, cfg)
 
 			// without any path args, should reformat the whole tree
-			_, statz, err := treefmt(t)
+			statz, err := treefmt(t)
 			as.NoError(err)
 
 			assertStats(t, as, statz, map[stats.Type]int{
@@ -1691,11 +1701,11 @@ func TestRunInSubdir(t *testing.T) {
 
 			// specify some explicit paths, relative to the tree root
 			// this should not work, as we're in a subdirectory
-			_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
+			_, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
 			as.ErrorContains(err, "path elm/elm.json not found")
 
 			// specify some explicit paths, relative to the current directory
-			_, statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
+			statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
 			as.NoError(err)
 
 			assertStats(t, as, statz, map[stats.Type]int{
@@ -1708,7 +1718,7 @@ func TestRunInSubdir(t *testing.T) {
 	}
 }
 
-func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
+func treefmt(t *testing.T, args ...string) (*stats.Stats, error) {
 	t.Helper()
 
 	t.Logf("treefmt %s", strings.Join(args, " "))
@@ -1760,7 +1770,7 @@ func treefmt(t *testing.T, args ...string) ([]byte, *stats.Stats, error) {
 
 	t.Log(string(out))
 
-	return out, statz, cmdErr
+	return statz, cmdErr
 }
 
 func assertStats(
