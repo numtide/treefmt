@@ -60,7 +60,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	// default is WARN
 	t.Run("default", func(t *testing.T) {
-		treefmt2(t, withNoError(t), withOutput(checkOutput(log.WarnLevel)))
+		treefmt(t, withNoError(t), withOutput(checkOutput(log.WarnLevel)))
 	})
 
 	// should exit with error when using fatal
@@ -69,11 +69,11 @@ func TestOnUnmatched(t *testing.T) {
 			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
 		}
 
-		treefmt2(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))
+		treefmt(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))
 
 		t.Setenv("TREEFMT_ON_UNMATCHED", "fatal")
 
-		treefmt2(t, withError(errorFn))
+		treefmt(t, withError(errorFn))
 	})
 
 	// test other levels
@@ -82,7 +82,7 @@ func TestOnUnmatched(t *testing.T) {
 			level, err := log.ParseLevel(levelStr)
 			as.NoError(err, "failed to parse log level: %s", level)
 
-			treefmt2(t,
+			treefmt(t,
 				withArgs("-vv", "--on-unmatched", levelStr),
 				withNoError(t),
 				withOutput(checkOutput(level)),
@@ -90,7 +90,7 @@ func TestOnUnmatched(t *testing.T) {
 
 			t.Setenv("TREEFMT_ON_UNMATCHED", levelStr)
 
-			treefmt2(t,
+			treefmt(t,
 				withArgs("-vv"),
 				withNoError(t),
 				withOutput(checkOutput(level)),
@@ -106,14 +106,14 @@ func TestOnUnmatched(t *testing.T) {
 			}
 		}
 
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--on-unmatched", "foo"),
 			withError(errorFn("foo")),
 		)
 
 		t.Setenv("TREEFMT_ON_UNMATCHED", "bar")
 
-		treefmt2(t, withError(errorFn("bar")))
+		treefmt(t, withError(errorFn("bar")))
 	})
 }
 
@@ -126,7 +126,7 @@ func TestCpuProfile(t *testing.T) {
 	// allow missing formatter
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--cpu-profile", "cpu.pprof"),
 		withNoError(t),
 	)
@@ -136,7 +136,7 @@ func TestCpuProfile(t *testing.T) {
 	// test with env
 	t.Setenv("TREEFMT_CPU_PROFILE", "env.pprof")
 
-	treefmt2(t, withNoError(t))
+	treefmt(t, withNoError(t))
 
 	as.FileExists(filepath.Join(tempDir, "env.pprof"))
 }
@@ -158,7 +158,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 	})
 
 	t.Run("default", func(t *testing.T) {
-		treefmt2(t,
+		treefmt(t,
 			withError(func(err error) {
 				as.ErrorIs(err, format.ErrCommandNotFound)
 			}),
@@ -166,7 +166,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 	})
 
 	t.Run("arg", func(t *testing.T) {
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--allow-missing-formatter"),
 			withNoError(t),
 		)
@@ -174,7 +174,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 
 	t.Run("env", func(t *testing.T) {
 		t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
-		treefmt2(t, withNoError(t))
+		treefmt(t, withNoError(t))
 	})
 }
 
@@ -209,7 +209,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 	test.ChangeWorkDir(t, tempDir)
 
 	t.Run("default", func(t *testing.T) {
-		treefmt2(t,
+		treefmt(t,
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
@@ -222,7 +222,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 	})
 
 	t.Run("args", func(t *testing.T) {
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--formatters", "elm,nix"),
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
@@ -234,7 +234,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			}),
 		)
 
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--formatters", "ruby,nix"),
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
@@ -246,7 +246,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			}),
 		)
 
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--formatters", "nix"),
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
@@ -259,7 +259,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 		)
 
 		// bad name
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--formatters", "foo"),
 			withError(func(err error) {
 				as.Errorf(err, "formatter not found in config: foo")
@@ -270,7 +270,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 	t.Run("env", func(t *testing.T) {
 		t.Setenv("TREEFMT_FORMATTERS", "ruby,nix")
 
-		treefmt2(t,
+		treefmt(t,
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
@@ -283,7 +283,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 
 		t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
 
-		treefmt2(t,
+		treefmt(t,
 			withError(func(err error) {
 				as.Errorf(err, "formatter not found in config: bar")
 			}),
@@ -292,10 +292,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 }
 
 func TestIncludesAndExcludes(t *testing.T) {
-	as := require.New(t)
-
 	tempDir := test.TempExamples(t)
-	configPath := tempDir + "/treefmt.toml"
+	configPath := filepath.Join(tempDir, "treefmt.toml")
 
 	test.ChangeWorkDir(t, tempDir)
 
@@ -309,104 +307,110 @@ func TestIncludesAndExcludes(t *testing.T) {
 		},
 	}
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err := treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
 
 	// globally exclude nix files
 	cfg.Excludes = []string{"*.nix"}
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   31,
-		stats.Formatted: 31,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   0,
+		}),
+	)
 
 	// add haskell files to the global exclude
 	cfg.Excludes = []string{"*.nix", "*.hs"}
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   25,
-		stats.Formatted: 25,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   25,
+			stats.Formatted: 25,
+			stats.Changed:   0,
+		}),
+	)
 
 	echo := cfg.FormatterConfigs["echo"]
 
 	// remove python files from the echo formatter
 	echo.Excludes = []string{"*.py"}
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   23,
-		stats.Formatted: 23,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   23,
+			stats.Formatted: 23,
+			stats.Changed:   0,
+		}),
+	)
 
 	// remove go files from the echo formatter via env
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "*.py,*.go")
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   22,
-		stats.Formatted: 22,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   22,
+			stats.Formatted: 22,
+			stats.Changed:   0,
+		}),
+	)
 
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "") // reset
 
 	// adjust the includes for echo to only include elm files
 	echo.Includes = []string{"*.elm"}
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   1,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   0,
+		}),
+	)
 
 	// add js files to echo formatter via env
 	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
 
-	test.WriteConfig(t, configPath, cfg)
-	statz, err = treefmt(t, "-c", "--config-file", configPath, "--tree-root", tempDir)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   2,
-		stats.Formatted: 2,
-		stats.Changed:   0,
-	})
+	treefmt(t,
+		withArgs("-c"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   2,
+			stats.Formatted: 2,
+			stats.Changed:   0,
+		}),
+	)
 }
 
 func TestPrjRootEnvVariable(t *testing.T) {
@@ -415,7 +419,7 @@ func TestPrjRootEnvVariable(t *testing.T) {
 
 	t.Setenv("PRJ_ROOT", tempDir)
 
-	treefmt2(t,
+	treefmt(t,
 		withConfig(configPath, &config.Config{
 			FormatterConfigs: map[string]*config.Formatter{
 				"echo": {
@@ -457,7 +461,7 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// first run
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
@@ -468,7 +472,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// cached run with no changes to underlying files
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
@@ -479,7 +483,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// clear cache
-	treefmt2(t,
+	treefmt(t,
 		withArgs("-c"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -491,7 +495,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// cached run with no changes to underlying files
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
@@ -502,7 +506,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// bump underlying files
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withModtimeBump(tempDir, time.Second),
 		withStats(t, map[stats.Type]int{
@@ -514,7 +518,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// no cache
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--no-cache"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -542,7 +546,7 @@ func TestCache(t *testing.T) {
 
 	// running should match but not format anything
 
-	treefmt2(t,
+	treefmt(t,
 		withError(func(err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
@@ -555,7 +559,7 @@ func TestCache(t *testing.T) {
 	)
 
 	// running again should provide the same result
-	treefmt2(t,
+	treefmt(t,
 		withError(func(err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
@@ -577,7 +581,7 @@ func TestCache(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// we should now format the haskell files
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
@@ -617,7 +621,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 		// change to an empty temp dir and try running without specifying a working directory
 		as.NoError(os.Chdir(t.TempDir()))
 
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withError(func(err error) {
 				as.ErrorContains(err, "failed to find treefmt config file")
@@ -627,7 +631,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 		// now change to the examples temp directory
 		as.NoError(os.Chdir(tempDir), "failed to change to temp directory")
 
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -661,7 +665,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 				args = []string{"-C", tempDir}
 			}
 
-			treefmt2(t,
+			treefmt(t,
 				withArgs(args...),
 				withConfig(configPath, cfg),
 				withNoError(t),
@@ -711,7 +715,7 @@ func TestFailOnChange(t *testing.T) {
 
 		// running with a cold cache, we should see the elm files being formatted, resulting in changes, which should
 		// trigger an error
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--fail-on-change"),
 			withConfig(configPath, cfg),
 			withError(func(err error) {
@@ -727,7 +731,7 @@ func TestFailOnChange(t *testing.T) {
 
 		// running with a hot cache, we should see matches for the elm files, but no attempt to format them as the
 		// underlying files have not changed since we last ran
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -755,7 +759,7 @@ func TestFailOnChange(t *testing.T) {
 
 		// running with a cold cache, we should see the haskell files being formatted, resulting in changes, which should
 		// trigger an error
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--fail-on-change"),
 			withConfigFunc(configPath, func() *config.Config {
 				// new mod time is in the next second
@@ -788,7 +792,7 @@ func TestFailOnChange(t *testing.T) {
 
 		// running with a hot cache, we should see matches for the haskell files, but no attempt to format them as the
 		// underlying files have not changed since we last ran
-		treefmt2(t,
+		treefmt(t,
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -826,7 +830,7 @@ func TestCacheBusting(t *testing.T) {
 		}
 
 		// initial run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -840,7 +844,7 @@ func TestCacheBusting(t *testing.T) {
 		cfg.FormatterConfigs["haskell"].Options = []string{""}
 
 		// cache entries for haskell files should be invalidated
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -851,7 +855,7 @@ func TestCacheBusting(t *testing.T) {
 			}))
 
 		// run again, nothing should be formatted
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -865,7 +869,7 @@ func TestCacheBusting(t *testing.T) {
 		cfg.FormatterConfigs["haskell"].Command = "echo"
 
 		// cache entries for haskell files should be invalidated
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -876,7 +880,7 @@ func TestCacheBusting(t *testing.T) {
 			}))
 
 		// run again, nothing should be formatted
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -891,7 +895,7 @@ func TestCacheBusting(t *testing.T) {
 
 		// we should match on fewer files, but no formatting should occur as includes are not part of the formatting
 		// signature
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -906,7 +910,7 @@ func TestCacheBusting(t *testing.T) {
 
 		// we should match on fewer files, but no formatting should occur as excludes are not part of the formatting
 		// signature
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -953,7 +957,7 @@ func TestCacheBusting(t *testing.T) {
 		}
 
 		// initial run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -968,7 +972,7 @@ func TestCacheBusting(t *testing.T) {
 		as.NoError(os.Chtimes(scriptPath, newTime, newTime))
 
 		// cache entries for elm files should be invalidated
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -979,7 +983,7 @@ func TestCacheBusting(t *testing.T) {
 			}))
 
 		// running again with a hot cache, we should see nothing be formatted
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -999,7 +1003,7 @@ func TestCacheBusting(t *testing.T) {
 		as.NoError(formatter.Close(), "failed to close elm formatter")
 
 		// cache entries for elm files should be invalidated
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1010,7 +1014,7 @@ func TestCacheBusting(t *testing.T) {
 			}))
 
 		// running again with a hot cache, we should see nothing be formatted
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1039,7 +1043,7 @@ func TestCacheBusting(t *testing.T) {
 		}
 
 		// initial run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1051,7 +1055,7 @@ func TestCacheBusting(t *testing.T) {
 		)
 
 		// cached run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1070,7 +1074,7 @@ func TestCacheBusting(t *testing.T) {
 		}
 
 		// only the elm files should be formatted
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1089,7 +1093,7 @@ func TestCacheBusting(t *testing.T) {
 		}
 
 		// python files should be formatted as their pipeline has changed
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1101,7 +1105,7 @@ func TestCacheBusting(t *testing.T) {
 		)
 
 		// cached run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1117,7 +1121,7 @@ func TestCacheBusting(t *testing.T) {
 		cfg.FormatterConfigs["python_secondary"].Priority = 1
 
 		// python files should be formatted as their pipeline has changed
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1129,7 +1133,7 @@ func TestCacheBusting(t *testing.T) {
 		)
 
 		// cached run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1144,7 +1148,7 @@ func TestCacheBusting(t *testing.T) {
 		delete(cfg.FormatterConfigs, "python_secondary")
 
 		// python files should be formatted as their pipeline has changed
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1156,7 +1160,7 @@ func TestCacheBusting(t *testing.T) {
 		)
 
 		// cached run
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1172,7 +1176,7 @@ func TestCacheBusting(t *testing.T) {
 
 		// only python files should match, but no formatting should occur as not formatting signatures have been
 		// affected
-		treefmt2(t,
+		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
@@ -1210,7 +1214,7 @@ func TestGit(t *testing.T) {
 	as.NoError(gitCmd.Run(), "failed to init git repository")
 
 	// run before adding anything to the index
-	treefmt2(t,
+	treefmt(t,
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1222,7 +1226,7 @@ func TestGit(t *testing.T) {
 	gitCmd = exec.Command("git", "add", ".")
 	as.NoError(gitCmd.Run(), "failed to add everything to the index")
 
-	treefmt2(t,
+	treefmt(t,
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1239,7 +1243,7 @@ func TestGit(t *testing.T) {
 
 	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
 	// are impacted
-	treefmt2(t,
+	treefmt(t,
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1257,7 +1261,7 @@ func TestGit(t *testing.T) {
 	// the .git folder contains 49 additional files
 	// when added to the 31 we started with (32 minus nixpkgs.toml which we removed from the filesystem), we should
 	// traverse 80 files.
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1273,7 +1277,7 @@ func TestGit(t *testing.T) {
 	// we should traverse and match against those files, but without any underlying change to their files or their
 	// formatting config, we will not format them
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("go"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1285,7 +1289,7 @@ func TestGit(t *testing.T) {
 		}),
 	)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("go", "haskell"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1297,7 +1301,7 @@ func TestGit(t *testing.T) {
 		}),
 	)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("-C", tempDir, "go", "haskell", "ruby"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1310,7 +1314,7 @@ func TestGit(t *testing.T) {
 	)
 
 	// try with a bad path
-	treefmt2(t,
+	treefmt(t,
 		withArgs("-C", tempDir, "haskell", "foo"),
 		withConfig(configPath, cfg),
 		withError(func(err error) {
@@ -1322,7 +1326,7 @@ func TestGit(t *testing.T) {
 	_, err := os.Create(filepath.Join(tempDir, "foo.txt"))
 	as.NoError(err)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("haskell", "foo.txt"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1334,7 +1338,7 @@ func TestGit(t *testing.T) {
 		}),
 	)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("go", "foo.txt"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1346,7 +1350,7 @@ func TestGit(t *testing.T) {
 		}),
 	)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("foo.txt"),
 		withConfig(configPath, cfg),
 		withNoError(t),
@@ -1400,7 +1404,7 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	treefmt2(t,
+	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 32,
@@ -1411,7 +1415,7 @@ func TestPathsArg(t *testing.T) {
 	)
 
 	// specify some explicit paths
-	treefmt2(t,
+	treefmt(t,
 		withArgs("elm/elm.json", "haskell/Nested/Foo.hs"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1426,7 +1430,7 @@ func TestPathsArg(t *testing.T) {
 	absoluteInternalPath, err := filepath.Abs("elm/elm.json")
 	as.NoError(err)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs(absoluteInternalPath),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1438,7 +1442,7 @@ func TestPathsArg(t *testing.T) {
 	)
 
 	// specify a bad path
-	treefmt2(t,
+	treefmt(t,
 		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
 		withError(func(err error) {
 			as.Errorf(err, "path haskell/Nested/Bar.hs not found")
@@ -1450,7 +1454,7 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(err)
 	as.FileExists(absoluteExternalPath, "external file must exist")
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs(absoluteExternalPath),
 		withError(func(err error) {
 			as.Errorf(err, "path %s not found within the tree root", absoluteExternalPath)
@@ -1461,7 +1465,7 @@ func TestPathsArg(t *testing.T) {
 	relativeExternalPath := "../outside_tree.go"
 	as.FileExists(relativeExternalPath, "exernal file must exist")
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs(relativeExternalPath),
 		withError(func(err error) {
 			as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
@@ -1490,7 +1494,7 @@ func TestStdin(t *testing.T) {
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
 
 	// we get an error about the missing filename parameter.
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--stdin"),
 		withError(func(err error) {
 			as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
@@ -1503,7 +1507,7 @@ func TestStdin(t *testing.T) {
 	// now pass along the filename parameter
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--stdin", "test.nix"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1523,7 +1527,7 @@ func TestStdin(t *testing.T) {
 	// try a file that's outside of the project root
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--stdin", "../test.nix"),
 		withError(func(err error) {
 			as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
@@ -1542,7 +1546,7 @@ func TestStdin(t *testing.T) {
 `
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 
-	treefmt2(t,
+	treefmt(t,
 		withArgs("--stdin", "test.md"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
@@ -1593,7 +1597,7 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 		},
 	})
 
-	treefmt2(t, withNoError(t))
+	treefmt(t, withNoError(t))
 
 	matcher := regexp.MustCompile("^fmt-(.*)")
 
@@ -1675,7 +1679,7 @@ func TestRunInSubdir(t *testing.T) {
 			test.WriteConfig(t, configPath, cfg)
 
 			// without any path args, should reformat the whole tree
-			treefmt2(t,
+			treefmt(t,
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
 					stats.Traversed: 32,
@@ -1687,7 +1691,7 @@ func TestRunInSubdir(t *testing.T) {
 
 			// specify some explicit paths, relative to the tree root
 			// this should not work, as we're in a subdirectory
-			treefmt2(t,
+			treefmt(t,
 				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
 				withError(func(err error) {
 					as.ErrorContains(err, "path elm/elm.json not found")
@@ -1695,7 +1699,7 @@ func TestRunInSubdir(t *testing.T) {
 			)
 
 			// specify some explicit paths, relative to the current directory
-			treefmt2(t,
+			treefmt(t,
 				withArgs("-c", "elm.json", "../haskell/Nested/Foo.hs"),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
@@ -1706,74 +1710,6 @@ func TestRunInSubdir(t *testing.T) {
 				}),
 			)
 		})
-	}
-}
-
-func treefmt(t *testing.T, args ...string) (*stats.Stats, error) {
-	t.Helper()
-
-	t.Logf("treefmt %s", strings.Join(args, " "))
-
-	tempDir := t.TempDir()
-	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
-
-	// capture standard outputs before swapping them
-	stdout := os.Stdout
-	stderr := os.Stderr
-
-	// swap them temporarily
-	os.Stdout = tempOut
-	os.Stderr = tempOut
-
-	log.SetOutput(tempOut)
-
-	defer func() {
-		// swap outputs back
-		os.Stdout = stdout
-		os.Stderr = stderr
-		log.SetOutput(stderr)
-	}()
-
-	// run the command
-	root, statz := cmd.NewRoot()
-
-	if args == nil {
-		// we must pass an empty array otherwise cobra with use os.Args[1:]
-		args = []string{}
-	}
-
-	root.SetArgs(args)
-	root.SetOut(tempOut)
-	root.SetErr(tempOut)
-
-	// execute the command
-	cmdErr := root.Execute()
-
-	// reset and read the temporary output
-	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
-		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
-	}
-
-	out, readErr := io.ReadAll(tempOut)
-	if readErr != nil {
-		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
-	}
-
-	t.Log(string(out))
-
-	return statz, cmdErr
-}
-
-func assertStats(
-	t *testing.T,
-	as *require.Assertions,
-	statz *stats.Stats,
-	expected map[stats.Type]int,
-) {
-	t.Helper()
-
-	for k, v := range expected {
-		as.Equal(v, statz.Value(k), k.String())
 	}
 }
 
@@ -1856,7 +1792,7 @@ func withModtimeBump(path string, bump time.Duration) option {
 	}
 }
 
-func treefmt2(
+func treefmt(
 	t *testing.T,
 	opt ...option,
 ) {
