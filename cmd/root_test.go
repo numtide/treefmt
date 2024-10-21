@@ -1629,17 +1629,10 @@ func TestRunInSubdir(t *testing.T) {
 	// Run the same test for each walk type
 	for _, walkType := range walk.TypeValues() {
 		t.Run(walkType.String(), func(t *testing.T) {
-			// capture current cwd, so we can replace it after the test is finished
-			cwd, err := os.Getwd()
-			as.NoError(err)
-
-			t.Cleanup(func() {
-				// return to the previous working directory
-				as.NoError(os.Chdir(cwd))
-			})
-
 			tempDir := test.TempExamples(t)
 			configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+			test.ChangeWorkDir(t, tempDir)
 
 			// set the walk type via environment variable
 			t.Setenv("TREEFMT_WALK_TYPE", walkType.String())
@@ -1678,34 +1671,40 @@ func TestRunInSubdir(t *testing.T) {
 					},
 				},
 			}
+
 			test.WriteConfig(t, configPath, cfg)
 
 			// without any path args, should reformat the whole tree
-			statz, err := treefmt(t)
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
-				stats.Traversed: 32,
-				stats.Matched:   32,
-				stats.Formatted: 32,
-				stats.Changed:   0,
-			})
+			treefmt2(t,
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 32,
+					stats.Matched:   32,
+					stats.Formatted: 32,
+					stats.Changed:   0,
+				}),
+			)
 
 			// specify some explicit paths, relative to the tree root
 			// this should not work, as we're in a subdirectory
-			_, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
-			as.ErrorContains(err, "path elm/elm.json not found")
+			treefmt2(t,
+				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
+				withError(func(err error) {
+					as.ErrorContains(err, "path elm/elm.json not found")
+				}),
+			)
 
 			// specify some explicit paths, relative to the current directory
-			statz, err = treefmt(t, "-c", "elm.json", "../haskell/Nested/Foo.hs")
-			as.NoError(err)
-
-			assertStats(t, as, statz, map[stats.Type]int{
-				stats.Traversed: 2,
-				stats.Matched:   2,
-				stats.Formatted: 2,
-				stats.Changed:   0,
-			})
+			treefmt2(t,
+				withArgs("-c", "elm.json", "../haskell/Nested/Foo.hs"),
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 2,
+					stats.Matched:   2,
+					stats.Formatted: 2,
+					stats.Changed:   0,
+				}),
+			)
 		})
 	}
 }
