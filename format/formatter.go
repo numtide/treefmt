@@ -71,8 +71,7 @@ func (f *Formatter) Hash(h hash.Hash) error {
 
 	// include the executable's size and mod time
 	// if the formatter executable changes (e.g. new version) the outcome of applying the formatter might differ
-	h.Write([]byte(fmt.Sprintf("%d", info.Size())))
-	h.Write([]byte(fmt.Sprintf("%d", info.ModTime().Unix())))
+	h.Write([]byte(fmt.Sprintf("%d %d", info.Size(), info.ModTime().Unix())))
 
 	return nil
 }
@@ -165,6 +164,11 @@ func newFormatter(
 		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s[%d]", name, cfg.Priority))
 	} else {
 		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s", name))
+	}
+
+	// check there is at least one include
+	if len(cfg.Includes) == 0 {
+		return nil, fmt.Errorf("formatter '%v' has no includes", f.name)
 	}
 
 	f.includes, err = compileGlobs(cfg.Includes)

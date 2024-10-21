@@ -30,7 +30,8 @@ func TestInvalidFormatterName(t *testing.T) {
 	// valid name using all the acceptable characters
 	cfg.FormatterConfigs = map[string]*config.Formatter{
 		"echo_command-1234567890": {
-			Command: "echo",
+			Command:  "echo",
+			Includes: []string{"*"},
 		},
 	}
 
