@@ -1371,15 +1371,16 @@ func TestPathsArg(t *testing.T) {
 		as.NoError(os.Chdir(cwd))
 	})
 
-	// create a project root under a temp dir, in order verify behavior with
-	// files inside of temp dir, but outside of the project root
+	// create a project root under a temp dir to verify behaviour with files inside the temp dir, but outside the
+	// project root
 	tempDir := t.TempDir()
 	treeRoot := filepath.Join(tempDir, "tree-root")
+
 	test.TempExamplesInDir(t, treeRoot)
 
 	configPath := filepath.Join(treeRoot, "/treefmt.toml")
 
-	// create a file outside of treeRoot
+	// create a file outside the treeRoot
 	externalFile, err := os.Create(filepath.Join(tempDir, "outside_tree.go"))
 	as.NoError(err)
 
@@ -1399,55 +1400,74 @@ func TestPathsArg(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// without any path args
-	_, statz, err := treefmt(t)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 32,
-		stats.Matched:   32,
-		stats.Formatted: 32,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
 
 	// specify some explicit paths
-	_, statz, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Foo.hs")
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 2,
-		stats.Matched:   2,
-		stats.Formatted: 2,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs("elm/elm.json", "haskell/Nested/Foo.hs"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// specify an absolute path
 	absoluteInternalPath, err := filepath.Abs("elm/elm.json")
 	as.NoError(err)
 
-	_, statz, err = treefmt(t, "-c", absoluteInternalPath)
-	as.NoError(err)
-
-	assertStats(t, as, statz, map[stats.Type]int{
-		stats.Traversed: 1,
-		stats.Matched:   1,
-		stats.Formatted: 1,
-		stats.Changed:   0,
-	})
+	treefmt2(t,
+		withArgs(absoluteInternalPath),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
 
 	// specify a bad path
-	_, _, err = treefmt(t, "-c", "elm/elm.json", "haskell/Nested/Bar.hs")
-	as.Errorf(err, "path haskell/Nested/Bar.hs not found")
+	treefmt2(t,
+		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
+		withError(func(err error) {
+			as.Errorf(err, "path haskell/Nested/Bar.hs not found")
+		}),
+	)
 
 	// specify an absolute path outside the tree root
 	absoluteExternalPath, err := filepath.Abs(externalFile.Name())
 	as.NoError(err)
-	as.FileExists(absoluteExternalPath, "exernal file must exist")
-	_, _, err = treefmt(t, "-c", absoluteExternalPath)
-	as.Errorf(err, "path %s not found within the tree root", absoluteExternalPath)
+	as.FileExists(absoluteExternalPath, "external file must exist")
+
+	treefmt2(t,
+		withArgs(absoluteExternalPath),
+		withError(func(err error) {
+			as.Errorf(err, "path %s not found within the tree root", absoluteExternalPath)
+		}),
+	)
 
 	// specify a relative path outside the tree root
 	relativeExternalPath := "../outside_tree.go"
 	as.FileExists(relativeExternalPath, "exernal file must exist")
+
+	treefmt2(t,
+		withArgs(relativeExternalPath),
+		withError(func(err error) {
+			as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
+		}),
+	)
+
 	_, _, err = treefmt(t, "-c", relativeExternalPath)
 	as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
 }
