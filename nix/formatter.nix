@@ -20,7 +20,7 @@ inputs.treefmt-nix.lib.mkWrapper pkgs {
       # let's not mess with the test folder
       "test/*"
       # unsupported extensions
-      "*.{gif,png,svg,tape,mts,lock,mod,sum,toml,env,envrc,gitignore}"
+      "*.{gif,png,svg,tape,mts,lock,mod,sum,toml,env,envrc,gitignore,pages}"
     ];
 
     formatter = {

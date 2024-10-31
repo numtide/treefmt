@@ -1,8 +1,4 @@
----
-outline: deep
----
-
-# Install Treefmt
+# Install
 
 There are two ways to install `treefmt`:
 

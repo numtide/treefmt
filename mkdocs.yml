@@ -1,0 +1,111 @@
+# Project info
+site_name: Treefmt
+site_url: https://treefmt.com
+site_description: >-
+    One CLI to format your repo
+
+# Repository
+repo_name: numtide/treefmt
+repo_url: https://github.com/numtide/treefmt
+
+# Copyright
+copyright: >-
+    Content on this site is licensed under a <a href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons 
+    Attribution-ShareAlike 4.0 International license</a>.
+
+validation:
+    omitted_files: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+# Configuration
+
+docs_dir: docs/content
+
+theme:
+    name: material
+    custom_dir: docs/theme
+
+    logo: assets/images/logo.png
+    favicon: assets/images/logo.png
+
+    features:
+        - content.code.annotate
+        - content.code.copy
+        - navigation.footer
+        - navigation.indexes
+        - navigation.path
+        - navigation.sections
+        - navigation.tabs
+        - navigation.tracking
+        - search.highlight
+        - search.share
+        - search.suggest
+
+    font:
+        text: Inter
+        mono: Noto Sans Mono
+    palette:
+        # Palette toggle for automatic mode
+        - media: "(prefers-color-scheme)"
+          toggle:
+              icon: material/brightness-auto
+              name: Switch to light mode
+
+        # Palette toggle for light mode
+        - media: "(prefers-color-scheme: light)"
+          scheme: default
+          toggle:
+              icon: material/brightness-7
+              name: Switch to dark mode
+
+        # Palette toggle for dark mode
+        - media: "(prefers-color-scheme: dark)"
+          scheme: slate
+          toggle:
+              icon: material/brightness-4
+              name: Switch to system preference
+
+extra:
+    version:
+        provider: mike
+    social:
+        - icon: fontawesome/brands/github
+          link: https://github.com/numtide
+        - icon: fontawesome/brands/x-twitter
+          link: https://x.com/numtide
+        - icon: fontawesome/brands/mastodon
+          link: https://fosstodon.org/@numtide
+
+extra_css:
+    - stylesheets/extra.css
+
+markdown_extensions:
+    - tables
+    - admonition
+    - attr_list
+    - footnotes
+    - md_in_html
+    - def_list
+    - meta
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - pymdownx.tasklist:
+          custom_checkbox: true
+    - pymdownx.superfences
+    - pymdownx.tabbed:
+          alternate_style: true
+    - pymdownx.details
+    - pymdownx.highlight:
+          use_pygments: true
+          linenums: true
+          anchor_linenums: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - pymdownx.keys
+
+plugins:
+    - awesome-pages
+    - mike
+    - search

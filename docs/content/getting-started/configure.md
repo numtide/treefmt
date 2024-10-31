@@ -1,8 +1,4 @@
----
-outline: deep
----
-
-# Configure Treefmt
+# Configure
 
 The `treefmt.toml` configuration file consists of a mixture of global options and formatter sections:
 
