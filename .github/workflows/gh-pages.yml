@@ -1,48 +1,44 @@
-# Build and deploy MkDocs to gh-pages for main branch
-name: gh-pages
+name: Deploy docs
+
 on:
     push:
         branches:
             - main
-    pull_request:
+        tags:
+            - "v*"
+
+    # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
 
-permissions:
-    contents: write
-    pages: write
-    id-token: write
-
 jobs:
-    build:
-        runs-on: ubuntu-latest
+    deploy:
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: write
+        concurrency:
+            group: ${{ github.workflow }}
         steps:
             - uses: actions/checkout@v4
-            - uses: cachix/install-nix-action@v30
-            - uses: cachix/cachix-action@v15
               with:
-                  name: numtide
-                  authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-            - name: Build the docs
-              id: build
+                  fetch-depth: 0
+            - uses: cachix/install-nix-action@V27
+              with:
+                  extra_nix_config: |
+                      accept-flake-config = true
+                      experimental-features = nix-command flakes
+            - name: Configure Git user
               run: |
-                  nix build .#treefmt-docs
-                  echo "result=$(readlink ./result)" >> $GITHUB_OUTPUT
-            - name: Upload artifact
-              uses: actions/upload-pages-artifact@v3
-              if: github.ref == 'refs/heads/main'
-              with:
-                  path: result
-
-    # Deployment job
-    deploy:
-        if: github.ref == 'refs/heads/main'
-        environment:
-            name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
-        needs: build
-        runs-on: ubuntu-latest
-        name: deploy
-        steps:
-            - name: Deploy to GitHub Pages
-              id: deployment
-              uses: actions/deploy-pages@v4
+                  git config --local user.email "github-actions[bot]@users.noreply.github.com"
+                  git config --local user.name "github-actions[bot]"
+            - name: Deploy main
+              if: ${{ github.ref_name == 'main' }}
+              run: |
+                  nix develop .#docs --command bash -c "mike deploy -p main"
+            - name: Deploy version
+              if: startsWith(github.ref, 'refs/tags/v')
+              run: |
+                  REF_NAME=${{ github.ref_name }}
+                  MAJOR_MINOR=${REF_NAME%.*}
+                  # strip the leading v from the ref_name
+                  # update the latest alias          
+                  nix develop .#docs --command bash -c "mike deploy -p -u ${MAJOR_MINOR} latest"
