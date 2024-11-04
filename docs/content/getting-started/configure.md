@@ -82,4 +82,4 @@ To find examples, take a look at <https://github.com/numtide/treefmt-nix/tree/ma
 
 If you are a Nix user, you might also like <https://github.com/numtide/treefmt-nix>, which uses Nix to pull in the right formatter package and seamlessly integrates both together.
 
-[spec]: formatter-spec.md
+[spec]: ../reference/formatter-spec.md
