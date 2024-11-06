@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/adrg/xdg v0.5.2
+	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/log v0.4.0
 	github.com/gobwas/glob v0.2.3
 	github.com/otiai10/copy v1.14.0
