@@ -1,4 +1,8 @@
-{ pkgs, perSystem, ... }:
+{
+  pkgs,
+  perSystem,
+  ...
+}:
 pkgs.stdenvNoCC.mkDerivation {
   name = "docs";
 

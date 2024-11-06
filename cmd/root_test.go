@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -32,12 +33,13 @@ func TestOnUnmatched(t *testing.T) {
 
 	test.ChangeWorkDir(t, tempDir)
 
-	paths := []string{
+	expectedPaths := []string{
 		"go/go.mod",
 		"haskell/haskell.cabal",
+		"haskell-frontend/haskell-frontend.cabal",
 		"html/scripts/.gitkeep",
 		"python/requirements.txt",
-		// these should not be reported as they're in the global excludes
+		// these should not be reported, they are in the global excludes
 		// - "nixpkgs.toml"
 		// - "touch.toml"
 		// - "treefmt.toml"
@@ -51,10 +53,22 @@ func TestOnUnmatched(t *testing.T) {
 	checkOutput := func(level log.Level) func([]byte) {
 		logPrefix := strings.ToUpper(level.String())[:4]
 
+		regex := regexp.MustCompile(fmt.Sprintf(`^%s no formatter for path: (.*)$`, logPrefix))
+
 		return func(out []byte) {
-			for _, p := range paths {
-				as.Contains(string(out), fmt.Sprintf("%s no formatter for path: %s", logPrefix, p))
+			var paths []string
+
+			scanner := bufio.NewScanner(bytes.NewReader(out))
+			for scanner.Scan() {
+				matches := regex.FindStringSubmatch(scanner.Text())
+				if len(matches) != 2 {
+					continue
+				}
+
+				paths = append(paths, matches[1])
 			}
+
+			as.Equal(expectedPaths, paths)
 		}
 	}
 
@@ -66,7 +80,7 @@ func TestOnUnmatched(t *testing.T) {
 	// should exit with error when using fatal
 	t.Run("fatal", func(t *testing.T) {
 		errorFn := func(err error) {
-			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", paths[0]))
+			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", expectedPaths[0]))
 		}
 
 		treefmt(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))

@@ -36,12 +36,12 @@ type CompositeFormatter struct {
 }
 
 // match filters the file against global excludes and returns a list of formatters that want to process the file.
-func (c *CompositeFormatter) match(file *walk.File) []*Formatter {
+func (c *CompositeFormatter) match(file *walk.File) (bool, []*Formatter) {
 	// first check if this file has been globally excluded
 	if pathMatches(file.RelPath, c.globalExcludes) {
 		log.Debugf("path matched global excludes: %s", file.RelPath)
 
-		return nil
+		return true, nil
 	}
 
 	// a list of formatters that match this file
@@ -54,7 +54,7 @@ func (c *CompositeFormatter) match(file *walk.File) []*Formatter {
 		}
 	}
 
-	return matches
+	return false, matches
 }
 
 // Apply applies the configured formatters to the given files.
@@ -62,7 +62,13 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 	var toRelease []*walk.File
 
 	for _, file := range files {
-		matches := c.match(file) // match the file against the formatters
+		// match the file against the formatters
+		globalExclude, matches := c.match(file)
+
+		// if the file is globally excluded, we do not emit a warning
+		if globalExclude {
+			continue
+		}
 
 		// check if there were no matches
 		if len(matches) == 0 {
