@@ -107,12 +107,26 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		configFile = os.Getenv("TREEFMT_CONFIG")
 	}
 
-	// find the config file if one was not specified
-	if configFile == "" {
-		if configFile, _, err = config.FindUp(workingDir, "treefmt.toml", ".treefmt.toml"); err != nil {
-			return fmt.Errorf("failed to find treefmt config file: %w", err)
-		}
+	filenames := []string{"treefmt.toml", ".treefmt.toml"}
+
+	// look in PRJ_ROOT if set
+	if prjRoot := os.Getenv("PRJ_ROOT"); configFile == "" && prjRoot != "" {
+		configFile, _ = config.Find(prjRoot, filenames...)
 	}
+
+	// search up from the working directory
+	if configFile == "" {
+		configFile, _, err = config.FindUp(workingDir, filenames...)
+	}
+
+	// error out if we couldn't find the config file
+	if err != nil {
+		cmd.SilenceUsage = true
+
+		return fmt.Errorf("failed to find treefmt config file: %w", err)
+	}
+
+	log.Infof("using config file: %s", configFile)
 
 	// read in the config
 	v.SetConfigFile(configFile)
