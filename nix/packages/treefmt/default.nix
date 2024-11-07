@@ -63,6 +63,19 @@ in
       git config --global user.name "Treefmt Test"
     '';
 
+    passthru.tests = {
+      golangci-lint = perSystem.self.treefmt.overrideAttrs (old: {
+        nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.golangci-lint];
+        buildPhase = ''
+          HOME=$TMPDIR
+          golangci-lint run
+        '';
+        installPhase = ''
+          touch $out
+        '';
+      });
+    };
+
     meta = with lib; {
       description = "treefmt: one CLI to format your repo";
       homepage = "https://github.com/numtide/treefmt";
