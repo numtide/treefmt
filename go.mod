@@ -14,7 +14,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	go.etcd.io/bbolt v1.3.11
-	golang.org/x/sync v0.8.0
+	golang.org/x/sync v0.9.0
 	golang.org/x/sys v0.26.0
 	mvdan.cc/sh/v3 v3.10.0
 )
