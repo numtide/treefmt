@@ -427,30 +427,93 @@ func TestIncludesAndExcludes(t *testing.T) {
 	)
 }
 
-func TestPrjRootEnvVariable(t *testing.T) {
-	tempDir := test.TempExamples(t)
-	configPath := filepath.Join(tempDir, "treefmt.toml")
+func TestConfigFile(t *testing.T) {
+	as := require.New(t)
 
-	t.Setenv("PRJ_ROOT", tempDir)
+	for _, name := range []string{"treefmt.toml", ".treefmt.toml"} {
+		t.Run(name, func(t *testing.T) {
+			tempDir := test.TempExamples(t)
 
-	treefmt(t,
-		withConfig(configPath, &config.Config{
-			FormatterConfigs: map[string]*config.Formatter{
-				"echo": {
-					Command:  "echo",
-					Includes: []string{"*"},
-				},
-			},
-		}),
-		withArgs("--config-file", configPath),
-		withNoError(t),
-		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
-			stats.Changed:   0,
-		}),
-	)
+			// use a config file in a different temp directory
+			configPath := filepath.Join(t.TempDir(), name)
+
+			// if we don't specify a tree root, we default to the directory containing the config file
+			treefmt(t,
+				withConfig(configPath, &config.Config{
+					FormatterConfigs: map[string]*config.Formatter{
+						"echo": {
+							Command:  "echo",
+							Includes: []string{"*"},
+						},
+					},
+				}),
+				withArgs("--config-file", configPath),
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 1,
+					stats.Matched:   1,
+					stats.Formatted: 1,
+					stats.Changed:   0,
+				}),
+			)
+
+			treefmt(t,
+				withArgs("--config-file", configPath, "--tree-root", tempDir),
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 32,
+					stats.Matched:   32,
+					stats.Formatted: 32,
+					stats.Changed:   0,
+				}),
+			)
+
+			// use env variable
+			treefmt(t,
+				withEnv(map[string]string{
+					// TREEFMT_CONFIG takes precedence
+					"TREEFMT_CONFIG": configPath,
+					"PRJ_ROOT":       tempDir,
+				}),
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 1,
+					stats.Matched:   1,
+					stats.Formatted: 0,
+					stats.Changed:   0,
+				}),
+			)
+
+			// should fallback to PRJ_ROOT
+			treefmt(t,
+				withArgs("--tree-root", tempDir),
+				withEnv(map[string]string{
+					"PRJ_ROOT": filepath.Dir(configPath),
+				}),
+				withNoError(t),
+				withStats(t, map[stats.Type]int{
+					stats.Traversed: 32,
+					stats.Matched:   32,
+					stats.Formatted: 0,
+					stats.Changed:   0,
+				}),
+			)
+
+			// should not search upwards if using PRJ_ROOT
+			configSubDir := filepath.Join(filepath.Dir(configPath), "sub")
+			as.NoError(os.MkdirAll(configSubDir, 0o600))
+
+			treefmt(t,
+				withArgs("--tree-root", tempDir),
+				withEnv(map[string]string{
+					"PRJ_ROOT": configSubDir,
+				}),
+				withError(func(err error) {
+					as.ErrorContains(err, "failed to find treefmt config file")
+				}),
+			)
+		})
+	}
 }
 
 func TestCache(t *testing.T) {
@@ -1729,6 +1792,7 @@ func TestRunInSubdir(t *testing.T) {
 
 type options struct {
 	args []string
+	env  map[string]string
 
 	config struct {
 		path  string
@@ -1751,6 +1815,12 @@ type option func(*options)
 func withArgs(args ...string) option {
 	return func(o *options) {
 		o.args = args
+	}
+}
+
+func withEnv(env map[string]string) option {
+	return func(o *options) {
+		o.env = env
 	}
 }
 
@@ -1817,6 +1887,18 @@ func treefmt(
 	for _, option := range opt {
 		option(opts)
 	}
+
+	// set env
+	for k, v := range opts.env {
+		t.Setenv(k, v)
+	}
+
+	defer func() {
+		// unset env variables after executing
+		for k := range opts.env {
+			t.Setenv(k, "")
+		}
+	}()
 
 	// default args if nil
 	// we must pass an empty array otherwise cobra with use os.Args[1:]

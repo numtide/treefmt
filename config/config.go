@@ -238,13 +238,22 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	return cfg, nil
 }
 
+func Find(searchDir string, fileNames ...string) (path string, err error) {
+	for _, f := range fileNames {
+		path := filepath.Join(searchDir, f)
+		if fileExists(path) {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not find %s in %s", fileNames, searchDir)
+}
+
 func FindUp(searchDir string, fileNames ...string) (path string, dir string, err error) {
 	for _, dir := range eachDir(searchDir) {
-		for _, f := range fileNames {
-			path := filepath.Join(dir, f)
-			if fileExists(path) {
-				return path, dir, nil
-			}
+		path, err := Find(dir, fileNames...)
+		if err == nil {
+			return path, dir, nil
 		}
 	}
 
