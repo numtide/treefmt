@@ -14,7 +14,7 @@ import (
 // Config is used to represent the list of configured Formatters.
 type Config struct {
 	AllowMissingFormatter bool     `mapstructure:"allow-missing-formatter" toml:"allow-missing-formatter,omitempty"`
-	CI                    bool     `mapstructure:"ci" toml:"ci,omitempty"`
+	CI                    bool     `mapstructure:"ci" toml:"-"`          // not allowed in config
 	ClearCache            bool     `mapstructure:"clear-cache" toml:"-"` // not allowed in config
 	CPUProfile            string   `mapstructure:"cpu-profile" toml:"cpu-profile,omitempty"`
 	Excludes              []string `mapstructure:"excludes" toml:"excludes,omitempty"`
