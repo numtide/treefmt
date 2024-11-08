@@ -815,19 +815,16 @@
 
 
 <h1 id="formatter-specification">Formatter Specification</h1>
-<p>To keep the design of <code>treefmt</code> simple, we only support formatters that adhere to a certain standard.
-This document outlines that standard.</p>
-<p>In this design, we rely on <code>treefmt</code> to do the tree traversal, and only invoke
-the code formatter on the selected files.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<p>In order to keep the design of <code>treefmt</code> simple, we only supports formatters that adhere to a certain standard. This
+document outlines that standard.</p>
 <p>If the formatter you would like to use doesn't comply with the rules, it's often possible to create a wrapper script
 that transforms the usage to match the specification.</p>
-</div>
+<p>In this design, we rely on <code>treefmt</code> to do the tree traversal, and only invoke
+the code formatter on the selected files.</p>
 <h2 id="rules">Rules</h2>
-<p>In order for the formatter to comply with this spec, it <strong>MUST</strong> satisfy the following:</p>
+<p>In order for the formatter to comply to this spec, it <strong>MUST</strong> comply with the following:</p>
 <h3 id="1-files-passed-as-arguments">1. Files passed as arguments</h3>
-<p>The formatter's CLI must be of the form:</p>
+<p>In order to be integrated with <code>treefmt</code>'s workflow, the formatter's CLI must be of the form:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>&lt;command&gt; [options] [...&lt;files&gt;]
 </code></pre></div></td></tr></table></div>
 <p>Where:</p>
@@ -839,15 +836,15 @@ that transforms the usage to match the specification.</p>
 <p>Example:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>$ rustfmt --edition 2018 src/main.rs src/lib.rs
 </code></pre></div></td></tr></table></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>It <em>MUST</em> process the specified files. For example, it <em>MUST</em> NOT ignore files because they are not tracked by a VCS.</p>
+<blockquote>
+<p>[!IMPORTANT]
+It <em>MUST</em> process the specified files. For example, it <em>MUST</em> NOT ignore files because they are not tracked by a VCS.</p>
 <p>It <em>SHOULD</em> processes only the specified files. Files that are not passed <em>SHOULD</em> never be formatted.</p>
-</div>
+</blockquote>
 <h3 id="2-write-to-changed-files">2. Write to changed files</h3>
-<p>Whenever there is a change to the code formatting, the code formatter <strong>MUST</strong> write those changes back to the
+<p>Whenever there is a change to the code formatting, the code formatter <strong>MUST</strong> write to the changes back to the
 original location.</p>
-<p>If there are no changes to the original file, the formatter <strong>MUST NOT</strong> write to the original location.</p>
+<p>If there is no changes to the original file, the formatter <strong>MUST</strong> NOT write to the original location.</p>
 <h3 id="3-idempotent">3. Idempotent</h3>
 <p>The code formatter <em>SHOULD</em> be indempotent. Meaning that it produces stable
 outputs.</p>
