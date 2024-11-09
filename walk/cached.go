@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/charmbracelet/log"
-	"github.com/numtide/treefmt/walk/cache"
+	"github.com/numtide/treefmt/v2/walk/cache"
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/sync/errgroup"
 )

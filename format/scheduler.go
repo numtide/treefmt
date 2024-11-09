@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/numtide/treefmt/stats"
-	"github.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/v2/stats"
+	"github.com/numtide/treefmt/v2/walk"
 	"golang.org/x/sync/errgroup"
 )
 

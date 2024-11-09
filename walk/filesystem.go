@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/v2/stats"
 	"golang.org/x/sync/errgroup"
 )
 

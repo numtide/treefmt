@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/numtide/treefmt/cmd"
+	"github.com/numtide/treefmt/v2/cmd"
 )
 
 func main() {
