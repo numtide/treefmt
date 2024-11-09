@@ -231,6 +231,10 @@ Ignore the evaluation cache entirely. Useful for CI.
 Log paths that did not match any formatters at the specified log level.
 Possible values are `<debug|info|warn|error|fatal>`.
 
+!!! warning
+
+    If you select `fatal`, the process will exit immediately with a non-zero exit.
+
 === "Flag"
 
     ```console
