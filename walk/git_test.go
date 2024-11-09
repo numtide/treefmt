@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/numtide/treefmt/stats"
-	"github.com/numtide/treefmt/test"
-	"github.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/v2/stats"
+	"github.com/numtide/treefmt/v2/test"
+	"github.com/numtide/treefmt/v2/walk"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )

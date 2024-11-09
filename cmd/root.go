@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
-	"github.com/numtide/treefmt/build"
-	"github.com/numtide/treefmt/cmd/format"
-	_init "github.com/numtide/treefmt/cmd/init"
-	"github.com/numtide/treefmt/config"
-	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/v2/build"
+	"github.com/numtide/treefmt/v2/cmd/format"
+	_init "github.com/numtide/treefmt/v2/cmd/init"
+	"github.com/numtide/treefmt/v2/config"
+	"github.com/numtide/treefmt/v2/stats"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

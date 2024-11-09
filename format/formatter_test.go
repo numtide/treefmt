@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/numtide/treefmt/config"
-	"github.com/numtide/treefmt/stats"
-	"github.com/numtide/treefmt/test"
+	"github.com/numtide/treefmt/v2/config"
+	"github.com/numtide/treefmt/v2/stats"
+	"github.com/numtide/treefmt/v2/test"
 	"github.com/stretchr/testify/require"
 )
 

@@ -13,8 +13,8 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gobwas/glob"
-	"github.com/numtide/treefmt/config"
-	"github.com/numtide/treefmt/walk"
+	"github.com/numtide/treefmt/v2/config"
+	"github.com/numtide/treefmt/v2/walk"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 )

@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/numtide/treefmt/stats"
+	"github.com/numtide/treefmt/v2/stats"
 	bolt "go.etcd.io/bbolt"
 )
 
