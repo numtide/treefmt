@@ -27,7 +27,7 @@ Formatting requires less effort with a universal formatter that supports multipl
 
 `treefmt` runs all your formatters with one command. It’s easy to configure and fast to execute.
 
-![Treefmt Init](./docs/public/init.gif)
+![Treefmt Init](./docs/content/assets/images/init.gif)
 
 Its main features are:
 
@@ -112,7 +112,7 @@ formatters.
 
 ## Compatibility
 
-`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/formatter-spec.md).
+`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/content/reference/formatter-spec.md).
 
 For instance, you can go for:
 
