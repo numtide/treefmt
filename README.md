@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="docs/public/logo.svg" alt="logo" width="200">
+  <img src="docs/content/assets/images/logo.svg" alt="logo" width="200">
   <br>
   treefmt — one CLI to format your repo
   <br>
@@ -144,7 +144,7 @@ This project is still pretty new. Down the line we also want to add support for:
 
 ## Contributing
 
-All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](docs/contributing.md)
+All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/content/contributing/code.md)
 guidelines for more information.
 
 ## Moving from Rust To Go
