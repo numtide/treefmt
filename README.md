@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="docs/public/logo.svg" alt="logo" width="200">
+  <img src="docs/content/assets/images/logo.svg" alt="logo" width="200">
   <br>
   treefmt — one CLI to format your repo
   <br>
@@ -27,7 +27,7 @@ Formatting requires less effort with a universal formatter that supports multipl
 
 `treefmt` runs all your formatters with one command. It’s easy to configure and fast to execute.
 
-![Treefmt Init](./docs/public/init.gif)
+![Treefmt Init](./docs/content/assets/images/init.gif)
 
 Its main features are:
 
@@ -112,7 +112,7 @@ formatters.
 
 ## Compatibility
 
-`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/formatter-spec.md).
+`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/content/reference/formatter-spec.md).
 
 For instance, you can go for:
 
@@ -144,7 +144,7 @@ This project is still pretty new. Down the line we also want to add support for:
 
 ## Contributing
 
-All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](docs/contributing.md)
+All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/content/contributing/code.md)
 guidelines for more information.
 
 ## Moving from Rust To Go
