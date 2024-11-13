@@ -1,15 +1,21 @@
-<h1 align="center">
-  <br>
-  <img src="docs/content/assets/images/logo.svg" alt="logo" width="200">
-  <br>
-  treefmt — one CLI to format your repo
-  <br>
-  <br>
-</h1>
+<div align="center">
 
-[![Support room on Matrix](https://img.shields.io/matrix/treefmt:numtide.com.svg?label=%23treefmt%3Anumtide.com&logo=matrix&server_fqdn=matrix.numtide.com)](https://matrix.to/#/#treefmt:numtide.com)
+# treefmt
 
-**Status: beta**
+<img src="docs/content/assets/images/logo.svg" height="150"/>
+
+**One CLI to format your repo**
+
+*A <a href="https://numtide.com/">numtide</a> project.*
+
+<p>
+<a href="https://github.com/numtide/treefmt/actions/workflows/golangci-lint.yml"><img src="https://github.com/numtide/treefmt/actions/workflows/golangci-lint.yml/badge.svg"/></a>
+<a href="https://github.com/numtide/treefmt/actions/workflows/release.yml"><img src="https://github.com/numtide/treefmt/actions/workflows/release.yml/badge.svg"/></a>
+<img alt="Static Badge" src="https://img.shields.io/badge/status-beta-yellow">
+<a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
+</p>
+
+</div>
 
 `treefmt` streamlines the process of applying formatters to your project, making it a breeze with just one command line.
 
