@@ -9,7 +9,6 @@
 *A <a href="https://numtide.com/">numtide</a> project.*
 
 <p>
-<a href="https://github.com/numtide/treefmt/actions/workflows/golangci-lint.yml"><img src="https://github.com/numtide/treefmt/actions/workflows/golangci-lint.yml/badge.svg"/></a>
 <a href="https://github.com/numtide/treefmt/actions/workflows/release.yml"><img src="https://github.com/numtide/treefmt/actions/workflows/release.yml/badge.svg"/></a>
 <img alt="Static Badge" src="https://img.shields.io/badge/status-beta-yellow">
 <a href="https://app.element.io/#/room/#home:numtide.com"><img src="https://img.shields.io/badge/Support-%23numtide-blue"/></a>
