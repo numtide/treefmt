@@ -152,27 +152,6 @@ This project is still pretty new. Down the line we also want to add support for:
 All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/content/contributing/code.md)
 guidelines for more information.
 
-## Moving from Rust To Go
-
-You may be familiar with [Version 1], which is written in [Rust]. So, why re-write it in [Go]?
-
-Ultimately, `treefmt` is spending most of it's time shelling out calls to the underlying formatters. This process is
-just as fast/performant in Go as it is in Rust.
-
-The remaining tasks are processing some cli args and parsing a config file. Do we really need something as _heavy duty_
-as Rust for that?
-
-Despite all this, you can make good, sane arguments for continuing with [Version 1] in Rust instead of a re-write.
-So here's a _bad argument_.
-
-[Brian] wanted to improve performance by moving away from a [Toml] cache file, introduce pipelines for applying multiple
-formatters against the same file set, and add an extensible approach for how `treefmt` walks file systems. He knows Go
-much better than Rust.
-
-[zimbatm] thought it was a good idea too.
-
-So here we are :shrug:.
-
 ## Commercial support
 
 Looking for help or customization?
