@@ -63,8 +63,22 @@ in
       git config --global user.name "Treefmt Test"
     '';
 
-    passthru.tests = {
-      golangci-lint = perSystem.self.treefmt.overrideAttrs (old: {
+    passthru.tests = let
+      inherit (perSystem.self) treefmt;
+    in {
+      coverage = lib.optionalAttrs pkgs.stdenv.isx86_64 (treefmt.overrideAttrs (old: {
+        nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.gcc];
+        CGO_ENABLED = 1;
+        buildPhase = ''
+          HOME=$TMPDIR
+          go test -race -covermode=atomic -coverprofile=coverage.out -v ./...
+        '';
+        installPhase = ''
+          mv coverage.out $out
+        '';
+      }));
+
+      golangci-lint = treefmt.overrideAttrs (old: {
         nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.golangci-lint];
         buildPhase = ''
           HOME=$TMPDIR

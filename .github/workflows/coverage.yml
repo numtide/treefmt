@@ -1,0 +1,26 @@
+name: Code Coverage
+
+on: [push]
+
+jobs:
+    coverage:
+        runs-on: "ubuntu-20.04"
+        name: Coverage
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Install Nix
+              uses: cachix/install-nix-action@v30
+              with:
+                  extra_nix_config: |
+                      accept-flake-config = true
+                      experimental-features = nix-command flakes
+            - name: Run coverage
+              run: nix build .#treefmt.tests.coverage
+            - name: Upload coverage
+              uses: coverallsapp/github-action@v2
+              with:
+                  github-token: ${{ secrets.github_token }}
+                  file: result
+                  format: golang
