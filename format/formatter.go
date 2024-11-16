@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ func (f *Formatter) Hash(h hash.Hash) error {
 	// if options change, the outcome of applying the formatter might be different
 	h.Write([]byte(strings.Join(f.config.Options, " ")))
 	// if priority changes, the outcome of applying a sequence of formatters might be different
-	h.Write([]byte(fmt.Sprintf("%d", f.config.Priority)))
+	h.Write([]byte(strconv.Itoa(f.config.Priority)))
 
 	// stat the formatter's executable
 	info, err := os.Lstat(f.executable)
@@ -163,7 +164,7 @@ func newFormatter(
 	if cfg.Priority > 0 {
 		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s[%d]", name, cfg.Priority))
 	} else {
-		f.log = log.WithPrefix(fmt.Sprintf("formatter | %s", name))
+		f.log = log.WithPrefix("formatter | " + name)
 	}
 
 	// check there is at least one include

@@ -2,6 +2,7 @@ package walk
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +26,7 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 	}
 
 	// read stdin into a temporary file with the same file extension
-	pattern := fmt.Sprintf("*%s", filepath.Ext(s.path))
+	pattern := "*" + filepath.Ext(s.path)
 
 	file, err := os.CreateTemp(s.root, pattern)
 	if err != nil {
@@ -34,7 +35,7 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 	defer file.Close()
 
 	if _, err = io.Copy(file, s.input); err != nil {
-		return 0, fmt.Errorf("failed to copy stdin into a temporary file")
+		return 0, errors.New("failed to copy stdin into a temporary file")
 	}
 
 	info, err := file.Stat()

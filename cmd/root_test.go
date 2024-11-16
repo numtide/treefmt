@@ -80,7 +80,7 @@ func TestOnUnmatched(t *testing.T) {
 	// should exit with error when using fatal
 	t.Run("fatal", func(t *testing.T) {
 		errorFn := func(err error) {
-			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", expectedPaths[0]))
+			as.ErrorContains(err, "no formatter for path: "+expectedPaths[0])
 		}
 
 		treefmt(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))

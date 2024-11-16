@@ -32,7 +32,7 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 
 	// create out root command
 	cmd := &cobra.Command{
-		Use:     fmt.Sprintf("%s <paths...>", build.Name),
+		Use:     build.Name + " <paths...>",
 		Short:   "One CLI to format your repo",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {

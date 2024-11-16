@@ -123,7 +123,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	if walkType == walk.Stdin && len(paths) != 1 {
 		// check we have only received one path arg which we use for the file extension / matching to formatters
-		return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
 	// checks all paths are contained within the tree root and exist
