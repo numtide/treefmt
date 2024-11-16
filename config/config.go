@@ -14,20 +14,20 @@ import (
 // Config is used to represent the list of configured Formatters.
 type Config struct {
 	AllowMissingFormatter bool     `mapstructure:"allow-missing-formatter" toml:"allow-missing-formatter,omitempty"`
-	CI                    bool     `mapstructure:"ci" toml:"-"`          // not allowed in config
-	ClearCache            bool     `mapstructure:"clear-cache" toml:"-"` // not allowed in config
-	CPUProfile            string   `mapstructure:"cpu-profile" toml:"cpu-profile,omitempty"`
-	Excludes              []string `mapstructure:"excludes" toml:"excludes,omitempty"`
-	FailOnChange          bool     `mapstructure:"fail-on-change" toml:"fail-on-change,omitempty"`
-	Formatters            []string `mapstructure:"formatters" toml:"formatters,omitempty"`
-	NoCache               bool     `mapstructure:"no-cache" toml:"-"` // not allowed in config
-	OnUnmatched           string   `mapstructure:"on-unmatched" toml:"on-unmatched,omitempty"`
-	TreeRoot              string   `mapstructure:"tree-root" toml:"tree-root,omitempty"`
-	TreeRootFile          string   `mapstructure:"tree-root-file" toml:"tree-root-file,omitempty"`
-	Verbose               uint8    `mapstructure:"verbose" toml:"verbose,omitempty"`
-	Walk                  string   `mapstructure:"walk" toml:"walk,omitempty"`
-	WorkingDirectory      string   `mapstructure:"working-dir" toml:"-"`
-	Stdin                 bool     `mapstructure:"stdin" toml:"-"` // not allowed in config
+	CI                    bool     `mapstructure:"ci"                      toml:"-"` // not allowed in config
+	ClearCache            bool     `mapstructure:"clear-cache"             toml:"-"` // not allowed in config
+	CPUProfile            string   `mapstructure:"cpu-profile"             toml:"cpu-profile,omitempty"`
+	Excludes              []string `mapstructure:"excludes"                toml:"excludes,omitempty"`
+	FailOnChange          bool     `mapstructure:"fail-on-change"          toml:"fail-on-change,omitempty"`
+	Formatters            []string `mapstructure:"formatters"              toml:"formatters,omitempty"`
+	NoCache               bool     `mapstructure:"no-cache"                toml:"-"` // not allowed in config
+	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
+	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
+	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
+	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
+	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
+	WorkingDirectory      string   `mapstructure:"working-dir"             toml:"-"`
+	Stdin                 bool     `mapstructure:"stdin"                   toml:"-"` // not allowed in config
 
 	FormatterConfigs map[string]*Formatter `mapstructure:"formatter" toml:"formatter,omitempty"`
 

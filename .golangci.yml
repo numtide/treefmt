@@ -29,6 +29,7 @@ linters:
         - revive
         - rowserrcheck
         - stylecheck
+        - tagalign
         - tagliatelle
         - tenv
         - testpackage
