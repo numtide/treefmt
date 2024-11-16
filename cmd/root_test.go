@@ -718,6 +718,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	})
 
 	execute := func(t *testing.T, configFile string, env bool) {
+		t.Helper()
 		t.Run(configFile, func(t *testing.T) {
 			// capture current cwd, so we can replace it after the test is finished
 			cwd, err := os.Getwd()
@@ -1839,6 +1840,8 @@ func withConfigFunc(path string, fn func() *config.Config) option {
 }
 
 func withStats(t *testing.T, expected map[stats.Type]int) option {
+	t.Helper()
+
 	return func(o *options) {
 		o.assertStats = func(s *stats.Stats) {
 			for k, v := range expected {
@@ -1855,6 +1858,8 @@ func withError(fn func(error)) option {
 }
 
 func withNoError(t *testing.T) option {
+	t.Helper()
+
 	return func(o *options) {
 		o.assertError = func(err error) {
 			require.NoError(t, err)

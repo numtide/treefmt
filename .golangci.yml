@@ -37,6 +37,7 @@ linters:
         - tenv
         - testifylint
         - testpackage
+        - thelper
         - unconvert
         - unparam
         - wastedassign
