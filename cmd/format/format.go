@@ -204,7 +204,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	if formatErr != nil {
 		// return an error if any formatting failures were detected
-		return formatErr
+		return formatErr //nolint:wrapcheck
 	} else if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
 		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
 		return ErrFailOnChange

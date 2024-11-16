@@ -45,7 +45,7 @@ func (f *FilesystemReader) process() error {
 	}
 
 	// walk the path
-	return filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
 		// return errors immediately
 		if err != nil {
 			return err
@@ -75,6 +75,11 @@ func (f *FilesystemReader) process() error {
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed to walk path %s: %w", path, err)
+	}
+
+	return nil
 }
 
 // Read populates the provided files array with as many files as are available until the provided context is cancelled.
@@ -91,7 +96,12 @@ LOOP:
 		select {
 		// exit early if the context was cancelled
 		case <-ctx.Done():
-			return n, ctx.Err()
+			err = ctx.Err()
+			if err == nil {
+				return n, fmt.Errorf("context cancelled: %w", ctx.Err())
+			}
+
+			return n, nil
 
 		// read the next file from the channel
 		case file, ok := <-f.filesCh:
@@ -113,7 +123,12 @@ LOOP:
 
 // Close waits for all filesystem processing to complete.
 func (f *FilesystemReader) Close() error {
-	return f.eg.Wait()
+	err := f.eg.Wait()
+	if err != nil {
+		return fmt.Errorf("failed to wait for processing to complete: %w", err)
+	}
+
+	return nil
 }
 
 // NewFilesystemReader creates a new instance of FilesystemReader to traverse and read files from the specified paths

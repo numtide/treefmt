@@ -56,7 +56,12 @@ LOOP:
 		select {
 		// exit early if the context was cancelled
 		case <-ctx.Done():
-			return n, ctx.Err()
+			err = ctx.Err()
+			if err == nil {
+				return n, fmt.Errorf("context cancelled: %w", ctx.Err())
+			}
+
+			return n, nil
 
 		default:
 			// read the next file
@@ -96,7 +101,12 @@ LOOP:
 }
 
 func (g *GitReader) Close() error {
-	return g.eg.Wait()
+	err := g.eg.Wait()
+	if err != nil {
+		return fmt.Errorf("failed to wait for git command to complete: %w", err)
+	}
+
+	return nil
 }
 
 func NewGitReader(

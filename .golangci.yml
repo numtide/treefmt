@@ -39,4 +39,5 @@ linters:
         - unparam
         - wastedassign
         - whitespace
+        - wrapcheck
         - wsl

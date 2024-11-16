@@ -33,14 +33,17 @@ func Open(root string) (*bolt.DB, error) {
 	// open db
 	db, err := bolt.Open(path, 0o600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open cache db: %w", err)
 	}
 
 	// ensure bucket exist
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketPaths))
+		if err != nil {
+			return fmt.Errorf("failed to create bucket: %w", err)
+		}
 
-		return err
+		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bucket: %w", err)
@@ -65,7 +68,17 @@ func deleteAll(bucket *bolt.Bucket) error {
 }
 
 func Clear(db *bolt.DB) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		return deleteAll(PathsBucket(tx))
+	err := db.Update(func(tx *bolt.Tx) error {
+		err := deleteAll(PathsBucket(tx))
+		if err != nil {
+			return fmt.Errorf("failed to clear cache: %w", err)
+		}
+
+		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed to clear cache: %w", err)
+	}
+
+	return nil
 }

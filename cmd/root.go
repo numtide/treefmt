@@ -91,7 +91,12 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 	if init, err := flags.GetBool("init"); err != nil {
 		return fmt.Errorf("failed to read init flag: %w", err)
 	} else if init {
-		return _init.Run()
+		err := _init.Run()
+		if err != nil {
+			return fmt.Errorf("failed to run init command: %w", err)
+		}
+
+		return nil
 	}
 
 	// otherwise attempt to load the config file
@@ -149,5 +154,5 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 	}
 
 	// format
-	return format.Run(v, statz, cmd, args)
+	return format.Run(v, statz, cmd, args) //nolint:wrapcheck
 }
