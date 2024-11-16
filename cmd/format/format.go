@@ -136,7 +136,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
 		if err != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %s", cfg.TreeRoot, absolutePath, err)
+			return fmt.Errorf("error computing relative path from %s to %s: %w", cfg.TreeRoot, absolutePath, err)
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
