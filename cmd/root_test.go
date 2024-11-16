@@ -1075,7 +1075,7 @@ func TestCacheBusting(t *testing.T) {
 		formatter, err := os.OpenFile(scriptPath, os.O_WRONLY|os.O_APPEND, 0o755)
 		as.NoError(err, "failed to open elm formatter")
 
-		_, err = formatter.Write([]byte(" ")) // add some whitespace
+		_, err = formatter.WriteString(" ") // add some whitespace
 		as.NoError(err, "failed to append to elm formatter")
 		as.NoError(formatter.Close(), "failed to close elm formatter")
 

@@ -16,6 +16,7 @@ linters:
         - ireturn
         - lll
         - makezero
+        - mirror
         - misspell
         - nakedret
         - nestif
