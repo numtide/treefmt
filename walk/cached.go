@@ -99,7 +99,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		n, err = c.delegate.Read(ctx, files)
 		c.log.Debugf("read %d files from delegate", n)
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			file := files[i]
 
 			file.CachedFormatSignature = bucket.Get([]byte(file.RelPath))
