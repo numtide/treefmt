@@ -670,7 +670,7 @@ func TestSampleConfigFile(t *testing.T) {
 	as.True(ok, "shfmt formatter not found")
 	as.Equal("shfmt", shfmt.Command)
 	as.Equal(2, shfmt.Priority)
-	as.Equal(shfmt.Options, []string{"-i", "2", "-s", "-w"})
+	as.Equal([]string{"-i", "2", "-s", "-w"}, shfmt.Options)
 	as.Equal([]string{"*.sh"}, shfmt.Includes)
 	as.Nil(shfmt.Excludes)
 

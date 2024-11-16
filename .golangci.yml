@@ -35,6 +35,7 @@ linters:
         - tagalign
         - tagliatelle
         - tenv
+        - testifylint
         - testpackage
         - unconvert
         - unparam
