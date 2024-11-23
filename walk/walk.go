@@ -60,7 +60,7 @@ func formatSignature(formattersSig []byte, info fs.FileInfo) []byte {
 // outcome.
 func (f *File) FormatSignature(formattersSig []byte) ([]byte, error) {
 	if f.Info == nil {
-		return nil, fmt.Errorf("file has no info")
+		return nil, errors.New("file has no info")
 	}
 
 	return formatSignature(formattersSig, f.Info), nil
@@ -78,10 +78,10 @@ func (f *File) NewFormatSignature() ([]byte, error) {
 
 	if info == nil {
 		// ensure info is not nil
-		return nil, fmt.Errorf("file has no info")
+		return nil, errors.New("file has no info")
 	} else if f.FormattersSignature == nil {
 		// ensure we have a formatters signature
-		return nil, fmt.Errorf("file has no formatters signature")
+		return nil, errors.New("file has no formatters signature")
 	}
 
 	return formatSignature(f.FormattersSignature, info), nil
@@ -210,7 +210,7 @@ func NewReader(
 
 		return reader, err
 	case Stdin:
-		return nil, fmt.Errorf("stdin walk type is not supported")
+		return nil, errors.New("stdin walk type is not supported")
 	case Filesystem:
 		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Git:
@@ -251,7 +251,7 @@ func NewCompositeReader(
 	// check we have received 1 path for the stdin walk type
 	if walkType == Stdin {
 		if len(paths) != 1 {
-			return nil, fmt.Errorf("stdin walk requires exactly one path")
+			return nil, errors.New("stdin walk requires exactly one path")
 		}
 
 		return NewStdinReader(root, paths[0], statz), nil

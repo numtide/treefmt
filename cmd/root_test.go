@@ -80,7 +80,7 @@ func TestOnUnmatched(t *testing.T) {
 	// should exit with error when using fatal
 	t.Run("fatal", func(t *testing.T) {
 		errorFn := func(err error) {
-			as.ErrorContains(err, fmt.Sprintf("no formatter for path: %s", expectedPaths[0]))
+			as.ErrorContains(err, "no formatter for path: "+expectedPaths[0])
 		}
 
 		treefmt(t, withArgs("--on-unmatched", "fatal"), withError(errorFn))
@@ -718,6 +718,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 	})
 
 	execute := func(t *testing.T, configFile string, env bool) {
+		t.Helper()
 		t.Run(configFile, func(t *testing.T) {
 			// capture current cwd, so we can replace it after the test is finished
 			cwd, err := os.Getwd()
@@ -1075,7 +1076,7 @@ func TestCacheBusting(t *testing.T) {
 		formatter, err := os.OpenFile(scriptPath, os.O_WRONLY|os.O_APPEND, 0o755)
 		as.NoError(err, "failed to open elm formatter")
 
-		_, err = formatter.Write([]byte(" ")) // add some whitespace
+		_, err = formatter.WriteString(" ") // add some whitespace
 		as.NoError(err, "failed to append to elm formatter")
 		as.NoError(formatter.Close(), "failed to close elm formatter")
 
@@ -1839,6 +1840,8 @@ func withConfigFunc(path string, fn func() *config.Config) option {
 }
 
 func withStats(t *testing.T, expected map[stats.Type]int) option {
+	t.Helper()
+
 	return func(o *options) {
 		o.assertStats = func(s *stats.Stats) {
 			for k, v := range expected {
@@ -1855,6 +1858,8 @@ func withError(fn func(error)) option {
 }
 
 func withNoError(t *testing.T) option {
+	t.Helper()
+
 	return func(o *options) {
 		o.assertError = func(err error) {
 			require.NoError(t, err)

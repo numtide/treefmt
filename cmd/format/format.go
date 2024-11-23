@@ -123,7 +123,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	if walkType == walk.Stdin && len(paths) != 1 {
 		// check we have only received one path arg which we use for the file extension / matching to formatters
-		return fmt.Errorf("exactly one path should be specified when using the --stdin flag")
+		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
 	// checks all paths are contained within the tree root and exist
@@ -136,7 +136,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
 		if err != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %s", cfg.TreeRoot, absolutePath, err)
+			return fmt.Errorf("error computing relative path from %s to %s: %w", cfg.TreeRoot, absolutePath, err)
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
@@ -204,7 +204,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	if formatErr != nil {
 		// return an error if any formatting failures were detected
-		return formatErr
+		return formatErr //nolint:wrapcheck
 	} else if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
 		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
 		return ErrFailOnChange

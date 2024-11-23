@@ -29,6 +29,7 @@ func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 }
 
 func TempExamples(t *testing.T) string {
+	t.Helper()
 	tempDir := t.TempDir()
 	TempExamplesInDir(t, tempDir)
 
@@ -36,6 +37,7 @@ func TempExamples(t *testing.T) string {
 }
 
 func TempExamplesInDir(t *testing.T, dir string) {
+	t.Helper()
 	require.NoError(t, cp.Copy("../test/examples", dir), "failed to copy test data to dir")
 
 	// we have second precision mod time tracking, so we wait a second before returning, so we don't trigger false

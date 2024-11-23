@@ -1,39 +1,23 @@
 # taken from https://github.com/nix-community/go-nix/blob/main/.golangci.yml
 linters:
-    enable:
-        - errname
-        - exhaustive
-        - gci
-        - gochecknoglobals
-        - gochecknoinits
-        - goconst
-        - godot
-        - gofumpt
-        - goheader
-        - goimports
-        - gosec
-        - importas
-        - ireturn
-        - lll
-        - makezero
-        - misspell
-        - nakedret
-        - nestif
-        - nilerr
-        - nilnil
-        - nlreturn
-        - noctx
-        - nolintlint
-        - prealloc
-        - predeclared
-        - revive
-        - rowserrcheck
-        - stylecheck
-        - tagliatelle
-        - tenv
-        - testpackage
-        - unconvert
-        - unparam
-        - wastedassign
-        - whitespace
-        - wsl
+    enable-all: true
+    disable:
+        - depguard
+        - execinquery
+        - exhaustruct
+        - exportloopref
+        - funlen
+        - godox
+        - gomnd
+        - mnd
+        - varnamelen
+        - forbidigo
+        - gocognit
+        - gocyclo
+        - cyclop
+        - err113
+        - maintidx
+        # would be nice to have but too many tests depend on environment variables, which is not allowed for t.Parallel()
+        - paralleltest
+        # would be also nice to enable because I also found some cases confusing
+        - nonamedreturns

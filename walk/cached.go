@@ -99,7 +99,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		n, err = c.delegate.Read(ctx, files)
 		c.log.Debugf("read %d files from delegate", n)
 
-		for i := 0; i < n; i++ {
+		for i := range n {
 			file := files[i]
 
 			file.CachedFormatSignature = bucket.Get([]byte(file.RelPath))
@@ -115,7 +115,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		}
 
 		if errors.Is(err, io.EOF) {
-			return err
+			return err //nolint:wrapcheck
 		} else if err != nil {
 			return fmt.Errorf("failed to read files from delegate: %w", err)
 		}
@@ -123,7 +123,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		return nil
 	})
 
-	return n, err
+	return n, err //nolint:wrapcheck
 }
 
 // Close waits for any processing to complete.
@@ -132,7 +132,12 @@ func (c *CachedReader) Close() error {
 	close(c.updateCh)
 
 	// wait for any pending releases to be processed
-	return c.eg.Wait()
+	err := c.eg.Wait()
+	if err != nil {
+		return fmt.Errorf("failed to wait for processing to complete: %w", err)
+	}
+
+	return nil
 }
 
 // NewCachedReader creates a cache Reader instance, backed by a bolt DB and delegating reads to delegate.
