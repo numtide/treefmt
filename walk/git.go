@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -50,6 +51,21 @@ func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) 
 		g.scanner = bufio.NewScanner(r)
 	}
 
+	nextLine := func() (string, error) {
+		line := g.scanner.Text()
+
+		if len(line) == 0 || line[0] != '"' {
+			return line, nil
+		}
+
+		unquoted, err := strconv.Unquote(line)
+		if err != nil {
+			return "", fmt.Errorf("failed to unquote line %s: %w", line, err)
+		}
+
+		return unquoted, nil
+	}
+
 LOOP:
 
 	for n < len(files) {
@@ -66,7 +82,12 @@ LOOP:
 		default:
 			// read the next file
 			if g.scanner.Scan() {
-				path := filepath.Join(g.root, g.path, g.scanner.Text())
+				entry, err := nextLine()
+				if err != nil {
+					return n, err
+				}
+
+				path := filepath.Join(g.root, g.path, entry)
 
 				g.log.Debugf("processing file: %s", path)
 
