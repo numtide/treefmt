@@ -1586,6 +1586,10 @@ Defaults to all configured formatters.</p>
 <h3 id="on-unmatched"><code>on-unmatched</code></h3>
 <p>Log paths that did not match any formatters at the specified log level.
 Possible values are <code>&lt;debug|info|warn|error|fatal&gt;</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you select <code>fatal</code>, the process will exit immediately with a non-zero exit.</p>
+</div>
 <div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><input id="__tabbed_10_3" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Flag</label><label for="__tabbed_10_2">Env</label><label for="__tabbed_10_3">Config</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
