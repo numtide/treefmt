@@ -154,7 +154,7 @@ func (s *scheduler) schedule(ctx context.Context, key batchKey, batch []*walk.Fi
 		hasErrors := len(formatErrors) > 0
 
 		// update overall error tracking
-		s.formatError.Store(hasErrors)
+		s.formatError.CompareAndSwap(false, hasErrors)
 
 		if !hasErrors {
 			// record that the file was formatted
