@@ -183,6 +183,12 @@ func TestAllowMissingFormatter(t *testing.T) {
 		treefmt(t,
 			withArgs("--allow-missing-formatter"),
 			withNoError(t),
+			withStats(t, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   0,
+				stats.Formatted: 0,
+				stats.Changed:   0,
+			}),
 		)
 	})
 
@@ -1346,7 +1352,7 @@ func TestGit(t *testing.T) {
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 82,
 			stats.Matched:   82,
-			stats.Formatted: 51, // the echo formatter should only be applied to the new files
+			stats.Formatted: 50, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)

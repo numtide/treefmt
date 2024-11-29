@@ -105,7 +105,7 @@ LOOP:
 
 				files[n] = &File{
 					Path:    path,
-					RelPath: filepath.Join(g.path, g.scanner.Text()),
+					RelPath: filepath.Join(g.path, entry),
 					Info:    info,
 				}
 				n++
