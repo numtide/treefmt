@@ -155,7 +155,7 @@ func newFormatter(
 	// test if the formatter is available
 	executable, err := interp.LookPathDir(treeRoot, env, cfg.Command)
 	if err != nil {
-		return nil, ErrCommandNotFound
+		return nil, fmt.Errorf("%w: error looking up '%s'", ErrCommandNotFound, cfg.Command)
 	}
 
 	f.executable = executable
