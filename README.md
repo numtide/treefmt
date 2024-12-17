@@ -21,13 +21,15 @@ _A <a href="https://numtide.com/">numtide</a> project._
 
 ## Motivation
 
-It’s common to format code according to the project’s standards before making contributions to any project. This task
-seems trivial at first sight — you can set up the required language formatter in your IDE.
+Modern code repositories are rarely written in a single language. They often contain a mix of languages, each with its own formatting requirements.
 
-However, contributing to multiple projects requires more effort: you must change your formatter configurations each
-time you switch between projects or call them manually.
+While working for our customers, we noticed that projects each tended to re-implement the same formatter multiplexing logic. A script that invokes all the formatters.
 
-Formatting requires less effort with a universal formatter that supports multiple languages but is still project-specific.
+What if that script was a single command?
+
+What if that single command would handle all the formatters in parallel? And only format files that have changed since the previous run?
+
+That's what treefmt is about.
 
 ## About treefmt
 
