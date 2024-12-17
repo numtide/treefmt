@@ -91,7 +91,7 @@ in
     };
 
     meta = with lib; {
-      description = "treefmt: one CLI to format your repo";
+      description = "treefmt: the formatter multiplexer";
       homepage = "https://github.com/numtide/treefmt";
       license = licenses.mit;
       mainProgram = "treefmt";

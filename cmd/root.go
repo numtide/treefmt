@@ -33,7 +33,7 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 	// create out root command
 	cmd := &cobra.Command{
 		Use:     build.Name + " <paths...>",
-		Short:   "One CLI to format your repo",
+		Short:   "The formatter multiplexer",
 		Version: build.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(v, &statz, cmd, args)

@@ -4,7 +4,7 @@
 
 <img src="docs/content/assets/images/logo.svg" height="150"/>
 
-**One CLI to format your repo**
+**The formatter multiplexer**
 
 _A <a href="https://numtide.com/">numtide</a> project._
 
