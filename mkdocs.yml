@@ -2,7 +2,7 @@
 site_name: Treefmt
 site_url: https://treefmt.com
 site_description: >-
-  The formatter multiplexer.
+    The formatter multiplexer.
 
 # Repository
 repo_name: numtide/treefmt
