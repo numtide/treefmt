@@ -131,7 +131,7 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		return fmt.Errorf("failed to find treefmt config file: %w", err)
 	}
 
-	log.Infof("using config file: %s", configFile)
+	log.Debugf("using config file: %s", configFile)
 
 	// read in the config
 	v.SetConfigFile(configFile)
