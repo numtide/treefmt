@@ -131,6 +131,33 @@ func TestOnUnmatched(t *testing.T) {
 	})
 }
 
+func TestQuiet(t *testing.T) {
+	as := require.New(t)
+	tempDir := test.TempExamples(t)
+
+	test.ChangeWorkDir(t, tempDir)
+
+	// allow missing formatter
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
+
+	noOutput := func(out []byte) {
+		as.Empty(out)
+	}
+
+	treefmt(t, withArgs("-q"), withNoError(t), withStdout(noOutput), withStderr(noOutput))
+	treefmt(t, withArgs("--quiet"), withNoError(t), withStdout(noOutput), withStderr(noOutput))
+
+	t.Setenv("TREEFMT_QUIET", "true")
+	treefmt(t, withNoError(t), withStdout(noOutput), withStderr(noOutput))
+
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "false")
+
+	// check it doesn't suppress errors
+	treefmt(t, withError(func(err error) {
+		as.ErrorContains(err, "error looking up 'foo-fmt'")
+	}))
+}
+
 func TestCpuProfile(t *testing.T) {
 	as := require.New(t)
 	tempDir := test.TempExamples(t)

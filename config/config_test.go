@@ -323,6 +323,36 @@ func TestNoCache(t *testing.T) {
 	checkValue(true)
 }
 
+func TestQuiet(t *testing.T) {
+	as := require.New(t)
+
+	cfg := &config.Config{}
+	v, flags := newViper(t)
+
+	checkValue := func(expected bool) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
+			as.Equal(expected, cfg.Quiet)
+		})
+	}
+
+	// default with no flag, env or config
+	checkValue(false)
+
+	// set config value and check that it has no effect
+	// you are not allowed to set no-cache in config
+	cfg.Quiet = true
+
+	checkValue(false)
+
+	// env override
+	t.Setenv("TREEFMT_QUIET", "false")
+	checkValue(false)
+
+	// flag override
+	as.NoError(flags.Set("quiet", "true"))
+	checkValue(true)
+}
+
 func TestOnUnmatched(t *testing.T) {
 	as := require.New(t)
 

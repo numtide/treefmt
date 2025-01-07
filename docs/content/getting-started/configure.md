@@ -254,6 +254,22 @@ Possible values are `<debug|info|warn|error|fatal>`.
     on-unmatched = "debug"
     ```
 
+### `quiet`
+
+Suppress all output except for errors.
+
+=== "Flag"
+
+    ```console
+    treefmt --quiet
+    ```
+
+=== "Env"
+
+    ```console
+    TREEFMT_QUIET=true treefmt
+    ```
+
 ### `stdin`
 
 Format the context passed in via stdin.
