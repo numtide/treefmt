@@ -89,7 +89,7 @@ func SetFlags(fs *pflag.FlagSet) {
 		"Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)",
 	)
 	fs.StringP(
-		"on-unmatched", "u", "warn",
+		"on-unmatched", "u", "info",
 		"Log paths that did not match any formatters at the specified log level. Possible values are "+
 			"<debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED)",
 	)

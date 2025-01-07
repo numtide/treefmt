@@ -72,9 +72,9 @@ func TestOnUnmatched(t *testing.T) {
 		}
 	}
 
-	// default is WARN
+	// default is INFO
 	t.Run("default", func(t *testing.T) {
-		treefmt(t, withNoError(t), withStderr(checkOutput(log.WarnLevel)))
+		treefmt(t, withArgs("-v"), withNoError(t), withStderr(checkOutput(log.InfoLevel)))
 	})
 
 	// should exit with error when using fatal

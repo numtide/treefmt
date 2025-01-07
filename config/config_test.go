@@ -336,7 +336,7 @@ func TestOnUnmatched(t *testing.T) {
 	}
 
 	// default with no flag, env or config
-	checkValue("warn")
+	checkValue("info")
 
 	// set config value
 	cfg.OnUnmatched = "error"
