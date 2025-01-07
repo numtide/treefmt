@@ -60,8 +60,11 @@ schema = 3
     version = "v0.15.2"
     hash = "sha256-Eum/SpyytcNIchANPkG4bYGBgcezLgej7j/+6IhqoMU="
   [mod."github.com/otiai10/copy"]
-    version = "v1.14.0"
-    hash = "sha256-xsaL1ddkPS544y0Jv7u/INUALBYmYq29ddWvysLXk4A="
+    version = "v1.14.1"
+    hash = "sha256-8RR7u17SbYg9AeBXVHIv5ZMU+kHmOcx0rLUKyz6YtU0="
+  [mod."github.com/otiai10/mint"]
+    version = "v1.6.3"
+    hash = "sha256-/FT3dYP2+UiW/qe1pxQ7HiS8et4+KHGPIMhc+8mHvzw="
   [mod."github.com/pelletier/go-toml/v2"]
     version = "v2.2.2"
     hash = "sha256-ukxk1Cfm6cQW18g/aa19tLcUu5BnF7VmfAvrDHAOl6A="
