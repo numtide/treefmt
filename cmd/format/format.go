@@ -197,9 +197,9 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return fmt.Errorf("failed to close walker: %w", err)
 	}
 
-	// print stats to stdout, unless we are processing from stdin and therefore outputting the results to stdout
-	if !cfg.Stdin {
-		statz.Print()
+	// print stats to stderr
+	if !cfg.Quiet {
+		statz.PrintToStderr()
 	}
 
 	if formatErr != nil {
