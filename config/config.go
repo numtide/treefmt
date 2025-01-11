@@ -22,6 +22,7 @@ type Config struct {
 	Formatters            []string `mapstructure:"formatters"              toml:"formatters,omitempty"`
 	NoCache               bool     `mapstructure:"no-cache"                toml:"-"` // not allowed in config
 	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
+	Quiet                 bool     `mapstructure:"quiet"                   toml:"-"` // not allowed in config
 	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
 	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
@@ -89,7 +90,7 @@ func SetFlags(fs *pflag.FlagSet) {
 		"Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)",
 	)
 	fs.StringP(
-		"on-unmatched", "u", "warn",
+		"on-unmatched", "u", "info",
 		"Log paths that did not match any formatters at the specified log level. Possible values are "+
 			"<debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED)",
 	)
@@ -109,6 +110,9 @@ func SetFlags(fs *pflag.FlagSet) {
 	fs.CountP(
 		"verbose", "v",
 		"Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)",
+	)
+	fs.BoolP(
+		"quiet", "q", false, "Disable all logs except errors. (env $TREEFMT_QUIET)",
 	)
 	fs.String(
 		"walk", "auto",

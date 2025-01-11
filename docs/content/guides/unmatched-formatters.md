@@ -18,23 +18,28 @@ This helps you decide whether to add formatters for specific files or ignore the
 ## Customizing Notifications
 
 ### Reducing Log Verbosity
+
 If you find the unmatched file warnings too noisy, you can lower the logging level in your config:
 
 `treefmt.toml`:
+
 ```toml
 on-unmatched = "debug"
 ```
 
 To later find out what files are unmatched, you can override this setting via the command line:
+
 ```console
 $ treefmt --on-unmatched warn
 ```
 
 ### Enforcing Strict Matching
+
 Another stricter policy approach is to fail the run if any unmatched files are found.
 This can be paired with an `excludes` list to ignore specific files:
 
 `treefmt.toml`:
+
 ```toml
 # Fail if any unmatched files are found
 on-unmatched = "fatal"

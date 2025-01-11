@@ -72,9 +72,9 @@ func TestOnUnmatched(t *testing.T) {
 		}
 	}
 
-	// default is WARN
+	// default is INFO
 	t.Run("default", func(t *testing.T) {
-		treefmt(t, withNoError(t), withOutput(checkOutput(log.WarnLevel)))
+		treefmt(t, withArgs("-v"), withNoError(t), withStderr(checkOutput(log.InfoLevel)))
 	})
 
 	// should exit with error when using fatal
@@ -99,7 +99,7 @@ func TestOnUnmatched(t *testing.T) {
 			treefmt(t,
 				withArgs("-vv", "--on-unmatched", levelStr),
 				withNoError(t),
-				withOutput(checkOutput(level)),
+				withStderr(checkOutput(level)),
 			)
 
 			t.Setenv("TREEFMT_ON_UNMATCHED", levelStr)
@@ -107,7 +107,7 @@ func TestOnUnmatched(t *testing.T) {
 			treefmt(t,
 				withArgs("-vv"),
 				withNoError(t),
-				withOutput(checkOutput(level)),
+				withStderr(checkOutput(level)),
 			)
 		})
 	}
@@ -129,6 +129,33 @@ func TestOnUnmatched(t *testing.T) {
 
 		treefmt(t, withError(errorFn("bar")))
 	})
+}
+
+func TestQuiet(t *testing.T) {
+	as := require.New(t)
+	tempDir := test.TempExamples(t)
+
+	test.ChangeWorkDir(t, tempDir)
+
+	// allow missing formatter
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "true")
+
+	noOutput := func(out []byte) {
+		as.Empty(out)
+	}
+
+	treefmt(t, withArgs("-q"), withNoError(t), withStdout(noOutput), withStderr(noOutput))
+	treefmt(t, withArgs("--quiet"), withNoError(t), withStdout(noOutput), withStderr(noOutput))
+
+	t.Setenv("TREEFMT_QUIET", "true")
+	treefmt(t, withNoError(t), withStdout(noOutput), withStderr(noOutput))
+
+	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "false")
+
+	// check it doesn't suppress errors
+	treefmt(t, withError(func(err error) {
+		as.ErrorContains(err, "error looking up 'foo-fmt'")
+	}))
 }
 
 func TestCpuProfile(t *testing.T) {
@@ -1583,7 +1610,7 @@ func TestStdin(t *testing.T) {
 		withError(func(err error) {
 			as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
 		}),
-		withOutput(func(out []byte) {
+		withStderr(func(out []byte) {
 			as.Equal("Error: exactly one path should be specified when using the --stdin flag\n", string(out))
 		}),
 	)
@@ -1600,7 +1627,7 @@ func TestStdin(t *testing.T) {
 			stats.Formatted: 1,
 			stats.Changed:   1,
 		}),
-		withOutput(func(out []byte) {
+		withStdout(func(out []byte) {
 			as.Equal(`{ ...}: "hello"
 `, string(out))
 		}),
@@ -1616,7 +1643,7 @@ func TestStdin(t *testing.T) {
 		withError(func(err error) {
 			as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
 		}),
-		withOutput(func(out []byte) {
+		withStderr(func(out []byte) {
 			as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
 		}),
 	)
@@ -1639,7 +1666,7 @@ func TestStdin(t *testing.T) {
 			stats.Formatted: 1,
 			stats.Changed:   1,
 		}),
-		withOutput(func(out []byte) {
+		withStdout(func(out []byte) {
 			as.Equal(`| col1   | col2      |
 | ------ | --------- |
 | nice   | fits      |
@@ -1806,7 +1833,9 @@ type options struct {
 		value *config.Config
 	}
 
-	assertOut   func([]byte)
+	assertStdout func([]byte)
+	assertStderr func([]byte)
+
 	assertError func(error)
 	assertStats func(*stats.Stats)
 
@@ -1873,9 +1902,15 @@ func withNoError(t *testing.T) option {
 	}
 }
 
-func withOutput(fn func([]byte)) option {
+func withStdout(fn func([]byte)) option {
 	return func(o *options) {
-		o.assertOut = fn
+		o.assertStdout = fn
+	}
+}
+
+func withStderr(fn func([]byte)) option {
+	return func(o *options) {
+		o.assertStderr = fn
 	}
 }
 
@@ -1931,17 +1966,19 @@ func treefmt(
 	t.Logf("treefmt %s", strings.Join(args, " "))
 
 	tempDir := t.TempDir()
-	tempOut := test.TempFile(t, tempDir, "combined_output", nil)
+
+	tempStdout := test.TempFile(t, tempDir, "stdout", nil)
+	tempStderr := test.TempFile(t, tempDir, "stderr", nil)
 
 	// capture standard outputs before swapping them
 	stdout := os.Stdout
 	stderr := os.Stderr
 
 	// swap them temporarily
-	os.Stdout = tempOut
-	os.Stderr = tempOut
+	os.Stdout = tempStdout
+	os.Stderr = tempStderr
 
-	log.SetOutput(tempOut)
+	log.SetOutput(tempStdout)
 
 	defer func() {
 		// swap outputs back
@@ -1954,30 +1991,49 @@ func treefmt(
 	root, statz := cmd.NewRoot()
 
 	root.SetArgs(args)
-	root.SetOut(tempOut)
-	root.SetErr(tempOut)
+	root.SetOut(tempStdout)
+	root.SetErr(tempStderr)
 
 	// execute the command
 	cmdErr := root.Execute()
 
-	// reset and read the temporary output
-	if _, resetErr := tempOut.Seek(0, 0); resetErr != nil {
+	// reset and read the temporary outputs
+	if _, resetErr := tempStdout.Seek(0, 0); resetErr != nil {
 		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
 	}
 
-	out, readErr := io.ReadAll(tempOut)
+	if _, resetErr := tempStderr.Seek(0, 0); resetErr != nil {
+		t.Fatal(fmt.Errorf("failed to reset temp output for reading: %w", resetErr))
+	}
+
+	// read back stderr and validate
+	out, readErr := io.ReadAll(tempStderr)
 	if readErr != nil {
-		t.Fatal(fmt.Errorf("failed to read temp output: %w", readErr))
+		t.Fatal(fmt.Errorf("failed to read temp stderr: %w", readErr))
+	}
+
+	if opts.assertStderr != nil {
+		opts.assertStderr(out)
 	}
 
 	t.Log("\n" + string(out))
 
-	if opts.assertStats != nil {
-		opts.assertStats(statz)
+	// read back stdout and validate
+	out, readErr = io.ReadAll(tempStdout)
+	if readErr != nil {
+		t.Fatal(fmt.Errorf("failed to read temp stdout: %w", readErr))
 	}
 
-	if opts.assertOut != nil {
-		opts.assertOut(out)
+	t.Log("\n" + string(out))
+
+	if opts.assertStdout != nil {
+		opts.assertStdout(out)
+	}
+
+	// assert other properties
+
+	if opts.assertStats != nil {
+		opts.assertStats(statz)
 	}
 
 	if opts.assertError != nil {

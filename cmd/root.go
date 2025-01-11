@@ -131,7 +131,7 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		return fmt.Errorf("failed to find treefmt config file: %w", err)
 	}
 
-	log.Infof("using config file: %s", configFile)
+	log.Debugf("using config file: %s", configFile)
 
 	// read in the config
 	v.SetConfigFile(configFile)
@@ -144,13 +144,19 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 	log.SetOutput(os.Stderr)
 	log.SetReportTimestamp(false)
 
-	switch v.GetInt("verbose") {
-	case 0:
-		log.SetLevel(log.WarnLevel)
-	case 1:
-		log.SetLevel(log.InfoLevel)
-	default:
-		log.SetLevel(log.DebugLevel)
+	if v.GetBool("quiet") {
+		// if quiet, we only log errors
+		log.SetLevel(log.ErrorLevel)
+	} else {
+		// otherwise, the verbose flag controls the log level
+		switch v.GetInt("verbose") {
+		case 0:
+			log.SetLevel(log.WarnLevel)
+		case 1:
+			log.SetLevel(log.InfoLevel)
+		default:
+			log.SetLevel(log.DebugLevel)
+		}
 	}
 
 	// format

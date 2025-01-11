@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -34,7 +35,7 @@ func (s *Stats) Elapsed() time.Duration {
 	return time.Since(s.start)
 }
 
-func (s *Stats) Print() {
+func (s *Stats) PrintToStderr() {
 	components := []string{
 		"traversed %d files",
 		"emitted %d files for processing",
@@ -42,7 +43,8 @@ func (s *Stats) Print() {
 		"",
 	}
 
-	fmt.Printf(
+	_, _ = fmt.Fprintf(
+		os.Stderr,
 		strings.Join(components, "\n"),
 		s.Value(Traversed),
 		s.Value(Matched),
