@@ -332,6 +332,44 @@ func TestSpecifyingFormatters(t *testing.T) {
 			}),
 		)
 	})
+
+	t.Run("bad names", func(t *testing.T) {
+		for _, name := range []string{"foo$", "/bar", "baz%"} {
+			treefmt(t,
+				withArgs("--formatters", name),
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			t.Setenv("TREEFMT_FORMATTERS", name)
+
+			treefmt(t,
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			t.Setenv("TREEFMT_FORMATTERS", "")
+
+			cfg.FormatterConfigs[name] = &config.Formatter{
+				Command:  "echo",
+				Includes: []string{"*"},
+			}
+
+			test.WriteConfig(t, configPath, cfg)
+
+			treefmt(t,
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			delete(cfg.FormatterConfigs, name)
+
+			test.WriteConfig(t, configPath, cfg)
+		}
+	})
 }
 
 func TestIncludesAndExcludes(t *testing.T) {
@@ -1633,7 +1671,7 @@ func TestStdin(t *testing.T) {
 	treefmt(t,
 		withArgs("--stdin", "../test.nix"),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, fmt.Sprintf("path ../test.nix not inside the tree root %s", tempDir))
+			as.ErrorContains(err, "path ../test.nix not inside the tree root "+tempDir)
 		}),
 		withStderr(func(out []byte) {
 			as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
