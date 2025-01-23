@@ -167,45 +167,70 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	// start traversing
 	files := make([]*walk.File, BatchSize)
 
+	var (
+		n                  int
+		readErr, formatErr error
+	)
+
 	for {
 		// read the next batch
-		readCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
-		n, err := walker.Read(readCtx, files)
+		readCtx, cancelRead := context.WithTimeout(ctx, 1*time.Second)
+
+		n, readErr = walker.Read(readCtx, files)
+		log.Debugf("read %d files", n)
 
 		// ensure context is cancelled to release resources
-		cancel()
+		cancelRead()
 
-		// format
-		if err := formatter.Apply(ctx, files[:n]); err != nil {
-			return fmt.Errorf("formatting failure: %w", err)
+		// format any files that were read before processing the read error
+		if formatErr = formatter.Apply(ctx, files[:n]); formatErr != nil {
+			break
 		}
 
-		if errors.Is(err, io.EOF) {
-			// we have finished traversing
+		// stop reading files if there was a read error
+		if readErr != nil {
 			break
-		} else if err != nil {
-			// something went wrong
-			return fmt.Errorf("failed to read files: %w", err)
 		}
 	}
 
-	// finalize formatting
-	formatErr := formatter.Close(ctx)
+	// finalize formatting (there could be formatting tasks in-flight)
+	formatCloseErr := formatter.Close(ctx)
 
 	// close the walker, ensuring any pending file release hooks finish
-	if err = walker.Close(); err != nil {
-		return fmt.Errorf("failed to close walker: %w", err)
-	}
+	walkerCloseErr := walker.Close()
 
 	// print stats to stderr
 	if !cfg.Quiet {
 		statz.PrintToStderr()
 	}
 
+	// process errors
+
+	//nolint:gocritic
+	if errors.Is(readErr, io.EOF) {
+		// nothing more to read, reset the error and break out of the read loop
+		log.Debugf("no more files to read")
+	} else if errors.Is(readErr, context.DeadlineExceeded) {
+		// the read timed-out
+		return errors.New("timeout reading files")
+	} else if readErr != nil {
+		// something unexpected happened
+		return fmt.Errorf("failed to read files: %w", readErr)
+	}
+
 	if formatErr != nil {
-		// return an error if any formatting failures were detected
-		return formatErr //nolint:wrapcheck
-	} else if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
+		return fmt.Errorf("failed to format files: %w", formatErr)
+	}
+
+	if formatCloseErr != nil {
+		return fmt.Errorf("failed to finalise formatting: %w", formatCloseErr)
+	}
+
+	if walkerCloseErr != nil {
+		return fmt.Errorf("failed to close walker: %w", walkerCloseErr)
+	}
+
+	if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
 		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
 		return ErrFailOnChange
 	}
