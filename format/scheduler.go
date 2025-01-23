@@ -203,14 +203,16 @@ func (s *scheduler) schedule(ctx context.Context, key batchKey, batch []*walk.Fi
 	})
 }
 
-func (s *scheduler) close(ctx context.Context) error {
+func (s *scheduler) apply(ctx context.Context) {
 	// schedule any partial batches that remain
 	for key, batch := range s.batches {
 		if len(batch) > 0 {
 			s.schedule(ctx, key, batch)
 		}
 	}
+}
 
+func (s *scheduler) close() error {
 	// wait for processing to complete
 	if err := s.eg.Wait(); err != nil {
 		return fmt.Errorf("failed to wait for formatters: %w", err)

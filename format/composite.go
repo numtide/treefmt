@@ -107,6 +107,8 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 		}
 	}
 
+	c.scheduler.apply(ctx)
+
 	return nil
 }
 
@@ -136,8 +138,8 @@ func (c *CompositeFormatter) signature() (signature, error) {
 
 // Close finalizes the processing of the CompositeFormatter, ensuring that any remaining batches are applied and
 // all formatters have completed their tasks. It returns an error if any formatting failures were detected.
-func (c *CompositeFormatter) Close(ctx context.Context) error {
-	return c.scheduler.close(ctx)
+func (c *CompositeFormatter) Close() error {
+	return c.scheduler.close()
 }
 
 func NewCompositeFormatter(

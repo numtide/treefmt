@@ -167,6 +167,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	// start traversing
 	files := make([]*walk.File, BatchSize)
 
+LOOP:
 	for {
 		// read the next batch
 		readCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
@@ -180,17 +181,21 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 			return fmt.Errorf("formatting failure: %w", err)
 		}
 
-		if errors.Is(err, io.EOF) {
+		switch {
+		case errors.Is(err, io.EOF):
 			// we have finished traversing
-			break
-		} else if err != nil {
+			break LOOP
+		case cfg.Watch && errors.Is(err, context.DeadlineExceeded):
+			// we timed out reading files, try again
+			continue
+		case err != nil:
 			// something went wrong
 			return fmt.Errorf("failed to read files: %w", err)
 		}
 	}
 
 	// finalize formatting
-	formatErr := formatter.Close(ctx)
+	formatErr := formatter.Close()
 
 	// close the walker, ensuring any pending file release hooks finish
 	if err = walker.Close(); err != nil {
