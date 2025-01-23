@@ -1433,12 +1433,12 @@ func TestGit(t *testing.T) {
 		}),
 	)
 
-	// try with a path not in the git index, e.g. it is skipped
+	// try with a path not in the git index
 	_, err := os.Create(filepath.Join(tempDir, "foo.txt"))
 	as.NoError(err)
 
 	treefmt(t,
-		withArgs("haskell", "foo.txt"),
+		withArgs("haskell", "foo.txt", "-vv"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
