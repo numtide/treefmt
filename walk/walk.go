@@ -22,6 +22,7 @@ const (
 	Stdin
 	Filesystem
 	Git
+	Watch
 
 	BatchSize = 1024
 )
@@ -215,6 +216,8 @@ func NewReader(
 		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Git:
 		reader, err = NewGitReader(root, path, statz)
+	case Watch:
+		reader, err = NewWatchReader(root, path, statz, BatchSize)
 
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)

@@ -29,6 +29,7 @@ type Config struct {
 	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
 	WorkingDirectory      string   `mapstructure:"working-dir"             toml:"-"`
 	Stdin                 bool     `mapstructure:"stdin"                   toml:"-"` // not allowed in config
+	Watch                 bool     `mapstructure:"watch"                   toml:"-"` // not allowed in config
 
 	FormatterConfigs map[string]*Formatter `mapstructure:"formatter" toml:"formatter,omitempty"`
 
@@ -98,6 +99,10 @@ func SetFlags(fs *pflag.FlagSet) {
 		"stdin", false,
 		"Format the context passed in via stdin.",
 	)
+	fs.Bool(
+		"watch", false,
+		"Watch the filesystem for changes and apply formatters when changes are detected. (env $TREEFMT_WATCH)",
+	)
 	fs.String(
 		"tree-root", "",
 		"The root directory from which treefmt will start walking the filesystem (defaults to the directory "+
@@ -157,6 +162,7 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		"clear-cache": false,
 		"no-cache":    false,
 		"stdin":       false,
+		"watch":       false,
 		"working-dir": ".",
 	}
 
@@ -183,6 +189,11 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	// if the stdin flag was passed, we force the stdin walk type
 	if cfg.Stdin {
 		cfg.Walk = walk.Stdin.String()
+	}
+
+	// if the watch flag was passed, we force the watch walk type
+	if cfg.Watch {
+		cfg.Walk = walk.Watch.String()
 	}
 
 	// determine the tree root

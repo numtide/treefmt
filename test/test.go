@@ -14,6 +14,43 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+//nolint:gochecknoglobals
+var ExamplesPaths = []string{
+	"elm/elm.json",
+	"elm/src/Main.elm",
+	"emoji 🕰️/README.md",
+	"go/go.mod",
+	"go/main.go",
+	"haskell/CHANGELOG.md",
+	"haskell/Foo.hs",
+	"haskell/Main.hs",
+	"haskell/Nested/Foo.hs",
+	"haskell/Setup.hs",
+	"haskell/haskell.cabal",
+	"haskell/treefmt.toml",
+	"haskell-frontend/CHANGELOG.md",
+	"haskell-frontend/Main.hs",
+	"haskell-frontend/Setup.hs",
+	"haskell-frontend/haskell-frontend.cabal",
+	"html/index.html",
+	"html/scripts/.gitkeep",
+	"javascript/source/hello.js",
+	"nix/sources.nix",
+	"nixpkgs.toml",
+	"python/main.py",
+	"python/requirements.txt",
+	"python/virtualenv_proxy.py",
+	"ruby/bundler.rb",
+	"rust/Cargo.toml",
+	"rust/src/main.rs",
+	"shell/foo.sh",
+	"terraform/main.tf",
+	"terraform/two.tf",
+	"touch.toml",
+	"treefmt.toml",
+	"yaml/test.yaml",
+}
+
 func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	t.Helper()
 
