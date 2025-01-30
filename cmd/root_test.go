@@ -79,7 +79,7 @@ func TestOnUnmatched(t *testing.T) {
 
 	// should exit with error when using fatal
 	t.Run("fatal", func(t *testing.T) {
-		errorFn := func(err error) {
+		errorFn := func(as *require.Assertions, err error) {
 			as.ErrorContains(err, "no formatter for path: "+expectedPaths[0])
 		}
 
@@ -114,8 +114,8 @@ func TestOnUnmatched(t *testing.T) {
 
 	t.Run("invalid", func(t *testing.T) {
 		// test bad value
-		errorFn := func(arg string) func(err error) {
-			return func(err error) {
+		errorFn := func(arg string) func(as *require.Assertions, err error) {
+			return func(as *require.Assertions, err error) {
 				as.ErrorContains(err, fmt.Sprintf(`invalid level: "%s"`, arg))
 			}
 		}
@@ -153,7 +153,7 @@ func TestQuiet(t *testing.T) {
 	t.Setenv("TREEFMT_ALLOW_MISSING_FORMATTER", "false")
 
 	// check it doesn't suppress errors
-	treefmt(t, withError(func(err error) {
+	treefmt(t, withError(func(as *require.Assertions, err error) {
 		as.ErrorContains(err, "error looking up 'foo-fmt'")
 	}))
 }
@@ -183,8 +183,6 @@ func TestCpuProfile(t *testing.T) {
 }
 
 func TestAllowMissingFormatter(t *testing.T) {
-	as := require.New(t)
-
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "treefmt.toml")
 
@@ -200,7 +198,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		treefmt(t,
-			withError(func(err error) {
+			withError(func(as *require.Assertions, err error) {
 				as.ErrorIs(err, format.ErrCommandNotFound)
 			}),
 		)
@@ -226,8 +224,6 @@ func TestAllowMissingFormatter(t *testing.T) {
 }
 
 func TestSpecifyingFormatters(t *testing.T) {
-	as := require.New(t)
-
 	// we use the test formatter to append some whitespace
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
@@ -308,8 +304,8 @@ func TestSpecifyingFormatters(t *testing.T) {
 		// bad name
 		treefmt(t,
 			withArgs("--formatters", "foo"),
-			withError(func(err error) {
-				as.Errorf(err, "formatter not found in config: foo")
+			withError(func(as *require.Assertions, err error) {
+				as.ErrorContains(err, "formatter foo not found in config")
 			}),
 		)
 	})
@@ -331,10 +327,48 @@ func TestSpecifyingFormatters(t *testing.T) {
 		t.Setenv("TREEFMT_FORMATTERS", "bar,foo")
 
 		treefmt(t,
-			withError(func(err error) {
-				as.Errorf(err, "formatter not found in config: bar")
+			withError(func(as *require.Assertions, err error) {
+				as.ErrorContains(err, "formatter bar not found in config")
 			}),
 		)
+	})
+
+	t.Run("bad names", func(t *testing.T) {
+		for _, name := range []string{"foo$", "/bar", "baz%"} {
+			treefmt(t,
+				withArgs("--formatters", name),
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			t.Setenv("TREEFMT_FORMATTERS", name)
+
+			treefmt(t,
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			t.Setenv("TREEFMT_FORMATTERS", "")
+
+			cfg.FormatterConfigs[name] = &config.Formatter{
+				Command:  "echo",
+				Includes: []string{"*"},
+			}
+
+			test.WriteConfig(t, configPath, cfg)
+
+			treefmt(t,
+				withError(func(as *require.Assertions, err error) {
+					as.ErrorContains(err, fmt.Sprintf("formatter name %q is invalid", name))
+				}),
+			)
+
+			delete(cfg.FormatterConfigs, name)
+
+			test.WriteConfig(t, configPath, cfg)
+		}
 	})
 }
 
@@ -541,7 +575,7 @@ func TestConfigFile(t *testing.T) {
 				withEnv(map[string]string{
 					"PRJ_ROOT": configSubDir,
 				}),
-				withError(func(err error) {
+				withError(func(as *require.Assertions, err error) {
 					as.ErrorContains(err, "failed to find treefmt config file")
 				}),
 			)
@@ -550,8 +584,6 @@ func TestConfigFile(t *testing.T) {
 }
 
 func TestCache(t *testing.T) {
-	as := require.New(t)
-
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "treefmt.toml")
 
@@ -657,7 +689,7 @@ func TestCache(t *testing.T) {
 	// running should match but not format anything
 
 	treefmt(t,
-		withError(func(err error) {
+		withError(func(as *require.Assertions, err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
@@ -670,7 +702,7 @@ func TestCache(t *testing.T) {
 
 	// running again should provide the same result
 	treefmt(t,
-		withError(func(err error) {
+		withError(func(as *require.Assertions, err error) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
@@ -733,7 +765,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 
 		treefmt(t,
 			withConfig(configPath, cfg),
-			withError(func(err error) {
+			withError(func(as *require.Assertions, err error) {
 				as.ErrorContains(err, "failed to find treefmt config file")
 			}),
 		)
@@ -804,8 +836,6 @@ func TestChangeWorkingDirectory(t *testing.T) {
 }
 
 func TestFailOnChange(t *testing.T) {
-	as := require.New(t)
-
 	t.Run("change size", func(t *testing.T) {
 		tempDir := test.TempExamples(t)
 		configPath := filepath.Join(tempDir, "treefmt.toml")
@@ -829,7 +859,7 @@ func TestFailOnChange(t *testing.T) {
 		treefmt(t,
 			withArgs("--fail-on-change"),
 			withConfig(configPath, cfg),
-			withError(func(err error) {
+			withError(func(as *require.Assertions, err error) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
@@ -890,7 +920,7 @@ func TestFailOnChange(t *testing.T) {
 					},
 				}
 			}),
-			withError(func(err error) {
+			withError(func(as *require.Assertions, err error) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
@@ -1428,7 +1458,7 @@ func TestGit(t *testing.T) {
 	treefmt(t,
 		withArgs("-C", tempDir, "haskell", "foo"),
 		withConfig(configPath, cfg),
-		withError(func(err error) {
+		withError(func(as *require.Assertions, err error) {
 			as.ErrorContains(err, "path foo not found")
 		}),
 	)
@@ -1555,8 +1585,8 @@ func TestPathsArg(t *testing.T) {
 	// specify a bad path
 	treefmt(t,
 		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
-		withError(func(err error) {
-			as.Errorf(err, "path haskell/Nested/Bar.hs not found")
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "path haskell/Nested/Bar.hs not found")
 		}),
 	)
 
@@ -1567,8 +1597,8 @@ func TestPathsArg(t *testing.T) {
 
 	treefmt(t,
 		withArgs(absoluteExternalPath),
-		withError(func(err error) {
-			as.Errorf(err, "path %s not found within the tree root", absoluteExternalPath)
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, fmt.Sprintf("path %s not inside the tree root", absoluteExternalPath))
 		}),
 	)
 
@@ -1578,8 +1608,8 @@ func TestPathsArg(t *testing.T) {
 
 	treefmt(t,
 		withArgs(relativeExternalPath),
-		withError(func(err error) {
-			as.Errorf(err, "path %s not found within the tree root", relativeExternalPath)
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, fmt.Sprintf("path %s not inside the tree root", relativeExternalPath))
 		}),
 	)
 }
@@ -1607,7 +1637,7 @@ func TestStdin(t *testing.T) {
 	// we get an error about the missing filename parameter.
 	treefmt(t,
 		withArgs("--stdin"),
-		withError(func(err error) {
+		withError(func(as *require.Assertions, err error) {
 			as.EqualError(err, "exactly one path should be specified when using the --stdin flag")
 		}),
 		withStderr(func(out []byte) {
@@ -1640,8 +1670,8 @@ func TestStdin(t *testing.T) {
 
 	treefmt(t,
 		withArgs("--stdin", "../test.nix"),
-		withError(func(err error) {
-			as.Errorf(err, "path ../test.nix not inside the tree root %s", tempDir)
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "path ../test.nix not inside the tree root "+tempDir)
 		}),
 		withStderr(func(out []byte) {
 			as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
@@ -1804,7 +1834,7 @@ func TestRunInSubdir(t *testing.T) {
 			// this should not work, as we're in a subdirectory
 			treefmt(t,
 				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
-				withError(func(err error) {
+				withError(func(as *require.Assertions, err error) {
 					as.ErrorContains(err, "path elm/elm.json not found")
 				}),
 			)
@@ -1836,7 +1866,7 @@ type options struct {
 	assertStdout func([]byte)
 	assertStderr func([]byte)
 
-	assertError func(error)
+	assertError func(*require.Assertions, error)
 	assertStats func(*stats.Stats)
 
 	bump struct {
@@ -1886,7 +1916,7 @@ func withStats(t *testing.T, expected map[stats.Type]int) option {
 	}
 }
 
-func withError(fn func(error)) option {
+func withError(fn func(*require.Assertions, error)) option {
 	return func(o *options) {
 		o.assertError = fn
 	}
@@ -1896,8 +1926,8 @@ func withNoError(t *testing.T) option {
 	t.Helper()
 
 	return func(o *options) {
-		o.assertError = func(err error) {
-			require.NoError(t, err)
+		o.assertError = func(as *require.Assertions, err error) {
+			as.NoError(err)
 		}
 	}
 }
@@ -1927,6 +1957,8 @@ func treefmt(
 	opt ...option,
 ) {
 	t.Helper()
+
+	as := require.New(t)
 
 	// build options
 	opts := &options{}
@@ -2037,6 +2069,6 @@ func treefmt(
 	}
 
 	if opts.assertError != nil {
-		opts.assertError(cmdErr)
+		opts.assertError(as, cmdErr)
 	}
 }

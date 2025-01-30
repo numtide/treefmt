@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/numtide/treefmt/v2/walk"
@@ -210,12 +211,32 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		cfg.Excludes = cfg.Global.Excludes
 	}
 
+	// validate formatter names do not contain invalid characters
+
+	nameRegex := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
+
+	for name := range cfg.FormatterConfigs {
+		if !nameRegex.MatchString(name) {
+			return nil, fmt.Errorf(
+				"formatter name %q is invalid, must be of the form %s",
+				name, nameRegex.String(),
+			)
+		}
+	}
+
 	// filter formatters based on provided names
 	if len(cfg.Formatters) > 0 {
 		filtered := make(map[string]*Formatter)
 
 		// check if the provided names exist in the config
 		for _, name := range cfg.Formatters {
+			if !nameRegex.MatchString(name) {
+				return nil, fmt.Errorf(
+					"formatter name %q is invalid, must be of the form %s",
+					name, nameRegex.String(),
+				)
+			}
+
 			formatterCfg, ok := cfg.FormatterConfigs[name]
 			if !ok {
 				return nil, fmt.Errorf("formatter %v not found in config", name)
