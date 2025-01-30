@@ -159,7 +159,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	// create a new walker for traversing the paths
-	walker, err := walk.NewCompositeReader(walkType, cfg.TreeRoot, paths, db, statz)
+	walker, err := walk.NewCompositeReader(walkType, cfg.TreeRoot, paths, cfg.IncludeGitSubmodules, db, statz)
 	if err != nil {
 		return fmt.Errorf("failed to create walker: %w", err)
 	}
