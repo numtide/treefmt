@@ -1,6 +1,8 @@
 module github.com/numtide/treefmt/v2
 
-go 1.22
+go 1.23
+
+toolchain go1.24.0
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -13,7 +15,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
-	go.etcd.io/bbolt v1.3.11
+	go.etcd.io/bbolt v1.4.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.30.0
 	mvdan.cc/sh/v3 v3.10.0
