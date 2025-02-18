@@ -93,8 +93,8 @@ schema = 3
     version = "v1.6.0"
     hash = "sha256-hxioqRZfXE0AE5099wmn3YG0AZF8Wda2EB4c7zHF6zI="
   [mod."github.com/spf13/cobra"]
-    version = "v1.8.1"
-    hash = "sha256-yDF6yAHycV1IZOrt3/hofR+QINe+B2yqkcIaVov3Ky8="
+    version = "v1.9.1"
+    hash = "sha256-dzEqquABE3UqZmJuj99244QjvfojS8cFlsPr/MXQGj0="
   [mod."github.com/spf13/pflag"]
     version = "v1.0.6"
     hash = "sha256-NjrK0FZPIfO/p2xtL1J7fOBQNTZAPZOC6Cb4aMMvhxI="
