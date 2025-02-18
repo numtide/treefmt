@@ -19,6 +19,7 @@ import (
 type GitReader struct {
 	root string
 	path string
+	includeSubmodules bool
 
 	log   *log.Logger
 	stats *stats.Stats
@@ -38,7 +39,13 @@ func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) 
 		r, w := io.Pipe()
 
 		// create a command which will execute from the specified sub path within root
-		cmd := exec.Command("git", "ls-files")
+		var cmd *exec.Cmd
+		if g.includeSubmodules {
+			cmd = exec.Command("git", "ls-files")
+	  	} else {
+			cmd = exec.Command("git", "ls-files", "--recurse-submodules")
+		}
+
 		cmd.Dir = filepath.Join(g.root, g.path)
 		cmd.Stdout = w
 
@@ -133,6 +140,7 @@ func (g *GitReader) Close() error {
 func NewGitReader(
 	root string,
 	path string,
+	includeSubmodules bool,
 	statz *stats.Stats,
 ) (*GitReader, error) {
 	// check if the root is a git repository
@@ -148,6 +156,7 @@ func NewGitReader(
 	return &GitReader{
 		root:  root,
 		path:  path,
+		includeSubmodules: includeSubmodules,
 		stats: statz,
 		eg:    &errgroup.Group{},
 		log:   log.WithPrefix("walk | git"),
