@@ -8,7 +8,7 @@
 }: let
   inherit (pkgs) lib;
 in
-  perSystem.gomod2nix.buildGoApplication rec {
+  pkgs.buildGoModule rec {
     inherit pname;
     # there's no good way of tying in the version to a git tag or branch
     # so for simplicity's sake we set the version as the commit revision hash
@@ -16,7 +16,7 @@ in
     version = lib.removeSuffix "-dirty" (flake.shortRev or flake.dirtyShortRev);
 
     # ensure we are using the same version of go to build with
-    inherit (pkgs) go;
+    go = pkgs.go_1_23;
 
     src = let
       filter = inputs.nix-filter.lib;
@@ -35,7 +35,7 @@ in
         ];
       };
 
-    modules = ./gomod2nix.toml;
+    vendorHash = "sha256-LQFb0X6clsVadMAWz+Pl7ONa033+faJxbvfkY/3MEBo=";
 
     CGO_ENABLED = 0;
 

@@ -1,8 +1,4 @@
-{
-  pkgs,
-  perSystem,
-  ...
-}:
+{pkgs, ...}:
 pkgs.mkShellNoCC {
   env.GOROOT = "${pkgs.go}/share/go";
 
@@ -16,7 +12,6 @@ pkgs.mkShellNoCC {
       graphviz
       cobra-cli
       enumer
-      perSystem.gomod2nix.default
     ])
     ++ # include formatters for development and testing
     (import ../packages/treefmt/formatters.nix pkgs);
