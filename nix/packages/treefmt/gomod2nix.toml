@@ -75,8 +75,8 @@ schema = 3
     version = "v0.4.7"
     hash = "sha256-rDcdNYH6ZD8KouyyiZCUEy8JrjOQoAkxHBhugrfHjFo="
   [mod."github.com/rogpeppe/go-internal"]
-    version = "v1.13.1"
-    hash = "sha256-fD4n3XVDNHL7hfUXK9qi31LpBVzWnRK/7LNc3BmPtnU="
+    version = "v1.14.1"
+    hash = "sha256-6NzhXCCD1Qhj05WHbCDxH5hwfNM6psoAk7uIxm7N55E="
   [mod."github.com/sagikazarmark/locafero"]
     version = "v0.4.0"
     hash = "sha256-7I1Oatc7GAaHgAqBFO6Tv4IbzFiYeU9bJAfJhXuWaXk="
