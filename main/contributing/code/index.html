@@ -927,34 +927,24 @@ much of what is listed below, but it is left up to the reader to determine how t
 <span class="normal"><a href="#__codelineno-0-15">15</a></span>
 <span class="normal"><a href="#__codelineno-0-16">16</a></span>
 <span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2"></a>  pkgs<span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  perSystem<span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4"></a>  <span class="o">...</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="p">}:</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6"></a>pkgs<span class="o">.</span>mkShellNoCC <span class="p">{</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7"></a>  env<span class="o">.</span><span class="ss">GOROOT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>go<span class="si">}</span><span class="s2">/share/go&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9"></a>  <span class="ss">packages</span> <span class="o">=</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10"></a>    <span class="p">(</span><span class="k">with</span> pkgs<span class="p">;</span> <span class="p">[</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      go
-<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      goreleaser
-<a id="__codelineno-0-13" name="__codelineno-0-13"></a>      golangci-lint
-<a id="__codelineno-0-14" name="__codelineno-0-14"></a>      delve
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a>      pprof
-<a id="__codelineno-0-16" name="__codelineno-0-16"></a>      graphviz
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a>      cobra-cli
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a>      enumer
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      perSystem<span class="o">.</span>gomod2nix<span class="o">.</span>default
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>    <span class="p">])</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>    <span class="o">++</span> <span class="c1"># include formatters for development and testing</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="p">(</span><span class="nb">import</span> <span class="l">../packages/treefmt/formatters.nix</span> pkgs<span class="p">);</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="p">}</span>
+<span class="normal"><a href="#__codelineno-0-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span>pkgs<span class="p">,</span> <span class="o">...</span><span class="p">}:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>pkgs<span class="o">.</span>mkShellNoCC <span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  env<span class="o">.</span><span class="ss">GOROOT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>go<span class="si">}</span><span class="s2">/share/go&quot;</span><span class="p">;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>  <span class="ss">packages</span> <span class="o">=</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="p">(</span><span class="k">with</span> pkgs<span class="p">;</span> <span class="p">[</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>      go
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      goreleaser
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>      golangci-lint
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      delve
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      pprof
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      graphviz
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>      cobra-cli
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>      enumer
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>    <span class="p">])</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>    <span class="o">++</span> <span class="c1"># include formatters for development and testing</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a>    <span class="p">(</span><span class="nb">import</span> <span class="l">../packages/treefmt/formatters.nix</span> pkgs<span class="p">);</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 <p><a href="https://direnv.net">Direnv</a> should load this by default when entering the root of the repository.</p>
 <p>For the most part, you <em>should</em> be able to develop normally as you would any other Go program.</p>
