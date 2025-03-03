@@ -128,6 +128,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	// checks all paths are contained within the tree root and exist
 	// also "normalize" paths so they're relative to cfg.TreeRoot
+	// Symlinks are allowed in `paths` and we e resolve them here, since
+	// the readers will ignore symlinks.
 	for i, path := range paths {
 		absolutePath, e := filepath.Abs(path)
 		if e != nil {
@@ -135,18 +137,17 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		}
 
 		if walkType != walk.Stdin {
-			if _, e = os.Stat(absolutePath); e != nil {
+			stat, ee := os.Lstat(absolutePath)
+			if ee != nil {
 				return fmt.Errorf("path %s not found", path)
-			}
+			} else if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
+				realPath, ee := filepath.EvalSymlinks(absolutePath)
+				if ee != nil {
+					return fmt.Errorf("could not determine real path of %s (evaluating all symlinks)", absolutePath)
+				}
 
-			// // symlinks are allowed on `paths` input, we resolve them here, since
-			// // the readers will k
-			// realPath, ee := filepath.EvalSymlinks(absolutePath)
-			// if ee != nil {
-			// 	return fmt.Errorf("could not determine real path of %s (evaluating all symlinks)", absolutePath)
-			// }
-			//
-			// absolutePath = realPath
+				absolutePath = realPath
+			}
 		}
 
 		relativePath, e := filepath.Rel(cfg.TreeRoot, absolutePath)
