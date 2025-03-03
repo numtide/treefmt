@@ -88,8 +88,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		// ensure db is closed after we're finished
 		defer func() {
-			if err := db.Close(); err != nil {
-				log.Errorf("failed to close cache: %v", err)
+			if e := db.Close(); e != nil {
+				log.Errorf("failed to close cache: %v", e)
 			}
 		}()
 	}
@@ -129,14 +129,29 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	// checks all paths are contained within the tree root and exist
 	// also "normalize" paths so they're relative to cfg.TreeRoot
 	for i, path := range paths {
-		absolutePath, err := filepath.Abs(path)
-		if err != nil {
-			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
+		absolutePath, e := filepath.Abs(path)
+		if e != nil {
+			return fmt.Errorf("error computing absolute path of %s: %w", path, e)
 		}
 
-		relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
-		if err != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %w", cfg.TreeRoot, absolutePath, err)
+		if walkType != walk.Stdin {
+			if _, e = os.Stat(absolutePath); e != nil {
+				return fmt.Errorf("path %s not found", path)
+			}
+
+			// // symlinks are allowed on `paths` input, we resolve them here, since
+			// // the readers will k
+			// realPath, ee := filepath.EvalSymlinks(absolutePath)
+			// if ee != nil {
+			// 	return fmt.Errorf("could not determine real path of %s (evaluating all symlinks)", absolutePath)
+			// }
+			//
+			// absolutePath = realPath
+		}
+
+		relativePath, e := filepath.Rel(cfg.TreeRoot, absolutePath)
+		if e != nil {
+			return fmt.Errorf("error computing relative path from %s to %s: %w", cfg.TreeRoot, absolutePath, e)
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
@@ -144,12 +159,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		}
 
 		paths[i] = relativePath
-
-		if walkType != walk.Stdin {
-			if _, err = os.Stat(absolutePath); err != nil {
-				return fmt.Errorf("path %s not found", path)
-			}
-		}
 	}
 
 	// create a composite formatter which will handle applying the correct formatters to each file we traverse
