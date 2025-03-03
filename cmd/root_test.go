@@ -1403,17 +1403,17 @@ func TestGit(t *testing.T) {
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
 
 	// walk with filesystem instead of with git
-	// the .git folder contains 50 additional files
+	// the .git folder contains 51 additional files
 	// when added to the 32 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
-	// traverse 82 files.
+	// traverse 83 files.
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 82,
-			stats.Matched:   82,
-			stats.Formatted: 50, // the echo formatter should only be applied to the new files
+			stats.Traversed: 83,
+			stats.Matched:   83,
+			stats.Formatted: 51, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
