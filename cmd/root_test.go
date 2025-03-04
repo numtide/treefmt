@@ -1399,17 +1399,17 @@ func TestGit(t *testing.T) {
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
 
 	// walk with filesystem instead of with git
-	// the .git folder contains 50 additional files
+	// the .git folder contains 51 additional files
 	// when added to the 32 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
-	// traverse 82 files.
+	// traverse 83 files.
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 82,
-			stats.Matched:   82,
-			stats.Formatted: 50, // the echo formatter should only be applied to the new files
+			stats.Traversed: 83,
+			stats.Matched:   83,
+			stats.Formatted: 51, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1459,7 +1459,7 @@ func TestGit(t *testing.T) {
 		withArgs("-C", tempDir, "haskell", "foo"),
 		withConfig(configPath, cfg),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path foo not found")
+			as.ErrorContains(err, "foo not found")
 		}),
 	)
 
@@ -1586,7 +1586,7 @@ func TestPathsArg(t *testing.T) {
 	treefmt(t,
 		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path haskell/Nested/Bar.hs not found")
+			as.ErrorContains(err, "Bar.hs not found")
 		}),
 	)
 
@@ -1604,7 +1604,7 @@ func TestPathsArg(t *testing.T) {
 
 	// specify a relative path outside the tree root
 	relativeExternalPath := "../outside_tree.go"
-	as.FileExists(relativeExternalPath, "exernal file must exist")
+	as.FileExists(relativeExternalPath, "external file must exist")
 
 	treefmt(t,
 		withArgs(relativeExternalPath),
@@ -1835,7 +1835,7 @@ func TestRunInSubdir(t *testing.T) {
 			treefmt(t,
 				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
 				withError(func(as *require.Assertions, err error) {
-					as.ErrorContains(err, "path elm/elm.json not found")
+					as.ErrorContains(err, "elm.json not found")
 				}),
 			)
 

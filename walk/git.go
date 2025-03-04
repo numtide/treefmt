@@ -91,16 +91,22 @@ LOOP:
 
 				g.log.Debugf("processing file: %s", path)
 
-				info, err := os.Stat(path)
-				if os.IsNotExist(err) {
+				info, err := os.Lstat(path)
+
+				switch {
+				case os.IsNotExist(err):
 					// the underlying file might have been removed
 					g.log.Warnf(
 						"Path %s is in the worktree but appears to have been removed from the filesystem", path,
 					)
 
 					continue
-				} else if err != nil {
+				case err != nil:
 					return n, fmt.Errorf("failed to stat %s: %w", path, err)
+				case info.Mode()&os.ModeSymlink == os.ModeSymlink:
+					// we skip reporting symlinks stored in Git, they should
+					// point to local files which we would list anyway.
+					continue
 				}
 
 				files[n] = &File{
@@ -108,6 +114,7 @@ LOOP:
 					RelPath: filepath.Join(g.path, entry),
 					Info:    info,
 				}
+
 				n++
 			} else {
 				// nothing more to read
