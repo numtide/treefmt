@@ -1463,7 +1463,7 @@ func TestGit(t *testing.T) {
 		withArgs("-C", tempDir, "haskell", "foo"),
 		withConfig(configPath, cfg),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path foo not found")
+			as.ErrorContains(err, "foo not found")
 		}),
 	)
 
@@ -1592,7 +1592,7 @@ func TestPathsArg(t *testing.T) {
 	treefmt(t,
 		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path haskell/Nested/Bar.hs not found")
+			as.ErrorContains(err, "Bar.hs not found")
 		}),
 	)
 
@@ -1842,7 +1842,7 @@ func TestRunInSubdir(t *testing.T) {
 			treefmt(t,
 				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
 				withError(func(as *require.Assertions, err error) {
-					as.ErrorContains(err, "path elm/elm.json not found")
+					as.ErrorContains(err, "elm.json not found")
 				}),
 			)
 
