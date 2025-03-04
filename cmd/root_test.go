@@ -1604,7 +1604,7 @@ func TestPathsArg(t *testing.T) {
 
 	// specify a relative path outside the tree root
 	relativeExternalPath := "../outside_tree.go"
-	as.FileExists(relativeExternalPath, "exernal file must exist")
+	as.FileExists(relativeExternalPath, "external file must exist")
 
 	treefmt(t,
 		withArgs(relativeExternalPath),
