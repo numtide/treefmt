@@ -88,8 +88,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		// ensure db is closed after we're finished
 		defer func() {
-			if e := db.Close(); e != nil {
-				log.Errorf("failed to close cache: %v", e)
+			if closeErr := db.Close(); closeErr != nil {
+				log.Errorf("failed to close cache: %v", closeErr)
 			}
 		}()
 	}
