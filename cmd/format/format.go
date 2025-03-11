@@ -126,8 +126,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
-	err = resolvePaths(paths, walkType, cfg.TreeRoot)
-	if err != nil {
+	if err = resolvePaths(paths, walkType, cfg.TreeRoot); err != nil {		
 		return err
 	}
 
