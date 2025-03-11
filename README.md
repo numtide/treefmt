@@ -2,7 +2,7 @@
 
 # treefmt
 
-<img src="docs/content/assets/images/logo.svg" height="150"/>
+<img src="docs/site/assets/images/logo.svg" height="150"/>
 
 **The formatter multiplexer**
 
@@ -35,7 +35,7 @@ That's what treefmt is about.
 
 `treefmt` runs all your formatters with one command. It’s easy to configure and fast to execute.
 
-![Treefmt Init](./docs/content/assets/images/init.gif)
+![Treefmt Init](docs/site/assets/images/init.gif)
 
 Its main features are:
 
@@ -152,7 +152,7 @@ This project is still pretty new. Down the line we also want to add support for:
 
 ## Contributing
 
-All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](./docs/content/contributing/code.md)
+All contributions are welcome! We try to keep the project simple and focused. Please refer to the [Contributing](docs/site/contributing/code.md)
 guidelines for more information.
 
 ## Commercial support

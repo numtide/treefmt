@@ -1,4 +1,8 @@
-{pkgs, perSystem, ...}:
+{
+  pkgs,
+  perSystem,
+  ...
+}:
 pkgs.stdenvNoCC.mkDerivation {
   name = "docs";
 
@@ -33,6 +37,6 @@ pkgs.stdenvNoCC.mkDerivation {
   '';
 
   installPhase = ''
-    mv site $out
+    mv out $out
   '';
 }

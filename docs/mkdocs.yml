@@ -20,7 +20,8 @@ validation:
 
 # Configuration
 
-docs_dir: content
+docs_dir: site
+site_dir: out
 
 theme:
     name: material
