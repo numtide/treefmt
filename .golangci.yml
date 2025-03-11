@@ -3,12 +3,10 @@ linters:
     enable-all: true
     disable:
         - depguard
-        - execinquery
         - exhaustruct
-        - exportloopref
         - funlen
+        - tenv
         - godox
-        - gomnd
         - mnd
         - varnamelen
         - forbidigo

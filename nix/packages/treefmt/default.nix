@@ -8,15 +8,12 @@
 }: let
   inherit (pkgs) lib;
 in
-  pkgs.buildGoModule rec {
+  pkgs.buildGo124Module rec {
     inherit pname;
     # there's no good way of tying in the version to a git tag or branch
     # so for simplicity's sake we set the version as the commit revision hash
     # we remove the `-dirty` suffix to avoid a lot of unnecessary rebuilds in local dev
     version = lib.removeSuffix "-dirty" (flake.shortRev or flake.dirtyShortRev);
-
-    # ensure we are using the same version of go to build with
-    go = pkgs.go_1_23;
 
     src = let
       filter = inputs.nix-filter.lib;
@@ -35,9 +32,9 @@ in
         ];
       };
 
-    vendorHash = "sha256-LKhykrZCfkd1grQ9vHeCJcDx0/QhrfQ4ItQqNiOx52c=";
+    vendorHash = "sha256-1fkOd7x4bJ4ymMOQOgdV/Z4rgpnDqDxNt/SXmXiZBZg=";
 
-    CGO_ENABLED = 0;
+    env.CGO_ENABLED = 0;
 
     ldflags = [
       "-s"
@@ -93,7 +90,7 @@ in
       tests = {
         coverage = lib.optionalAttrs pkgs.stdenv.isx86_64 (treefmt.overrideAttrs (old: {
           nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.gcc];
-          CGO_ENABLED = 1;
+          env.CGO_ENABLED = 1;
           buildPhase = ''
             HOME=$TMPDIR
             go test -race -covermode=atomic -coverprofile=coverage.out -v ./...

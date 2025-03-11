@@ -61,7 +61,7 @@ func TestFilesystemReader(t *testing.T) {
 	count := 0
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 
 		files := make([]*walk.File, 8)
 		n, err := r.Read(ctx, files)

@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+//nolint:recvcheck
 //go:generate enumer -type=Type -text -transform=snake -output=./stats_type.go
 type Type int
 

@@ -753,6 +753,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 		as.NoError(err)
 
 		t.Cleanup(func() {
+			//nolint:usetesting
 			// return to the previous working directory
 			as.NoError(os.Chdir(cwd))
 		})
@@ -760,6 +761,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 		tempDir := test.TempExamples(t)
 		configPath := filepath.Join(tempDir, "treefmt.toml")
 
+		//nolint:usetesting
 		// change to an empty temp dir and try running without specifying a working directory
 		as.NoError(os.Chdir(t.TempDir()))
 
@@ -770,6 +772,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 			}),
 		)
 
+		//nolint:usetesting
 		// now change to the examples temp directory
 		as.NoError(os.Chdir(tempDir), "failed to change to temp directory")
 
@@ -790,6 +793,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 			as.NoError(err)
 
 			t.Cleanup(func() {
+				//nolint:usetesting
 				// return to the previous working directory
 				as.NoError(os.Chdir(cwd))
 			})
@@ -1512,6 +1516,7 @@ func TestPathsArg(t *testing.T) {
 	as.NoError(err)
 
 	t.Cleanup(func() {
+		//nolint:usetesting
 		// return to the previous working directory
 		as.NoError(os.Chdir(cwd))
 	})
@@ -1529,6 +1534,7 @@ func TestPathsArg(t *testing.T) {
 	externalFile, err := os.Create(filepath.Join(tempDir, "outside_tree.go"))
 	as.NoError(err)
 
+	//nolint:usetesting
 	// change working directory to project root
 	as.NoError(os.Chdir(treeRoot))
 
@@ -1804,6 +1810,7 @@ func TestRunInSubdir(t *testing.T) {
 			err = os.Symlink(echoPath, echoRel)
 			as.NoError(err)
 
+			//nolint:usetesting
 			// change working directory to subdirectory
 			as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
 

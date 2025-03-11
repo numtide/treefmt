@@ -332,9 +332,9 @@ File to search for to find the tree root (if `tree-root` is not set)
 
 Set the verbosity level of logs:
 
--   `0` => `warn`
--   `1` => `info`
--   `2` => `debug`
+- `0` => `warn`
+- `1` => `info`
+- `2` => `debug`
 
 === "Flag"
 
@@ -456,8 +456,8 @@ selectors such as `*` and `?`.
 
 ### Examples
 
--   `*.go` - match all files in the project that end with a ".go" file extension.
--   `vendor/*` - match all files under the vendor folder, recursively.
+- `*.go` - match all files in the project that end with a ".go" file extension.
+- `vendor/*` - match all files under the vendor folder, recursively.
 
 ## Supported Formatters
 

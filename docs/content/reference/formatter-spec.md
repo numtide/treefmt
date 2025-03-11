@@ -29,9 +29,9 @@ The formatter's CLI must be of the form:
 
 Where:
 
--   `<command>` is the name of the formatting tool.
--   `[options]` is any number of flags and options that the formatter accepts.
--   `[...<files>]` is one or more files given to the formatter for processing.
+- `<command>` is the name of the formatting tool.
+- `[options]` is any number of flags and options that the formatter accepts.
+- `[...<files>]` is one or more files given to the formatter for processing.
 
 Example:
 
