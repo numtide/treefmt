@@ -111,3 +111,6 @@ plugins:
     - awesome-pages
     - mike
     - search
+
+hooks:
+    - hooks.py
