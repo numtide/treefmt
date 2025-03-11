@@ -20,11 +20,11 @@ validation:
 
 # Configuration
 
-docs_dir: docs/content
+docs_dir: content
 
 theme:
     name: material
-    custom_dir: docs/theme
+    custom_dir: theme
 
     logo: assets/images/logo.png
     favicon: assets/images/logo.png
@@ -102,7 +102,8 @@ markdown_extensions:
           linenums: true
           anchor_linenums: true
     - pymdownx.inlinehilite
-    - pymdownx.snippets
+    - pymdownx.snippets:
+          base_path: ../.
     - pymdownx.keys
 
 plugins:

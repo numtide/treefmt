@@ -1,17 +1,13 @@
-{
-  pkgs,
-  perSystem,
-  ...
-}:
+{pkgs, perSystem, ...}:
 pkgs.stdenvNoCC.mkDerivation {
   name = "docs";
 
   unpackPhase = ''
-    cp ${../../mkdocs.yml} mkdocs.yaml
-    cp -r ${../../docs} docs
+    cp -r ${../../docs}/* .
+    ls -alr
   '';
 
-  nativeBuildInputs = with pkgs;
+  nativeBuildInputs =
     (with pkgs.python3Packages; [
       mike
       mkdocs

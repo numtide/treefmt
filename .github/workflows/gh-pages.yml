@@ -33,7 +33,7 @@ jobs:
             - name: Deploy main
               if: ${{ github.ref_name == 'main' }}
               run: |
-                  nix develop .#docs --command bash -c "mike deploy -p main"
+                  nix develop .#docs --command bash -c "cd docs && mike deploy -p main"
             - name: Deploy version
               if: startsWith(github.ref, 'refs/tags/v')
               run: |
@@ -41,4 +41,4 @@ jobs:
                   MAJOR_MINOR=${REF_NAME%.*}
                   # strip the leading v from the ref_name
                   # update the latest alias          
-                  nix develop .#docs --command bash -c "mike deploy -p -u ${MAJOR_MINOR} latest"
+                  nix develop .#docs --command bash -c "cd docs && mike deploy -p -u ${MAJOR_MINOR} latest"
