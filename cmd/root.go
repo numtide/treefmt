@@ -16,11 +16,6 @@ import (
 )
 
 func NewRoot() (*cobra.Command, *stats.Stats) {
-	var (
-		treefmtInit bool
-		configFile  string
-	)
-
 	// create a viper instance for reading in config
 	v, err := config.NewViper()
 	if err != nil {
@@ -35,6 +30,9 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 		Use:     build.Name + " <paths...>",
 		Short:   "The formatter multiplexer",
 		Version: build.Version,
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd: true,
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(v, &statz, cmd, args)
 		},
@@ -53,15 +51,23 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 
 	cmd.HelpTemplate()
 
-	// add a couple of special flags which don't have a corresponding entry in treefmt.toml
-	fs.StringVar(
-		&configFile, "config-file", "",
+	// add a config file flag and some others for special subcommands
+	fs.String(
+		"config-file", "",
 		"Load the config file from the given path (defaults to searching upwards for treefmt.toml or "+
 			".treefmt.toml).",
 	)
-	fs.BoolVarP(
-		&treefmtInit, "init", "i", false,
+
+	// add a flag for the init sub command
+	fs.BoolP(
+		"init", "i", false,
 		"Create a treefmt.toml file in the current directory.",
+	)
+
+	// add a flag for generating shell completions
+	fs.String(
+		"completion", "",
+		"[bash|zsh|fish] Generate shell completion scripts for the specified shell.",
 	)
 
 	// bind our command's flags to viper
@@ -91,9 +97,19 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 	if init, err := flags.GetBool("init"); err != nil {
 		return fmt.Errorf("failed to read init flag: %w", err)
 	} else if init {
-		err := _init.Run()
-		if err != nil {
-			return fmt.Errorf("failed to run init command: %w", err)
+		if initErr := _init.Run(); initErr != nil {
+			return fmt.Errorf("failed to run init command: %w", initErr)
+		}
+
+		return nil
+	}
+
+	// check if we are running the completion command
+	if shell, err := flags.GetString("completion"); err != nil {
+		return fmt.Errorf("failed to read completion flag: %w", err)
+	} else if shell != "" {
+		if completionsErr := generateShellCompletions(cmd, []string{shell}); completionsErr != nil {
+			return fmt.Errorf("failed to generate shell completions: %w", completionsErr)
 		}
 
 		return nil

@@ -14,6 +14,7 @@ Flags:
       --allow-missing-formatter   Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)
       --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case. (env $TREEFMT_CI)
   -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)
+      --completion string         [bash|zsh|fish] Generate shell completion scripts for the specified shell.
       --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
       --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)
       --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)
@@ -124,6 +125,16 @@ output to `stdout`:
   };
 in
   flake.defaultNix
+```
+
+## Shell Completion
+
+To generate completions for your preferred shell:
+
+```console
+❯ treefmt --completion bash
+❯ treefmt --completion fish
+❯ treefmt --completion zsh
 ```
 
 ## CI integration
