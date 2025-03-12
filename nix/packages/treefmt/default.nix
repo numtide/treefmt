@@ -44,7 +44,10 @@ in
     ];
 
     nativeBuildInputs =
-      [pkgs.git]
+      (with pkgs; [
+        git
+        installShellFiles
+      ])
       ++
       # we need some formatters available for the tests
       import ./formatters.nix pkgs;
@@ -58,6 +61,15 @@ in
       # setup a git user for committing during tests
       git config --global user.email "<test@treefmt.com>"
       git config --global user.name "Treefmt Test"
+    '';
+
+    postInstall = ''
+      export HOME=$PWD
+
+      installShellCompletion --cmd treefmt \
+          --bash <($out/bin/treefmt --completion bash) \
+          --fish <($out/bin/treefmt --completion fish) \
+          --zsh <($out/bin/treefmt --completion zsh)
     '';
 
     passthru = let
