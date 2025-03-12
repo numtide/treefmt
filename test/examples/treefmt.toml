@@ -5,11 +5,6 @@ excludes = ["*.toml"]
 command = "black"
 includes = ["*.py"]
 
-[formatter.elm]
-command = "elm-format"
-options = ["--yes"]
-includes = ["*.elm"]
-
 [formatter.go]
 command = "gofmt"
 options = ["-w"]

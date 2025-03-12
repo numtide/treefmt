@@ -209,7 +209,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 			withArgs("--allow-missing-formatter"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   0,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -227,10 +227,10 @@ func TestSpecifyingFormatters(t *testing.T) {
 	// we use the test formatter to append some whitespace
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
-			"elm": {
+			"rust": {
 				Command:  "test-fmt-append",
 				Options:  []string{"   "},
-				Includes: []string{"*.elm"},
+				Includes: []string{"*.rs"},
 			},
 			"nix": {
 				Command:  "test-fmt-append",
@@ -256,7 +256,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 3,
 				stats.Changed:   3,
@@ -266,11 +266,11 @@ func TestSpecifyingFormatters(t *testing.T) {
 
 	t.Run("args", func(t *testing.T) {
 		treefmt(t,
-			withArgs("--formatters", "elm,nix"),
+			withArgs("--formatters", "rust,nix"),
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -282,7 +282,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -294,7 +294,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   1,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -317,7 +317,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -392,9 +392,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
 			stats.Changed:   0,
 		}),
 	)
@@ -407,9 +407,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 31,
+			stats.Matched:   30,
+			stats.Formatted: 30,
 			stats.Changed:   0,
 		}),
 	)
@@ -422,9 +422,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   26,
-			stats.Formatted: 26,
+			stats.Traversed: 31,
+			stats.Matched:   24,
+			stats.Formatted: 24,
 			stats.Changed:   0,
 		}),
 	)
@@ -439,9 +439,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   24,
-			stats.Formatted: 24,
+			stats.Traversed: 31,
+			stats.Matched:   22,
+			stats.Formatted: 22,
 			stats.Changed:   0,
 		}),
 	)
@@ -454,24 +454,24 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   23,
-			stats.Formatted: 23,
+			stats.Traversed: 31,
+			stats.Matched:   21,
+			stats.Formatted: 21,
 			stats.Changed:   0,
 		}),
 	)
 
 	t.Setenv("TREEFMT_FORMATTER_ECHO_EXCLUDES", "") // reset
 
-	// adjust the includes for echo to only include elm files
-	echo.Includes = []string{"*.elm"}
+	// adjust the includes for echo to only include rust files
+	echo.Includes = []string{"*.rs"}
 
 	treefmt(t,
 		withArgs("-c"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
+			stats.Traversed: 31,
 			stats.Matched:   1,
 			stats.Formatted: 1,
 			stats.Changed:   0,
@@ -479,14 +479,14 @@ func TestIncludesAndExcludes(t *testing.T) {
 	)
 
 	// add js files to echo formatter via env
-	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.elm,*.js")
+	t.Setenv("TREEFMT_FORMATTER_ECHO_INCLUDES", "*.rs,*.js")
 
 	treefmt(t,
 		withArgs("-c"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
+			stats.Traversed: 31,
 			stats.Matched:   2,
 			stats.Formatted: 2,
 			stats.Changed:   0,
@@ -528,9 +528,9 @@ func TestConfigFile(t *testing.T) {
 				withArgs("--config-file", configPath, "--tree-root", tempDir),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 33,
-					stats.Matched:   33,
-					stats.Formatted: 33,
+					stats.Traversed: 31,
+					stats.Matched:   31,
+					stats.Formatted: 31,
 					stats.Changed:   0,
 				}),
 			)
@@ -559,8 +559,8 @@ func TestConfigFile(t *testing.T) {
 				}),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 33,
-					stats.Matched:   33,
+					stats.Traversed: 31,
+					stats.Matched:   31,
 					stats.Formatted: 0,
 					stats.Changed:   0,
 				}),
@@ -606,10 +606,10 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
-			stats.Changed:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   31,
 		}),
 	)
 
@@ -617,8 +617,8 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -629,10 +629,10 @@ func TestCache(t *testing.T) {
 		withArgs("-c"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
-			stats.Changed:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   31,
 		}),
 	)
 
@@ -640,8 +640,8 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -652,10 +652,10 @@ func TestCache(t *testing.T) {
 		withNoError(t),
 		withModtimeBump(tempDir, time.Second),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
-			stats.Changed:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   31,
 		}),
 	)
 
@@ -664,10 +664,10 @@ func TestCache(t *testing.T) {
 		withArgs("--no-cache"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
-			stats.Changed:   33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   31,
 		}),
 	)
 
@@ -693,7 +693,7 @@ func TestCache(t *testing.T) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
+			stats.Traversed: 31,
 			stats.Matched:   6,
 			stats.Formatted: 0,
 			stats.Changed:   0,
@@ -706,7 +706,7 @@ func TestCache(t *testing.T) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
+			stats.Traversed: 31,
 			stats.Matched:   6,
 			stats.Formatted: 0,
 			stats.Changed:   0,
@@ -726,7 +726,7 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
+			stats.Traversed: 31,
 			stats.Matched:   6,
 			stats.Formatted: 6,
 			stats.Changed:   6,
@@ -780,7 +780,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 			}),
 		)
 	})
@@ -817,7 +817,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 				withConfig(configPath, cfg),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 33,
+					stats.Traversed: 31,
 				}),
 			)
 		})
@@ -853,12 +853,12 @@ func TestFailOnChange(t *testing.T) {
 					// an arbitrary value to a list of files
 					Command:  "test-fmt-append",
 					Options:  []string{"hello"},
-					Includes: []string{"elm/*"},
+					Includes: []string{"rust/*"},
 				},
 			},
 		}
 
-		// running with a cold cache, we should see the elm files being formatted, resulting in changes, which should
+		// running with a cold cache, we should see the rust files being formatted, resulting in changes, which should
 		// trigger an error
 		treefmt(t,
 			withArgs("--fail-on-change"),
@@ -867,20 +867,20 @@ func TestFailOnChange(t *testing.T) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
 			}),
 		)
 
-		// running with a hot cache, we should see matches for the elm files, but no attempt to format them as the
+		// running with a hot cache, we should see matches for the rust files, but no attempt to format them as the
 		// underlying files have not changed since we last ran
 		treefmt(t,
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -928,7 +928,7 @@ func TestFailOnChange(t *testing.T) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   7,
 				stats.Formatted: 7,
 				stats.Changed:   7,
@@ -941,7 +941,7 @@ func TestFailOnChange(t *testing.T) {
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   7,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -979,7 +979,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   8,
 				stats.Formatted: 8,
 				stats.Changed:   6,
@@ -993,7 +993,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   8,
 				stats.Formatted: 6,
 				stats.Changed:   6,
@@ -1004,7 +1004,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   8,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1018,7 +1018,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   8,
 				stats.Formatted: 6,
 				stats.Changed:   0, // echo doesn't affect the files so no changes expected
@@ -1029,7 +1029,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   8,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1044,7 +1044,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   6,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1059,7 +1059,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   5,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1093,10 +1093,10 @@ func TestCacheBusting(t *testing.T) {
 					Command:  "echo", // this is non-destructive, will match but cause no changes
 					Includes: []string{"*.py"},
 				},
-				"elm": {
+				"rust": {
 					Command:  "test-fmt-append",
 					Options:  []string{"   "},
-					Includes: []string{"*.elm"},
+					Includes: []string{"*.rs"},
 				},
 			},
 		}
@@ -1106,22 +1106,22 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 34,
+				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 3,
 				stats.Changed:   1,
 			}))
 
-		// tweak mod time of elm formatter
+		// tweak mod time of rust formatter
 		newTime := time.Now().Add(-time.Minute)
 		as.NoError(os.Chtimes(scriptPath, newTime, newTime))
 
-		// cache entries for elm files should be invalidated
+		// cache entries for rust files should be invalidated
 		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 34,
+				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1132,27 +1132,27 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 34,
+				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
 			}),
 		)
 
-		// tweak the size of elm formatter
+		// tweak the size of rust formatter
 		formatter, err := os.OpenFile(scriptPath, os.O_WRONLY|os.O_APPEND, 0o755)
-		as.NoError(err, "failed to open elm formatter")
+		as.NoError(err, "failed to open rust formatter")
 
 		_, err = formatter.WriteString(" ") // add some whitespace
-		as.NoError(err, "failed to append to elm formatter")
-		as.NoError(formatter.Close(), "failed to close elm formatter")
+		as.NoError(err, "failed to append to rust formatter")
+		as.NoError(formatter.Close(), "failed to close rust formatter")
 
-		// cache entries for elm files should be invalidated
+		// cache entries for rust files should be invalidated
 		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 34,
+				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1163,7 +1163,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 34,
+				stats.Traversed: 32,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1192,7 +1192,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1204,7 +1204,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1212,18 +1212,18 @@ func TestCacheBusting(t *testing.T) {
 		)
 
 		// add a formatter
-		cfg.FormatterConfigs["elm"] = &config.Formatter{
+		cfg.FormatterConfigs["rust"] = &config.Formatter{
 			Command:  "test-fmt-append",
 			Options:  []string{"   "},
-			Includes: []string{"*.elm"},
+			Includes: []string{"*.rs"},
 		}
 
-		// only the elm files should be formatted
+		// only the rust files should be formatted
 		treefmt(t,
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1242,7 +1242,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1254,7 +1254,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1270,7 +1270,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1282,7 +1282,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1297,7 +1297,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1309,15 +1309,15 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
 			}),
 		)
 
-		// remove the elm formatter
-		delete(cfg.FormatterConfigs, "elm")
+		// remove the rust formatter
+		delete(cfg.FormatterConfigs, "rust")
 
 		// only python files should match, but no formatting should occur as not formatting signatures have been
 		// affected
@@ -1325,7 +1325,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 31,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1375,9 +1375,9 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
 			stats.Changed:   0,
 		}),
 	)
@@ -1392,8 +1392,8 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 30,
-			stats.Matched:   30,
+			stats.Traversed: 28,
+			stats.Matched:   28,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1404,16 +1404,16 @@ func TestGit(t *testing.T) {
 
 	// walk with filesystem instead of with git
 	// the .git folder contains 50 additional files
-	// when added to the 32 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
+	// when added to the 30 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
 	// traverse 82 files.
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 82,
-			stats.Matched:   82,
-			stats.Formatted: 50, // the echo formatter should only be applied to the new files
+			stats.Traversed: 78,
+			stats.Matched:   78,
+			stats.Formatted: 48, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1554,16 +1554,16 @@ func TestPathsArg(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 33,
-			stats.Matched:   33,
-			stats.Formatted: 33,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
 			stats.Changed:   0,
 		}),
 	)
 
 	// specify some explicit paths
 	treefmt(t,
-		withArgs("elm/elm.json", "haskell/Nested/Foo.hs"),
+		withArgs("rust/src/main.rs", "haskell/Nested/Foo.hs"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 2,
@@ -1574,7 +1574,7 @@ func TestPathsArg(t *testing.T) {
 	)
 
 	// specify an absolute path
-	absoluteInternalPath, err := filepath.Abs("elm/elm.json")
+	absoluteInternalPath, err := filepath.Abs("rust/src/main.rs")
 	as.NoError(err)
 
 	treefmt(t,
@@ -1590,7 +1590,7 @@ func TestPathsArg(t *testing.T) {
 
 	// specify a bad path
 	treefmt(t,
-		withArgs("elm/elm.json", "haskell/Nested/Bar.hs"),
+		withArgs("rust/src/main.rs", "haskell/Nested/Bar.hs"),
 		withError(func(as *require.Assertions, err error) {
 			as.ErrorContains(err, "path haskell/Nested/Bar.hs not found")
 		}),
@@ -1812,7 +1812,7 @@ func TestRunInSubdir(t *testing.T) {
 
 			//nolint:usetesting
 			// change working directory to subdirectory
-			as.NoError(os.Chdir(filepath.Join(tempDir, "elm")))
+			as.NoError(os.Chdir(filepath.Join(tempDir, "go")))
 
 			// basic config
 			cfg := &config.Config{
@@ -1830,9 +1830,9 @@ func TestRunInSubdir(t *testing.T) {
 			treefmt(t,
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 33,
-					stats.Matched:   33,
-					stats.Formatted: 33,
+					stats.Traversed: 31,
+					stats.Matched:   31,
+					stats.Formatted: 31,
 					stats.Changed:   0,
 				}),
 			)
@@ -1840,15 +1840,15 @@ func TestRunInSubdir(t *testing.T) {
 			// specify some explicit paths, relative to the tree root
 			// this should not work, as we're in a subdirectory
 			treefmt(t,
-				withArgs("-c", "elm/elm.json", "haskell/Nested/Foo.hs"),
+				withArgs("-c", "go/main.go", "haskell/Nested/Foo.hs"),
 				withError(func(as *require.Assertions, err error) {
-					as.ErrorContains(err, "path elm/elm.json not found")
+					as.ErrorContains(err, "path go/main.go not found")
 				}),
 			)
 
 			// specify some explicit paths, relative to the current directory
 			treefmt(t,
-				withArgs("-c", "elm.json", "../haskell/Nested/Foo.hs"),
+				withArgs("-c", "main.go", "../haskell/Nested/Foo.hs"),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
 					stats.Traversed: 2,
