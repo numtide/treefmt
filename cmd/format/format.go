@@ -126,7 +126,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
-	if err = resolvePaths(paths, walkType, cfg.TreeRoot); err != nil {		
+	if err = resolvePaths(paths, walkType, cfg.TreeRoot); err != nil {
 		return err
 	}
 
@@ -224,23 +224,23 @@ func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
 	for i, path := range paths {
 		log.Errorf("Resolving path '%s': %v", path, walkType)
 
-		absolutePath, e := filepath.Abs(path)
-		if e != nil {
-			return fmt.Errorf("error computing absolute path of %s: %w", path, e)
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
 		}
 
 		if walkType != walk.Stdin {
-			realPath, ee := filepath.EvalSymlinks(absolutePath)
-			if ee != nil {
-				return fmt.Errorf("path %s not found", absolutePath)
+			realPath, err := filepath.EvalSymlinks(absolutePath)
+			if err != nil {
+				return fmt.Errorf("path %s not found: %w", absolutePath, err)
 			}
 
 			absolutePath = realPath
 		}
 
-		relativePath, e := filepath.Rel(treeRoot, absolutePath)
-		if e != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %w", treeRoot, absolutePath, e)
+		relativePath, err := filepath.Rel(treeRoot, absolutePath)
+		if err != nil {
+			return fmt.Errorf("error computing relative path from %s to %s: %w", treeRoot, absolutePath, err)
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
