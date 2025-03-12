@@ -39,17 +39,17 @@ That's what treefmt is about.
 
 Its main features are:
 
--   **Providing a unified CLI and output**
-    -   You don’t need to remember which formatters are necessary for each project.
-    -   Once you specify the formatters in the config file, you can trigger all of them with one command and get a
-        standardized output.
--   **Running all the formatters in parallel**
-    -   A standard script loops over your folders and runs each formatter sequentially.
-    -   In contrast, `treefmt` runs formatters in parallel. This way, the formatting job takes less time.
--   **Tracking file changes**
-    -   When formatters are run in a script, they process all the files they encounter, regardless of whether or not
-        they have changed.
-    -   `treefmt` tracks file changes, and only attempts to format files which have changed.
+- **Providing a unified CLI and output**
+    - You don’t need to remember which formatters are necessary for each project.
+    - Once you specify the formatters in the config file, you can trigger all of them with one command and get a
+      standardized output.
+- **Running all the formatters in parallel**
+    - A standard script loops over your folders and runs each formatter sequentially.
+    - In contrast, `treefmt` runs formatters in parallel. This way, the formatting job takes less time.
+- **Tracking file changes**
+    - When formatters are run in a script, they process all the files they encounter, regardless of whether or not
+      they have changed.
+    - `treefmt` tracks file changes, and only attempts to format files which have changed.
 
 To reformat the whole source tree, just type `treefmt` in any folder. This is a fast and simple formatting solution.
 
@@ -124,9 +124,9 @@ formatters.
 
 For instance, you can go for:
 
--   [clang-format] for C/C++/Java/JavaScript/JSON/Objective-C/Protobuf/C#
--   gofmt for Golang
--   Prettier for JavaScript/HTML/CSS
+- [clang-format] for C/C++/Java/JavaScript/JSON/Objective-C/Protobuf/C#
+- gofmt for Golang
+- Prettier for JavaScript/HTML/CSS
 
 Find the full list of supported formatters [here](https://treefmt.com/configure.html#supported-formatters).
 
@@ -134,21 +134,21 @@ Find the full list of supported formatters [here](https://treefmt.com/configure.
 
 `treefmt` currently has support for vscode via an extension:
 
--   [treefmt-vscode](https://marketplace.visualstudio.com/items?itemName=ibecker.treefmt-vscode) | [GitHub repo](https://github.com/isbecker/treefmt-vscode)
+- [treefmt-vscode](https://marketplace.visualstudio.com/items?itemName=ibecker.treefmt-vscode) | [GitHub repo](https://github.com/isbecker/treefmt-vscode)
 
 ## Upcoming features
 
 This project is still pretty new. Down the line we also want to add support for:
 
--   More IDE integration
--   Pre-commit hooks
+- More IDE integration
+- Pre-commit hooks
 
 ## Related projects
 
--   [EditorConfig](https://editorconfig.org/): unifies file indentations configuration on a per-project basis.
--   [prettier](https://prettier.io/): an opinionated code formatter for a number of languages.
--   [Super-Linter](https://github.com/github/super-linter): a project by GitHub to lint all of your code.
--   [pre-commit](https://pre-commit.com/): a framework for managing and maintaining multi-language pre-commit hooks.
+- [EditorConfig](https://editorconfig.org/): unifies file indentations configuration on a per-project basis.
+- [prettier](https://prettier.io/): an opinionated code formatter for a number of languages.
+- [Super-Linter](https://github.com/github/super-linter): a project by GitHub to lint all of your code.
+- [pre-commit](https://pre-commit.com/): a framework for managing and maintaining multi-language pre-commit hooks.
 
 ## Contributing
 

@@ -30,7 +30,7 @@ func TestGitReader(t *testing.T) {
 	as.NoError(err)
 
 	files := make([]*walk.File, 8)
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	n, err := reader.Read(ctx, files)
 
 	cancel()
@@ -48,7 +48,7 @@ func TestGitReader(t *testing.T) {
 	count := 0
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 
 		files := make([]*walk.File, 8)
 		n, err := reader.Read(ctx, files)

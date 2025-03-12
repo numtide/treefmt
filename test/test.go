@@ -115,13 +115,9 @@ func ChangeWorkDir(t *testing.T, dir string) {
 
 	t.Cleanup(func() {
 		// return to the previous working directory
-		if err := os.Chdir(cwd); err != nil {
-			t.Fatal(fmt.Errorf("failed to return to the previous working directory: %w", err))
-		}
+		t.Chdir(cwd)
 	})
 
 	// change to the new directory
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(fmt.Errorf("failed to change working directory to %s: %w", dir, err))
-	}
+	t.Chdir(dir)
 }

@@ -4,8 +4,8 @@
 
 You will need to have the following installed:
 
--   [Nix]
--   [Direnv]
+- [Nix]
+- [Direnv]
 
 !!! important
 

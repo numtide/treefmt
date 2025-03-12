@@ -11,8 +11,8 @@ It can be entered by running: `nix develop .#docs`
 The docs are based on [MkDocs] and the [MkDocs Material] theme.
 You will find its configuration and content in the following locations:
 
--   `mkdocs.yaml`
--   `./docs`
+- `mkdocs.yaml`
+- `./docs`
 
 ## Serve locally
 
@@ -43,9 +43,9 @@ configured to serve from.
 There is a github workflow, `.github/workflows/gh-pages.yml` which is responsible for publishing the docs.
 It does the following:
 
--   On merge to `main`, the docs version [main](https://numtide.github.io/treefmt/main/) is updated.
--   When a new tag is created of the form `v.<major>.<minor>.<patch>` a docs version `v<major>.<minor>` is created and the
-    [latest](https://numtide.github.io/treefmt/latest) alias is updated to point to this.
+- On merge to `main`, the docs version [main](https://numtide.github.io/treefmt/main/) is updated.
+- When a new tag is created of the form `v.<major>.<minor>.<patch>` a docs version `v<major>.<minor>` is created and the
+  [latest](https://numtide.github.io/treefmt/latest) alias is updated to point to this.
 
 The idea is that users will land on the latest released version of the docs by default, with `main` being available if
 they wish to read about unreleased features and changes.

@@ -14,6 +14,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+//nolint:recvcheck
 //go:generate enumer -type=Type -text -transform=snake -output=./type_enum.go
 type Type int
 
