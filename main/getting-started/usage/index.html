@@ -952,30 +952,36 @@
 <span class="normal"><a href="#__codelineno-0-21">21</a></span>
 <span class="normal"><a href="#__codelineno-0-22">22</a></span>
 <span class="normal"><a href="#__codelineno-0-23">23</a></span>
-<span class="normal"><a href="#__codelineno-0-24">24</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>Usage:
-<a id="__codelineno-0-2" name="__codelineno-0-2"></a>  treefmt &lt;paths...&gt; [flags]
-<a id="__codelineno-0-3" name="__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4"></a>Flags:
-<a id="__codelineno-0-5" name="__codelineno-0-5"></a>      --allow-missing-formatter   Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)
-<a id="__codelineno-0-6" name="__codelineno-0-6"></a>      --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case. (env $TREEFMT_CI)
-<a id="__codelineno-0-7" name="__codelineno-0-7"></a>  -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)
-<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      --completion string         [bash|zsh|fish] Generate shell completion scripts for the specified shell.
-<a id="__codelineno-0-9" name="__codelineno-0-9"></a>      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
-<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)
-<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)
-<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      --fail-on-change            Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)
-<a id="__codelineno-0-13" name="__codelineno-0-13"></a>  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)
-<a id="__codelineno-0-14" name="__codelineno-0-14"></a>  -h, --help                      help for treefmt
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a>  -i, --init                      Create a treefmt.toml file in the current directory.
-<a id="__codelineno-0-16" name="__codelineno-0-16"></a>      --no-cache                  Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a>  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level. Possible values are &lt;debug|info|warn|error|fatal&gt;. (env $TREEFMT_ON_UNMATCHED) (default &quot;warn&quot;)
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a>      --stdin                     Format the context passed in via stdin.
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>  -v, --verbose count             Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>      --version                   version for treefmt
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a>      --walk string               The method used to traverse the files within the tree root. Currently supports &lt;auto|git|filesystem&gt;. (env $TREEFMT_WALK) (default &quot;auto&quot;)
-<a id="__codelineno-0-24" name="__codelineno-0-24"></a>  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (env $TREEFMT_WORKING_DIR) (default &quot;.&quot;)
+<span class="normal"><a href="#__codelineno-0-24">24</a></span>
+<span class="normal"><a href="#__codelineno-0-25">25</a></span>
+<span class="normal"><a href="#__codelineno-0-26">26</a></span>
+<span class="normal"><a href="#__codelineno-0-27">27</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="go">The formatter multiplexer</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="go">Usage:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="go">  treefmt &lt;paths...&gt; [flags]</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="go">Flags:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="go">      --allow-missing-formatter   Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="go">      --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case. (env $TREEFMT_CI)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="go">  -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="go">      --completion string         [bash|zsh|fish] Generate shell completion scripts for the specified shell.</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="go">      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="go">      --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="go">      --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="go">      --fail-on-change            Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="go">  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="go">  -h, --help                      help for treefmt</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="go">  -i, --init                      Create a treefmt.toml file in the current directory.</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="go">      --no-cache                  Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="go">  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level. Possible values are &lt;debug|info|warn|error|fatal&gt;. (env $TREEFMT_ON_UNMATCHED) (default &quot;info&quot;)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="go">  -q, --quiet                     Disable all logs except errors. (env $TREEFMT_QUIET)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="go">      --stdin                     Format the context passed in via stdin.</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="go">      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="go">      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="go">  -v, --verbose count             Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="go">      --version                   version for treefmt</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="go">      --walk string               The method used to traverse the files within the tree root. Currently supports &lt;auto|git|filesystem&gt;. (env $TREEFMT_WALK) (default &quot;auto&quot;)</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="go">  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (env $TREEFMT_WORKING_DIR) (default &quot;.&quot;)</span>
 </code></pre></div></td></tr></table></div>
 <p>Typically, you will execute <code>treefmt</code> from the root of your repository with no arguments:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>

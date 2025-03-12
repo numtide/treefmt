@@ -856,33 +856,114 @@
 
 
 <h1 id="documentation">Documentation</h1>
-<p>There is a separate <a href="https://nix.dev/tutorials/first-steps/declarative-shell.html">devshell</a> called <code>docs</code> which is provided for working with the docs locally.</p>
-<p>It can be entered by running: <code>nix develop .#docs</code></p>
-<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">nix/devshells/docs.nix</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>
+<p>There is a <code>docs</code> package which can be built as follows:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="go">❯ nix build .#docs</span>
 </code></pre></div></td></tr></table></div>
-<p>The docs are based on <a href="https://www.mkdocs.org/">MkDocs</a> and the <a href="https://squidfunk.github.io/mkdocs-material/">MkDocs Material</a> theme.
-You will find its configuration and content in the following locations:</p>
-<ul>
-<li><code>mkdocs.yaml</code></li>
-<li><code>./docs</code></li>
-</ul>
+<p>This produces a static build of the docs and places it in a symlink called <code>result</code> in the same directory.</p>
+<p>We can re-use this package as a <a href="https://nix.dev/tutorials/first-steps/declarative-shell.html">devshell</a>, relying upon it to provide the necessary dependencies for developing the
+docs.</p>
+<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">nix/devshells/docs.nix</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span>
+<span class="normal"><a href="#__codelineno-1-16">16</a></span>
+<span class="normal"><a href="#__codelineno-1-17">17</a></span>
+<span class="normal"><a href="#__codelineno-1-18">18</a></span>
+<span class="normal"><a href="#__codelineno-1-19">19</a></span>
+<span class="normal"><a href="#__codelineno-1-20">20</a></span>
+<span class="normal"><a href="#__codelineno-1-21">21</a></span>
+<span class="normal"><a href="#__codelineno-1-22">22</a></span>
+<span class="normal"><a href="#__codelineno-1-23">23</a></span>
+<span class="normal"><a href="#__codelineno-1-24">24</a></span>
+<span class="normal"><a href="#__codelineno-1-25">25</a></span>
+<span class="normal"><a href="#__codelineno-1-26">26</a></span>
+<span class="normal"><a href="#__codelineno-1-27">27</a></span>
+<span class="normal"><a href="#__codelineno-1-28">28</a></span>
+<span class="normal"><a href="#__codelineno-1-29">29</a></span>
+<span class="normal"><a href="#__codelineno-1-30">30</a></span>
+<span class="normal"><a href="#__codelineno-1-31">31</a></span>
+<span class="normal"><a href="#__codelineno-1-32">32</a></span>
+<span class="normal"><a href="#__codelineno-1-33">33</a></span>
+<span class="normal"><a href="#__codelineno-1-34">34</a></span>
+<span class="normal"><a href="#__codelineno-1-35">35</a></span>
+<span class="normal"><a href="#__codelineno-1-36">36</a></span>
+<span class="normal"><a href="#__codelineno-1-37">37</a></span>
+<span class="normal"><a href="#__codelineno-1-38">38</a></span>
+<span class="normal"><a href="#__codelineno-1-39">39</a></span>
+<span class="normal"><a href="#__codelineno-1-40">40</a></span>
+<span class="normal"><a href="#__codelineno-1-41">41</a></span>
+<span class="normal"><a href="#__codelineno-1-42">42</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>  pkgs<span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a>  perSystem<span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>  <span class="o">...</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="p">}:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>pkgs<span class="o">.</span>stdenvNoCC<span class="o">.</span>mkDerivation <span class="p">{</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>  <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;docs&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>  <span class="ss">unpackPhase</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="s s-Multiline">    cp -r </span><span class="si">${</span><span class="l">../../docs</span><span class="si">}</span><span class="s s-Multiline">/* .</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="s s-Multiline">    ls -alr</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="s s-Multiline">  &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14"></a>  <span class="ss">nativeBuildInputs</span> <span class="o">=</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15"></a>    <span class="p">(</span><span class="k">with</span> pkgs<span class="o">.</span>python3Packages<span class="p">;</span> <span class="p">[</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16"></a>      mike
+<a id="__codelineno-1-17" name="__codelineno-1-17"></a>      mkdocs
+<a id="__codelineno-1-18" name="__codelineno-1-18"></a>      mkdocs-material
+<a id="__codelineno-1-19" name="__codelineno-1-19"></a>      mkdocs-awesome-pages-plugin
+<a id="__codelineno-1-20" name="__codelineno-1-20"></a>    <span class="p">])</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21"></a>    <span class="o">++</span> <span class="p">[</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22"></a>      <span class="p">(</span>pkgs<span class="o">.</span>writeShellApplication <span class="p">{</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23"></a>        <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;vhs&quot;</span><span class="p">;</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24"></a>        <span class="ss">runtimeInputs</span> <span class="o">=</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25"></a>          <span class="p">[</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26"></a>            perSystem<span class="o">.</span>self<span class="o">.</span>treefmt
+<a id="__codelineno-1-27" name="__codelineno-1-27"></a>            pkgs<span class="o">.</span>rsync
+<a id="__codelineno-1-28" name="__codelineno-1-28"></a>            pkgs<span class="o">.</span>vhs
+<a id="__codelineno-1-29" name="__codelineno-1-29"></a>          <span class="p">]</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30"></a>          <span class="o">++</span> <span class="p">(</span><span class="nb">import</span> <span class="l">./treefmt/formatters.nix</span> pkgs<span class="p">);</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31"></a>        <span class="ss">text</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;vhs &quot;$@&quot;&#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32"></a>      <span class="p">})</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33"></a>    <span class="p">];</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34"></a>
+<a id="__codelineno-1-35" name="__codelineno-1-35"></a>  <span class="ss">buildPhase</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36"></a><span class="s s-Multiline">    mkdocs build</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37"></a><span class="s s-Multiline">  &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38"></a>
+<a id="__codelineno-1-39" name="__codelineno-1-39"></a>  <span class="ss">installPhase</span> <span class="o">=</span> <span class="s s-Multiline">&#39;&#39;</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40"></a><span class="s s-Multiline">    mv out $out</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41"></a><span class="s s-Multiline">  &#39;&#39;</span><span class="p">;</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The docs are based on <a href="https://www.mkdocs.org/">MkDocs</a> and the <a href="https://squidfunk.github.io/mkdocs-material/">MkDocs Material</a> theme.</p>
 <h2 id="serve-locally">Serve locally</h2>
-<p>To serve the docs locally run <code>mkdocs serve</code> from the root of the repository:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
-<span class="normal"><a href="#__codelineno-1-2">2</a></span>
-<span class="normal"><a href="#__codelineno-1-3">3</a></span>
-<span class="normal"><a href="#__codelineno-1-4">4</a></span>
-<span class="normal"><a href="#__codelineno-1-5">5</a></span>
-<span class="normal"><a href="#__codelineno-1-6">6</a></span>
-<span class="normal"><a href="#__codelineno-1-7">7</a></span>
-<span class="normal"><a href="#__codelineno-1-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="go">❯ mkdocs serve</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="go">INFO    -  Building documentation...</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="go">INFO    -  Cleaning site directory</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="go">WARNING -  The following pages exist in the docs directory, but are not included in the &quot;nav&quot; configuration:</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="go">             - index.md</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="go">INFO    -  Documentation built in 0.26 seconds</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="go">INFO    -  [16:22:36] Watching paths for changes: &#39;docs/content&#39;, &#39;mkdocs.yml&#39;</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="go">INFO    -  [16:22:36] Serving on http://127.0.0.1:8000/treefmt/</span>
+<p>To serve the docs locally run <code>mkdocs serve</code> from the <code>docs</code> directory:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span>
+<span class="normal"><a href="#__codelineno-2-7">7</a></span>
+<span class="normal"><a href="#__codelineno-2-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="go">❯ mkdocs serve</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="go">INFO    -  Building documentation...</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="go">INFO    -  Cleaning site directory</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="go">WARNING -  The following pages exist in the docs directory, but are not included in the &quot;nav&quot; configuration:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="go">             - index.md</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="go">INFO    -  Documentation built in 0.26 seconds</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="go">INFO    -  [16:22:36] Watching paths for changes: &#39;docs/content&#39;, &#39;mkdocs.yml&#39;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="go">INFO    -  [16:22:36] Serving on http://127.0.0.1:8000/treefmt/</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="versioning-publication">Versioning &amp; Publication</h2>
 <p>Versioning of the docs is managed through <a href="https://github.com/jimporter/mike">mike</a>.</p>
