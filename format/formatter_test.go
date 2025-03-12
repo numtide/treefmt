@@ -66,7 +66,7 @@ func TestFormatSignature(t *testing.T) {
 	binPath := filepath.Join(tempDir, "bin")
 	as.NoError(os.Mkdir(binPath, 0o755))
 
-	binaries := []string{"black", "elm-format", "gofmt"}
+	binaries := []string{"black", "rufo", "gofmt"}
 
 	for _, name := range binaries {
 		src, err := exec.LookPath(name)
@@ -85,10 +85,10 @@ func TestFormatSignature(t *testing.T) {
 				Command:  "black",
 				Includes: []string{"*.py"},
 			},
-			"elm": {
-				Command:  "elm-format",
-				Options:  []string{"--yes"},
-				Includes: []string{"*.elm"},
+			"ruby": {
+				Command:  "rufo",
+				Options:  []string{"-x"},
+				Includes: []string{"*.rb"},
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func TestFormatSignature(t *testing.T) {
 	oldSignature := assertSignatureChangedAndStable(t, as, cfg, nil)
 
 	t.Run("change formatter mod time", func(t *testing.T) {
-		for _, name := range []string{"black", "elm-format"} {
+		for _, name := range []string{"black", "rufo"} {
 			t.Logf("changing mod time of %s", name)
 
 			// tweak mod time
@@ -155,7 +155,7 @@ func TestFormatSignature(t *testing.T) {
 		oldSignature = assertSignatureChangedAndStable(t, as, cfg, oldSignature)
 
 		// remove elm formatter
-		delete(cfg.FormatterConfigs, "elm")
+		delete(cfg.FormatterConfigs, "ruby")
 		oldSignature = assertSignatureChangedAndStable(t, as, cfg, oldSignature)
 	})
 }

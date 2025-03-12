@@ -62,8 +62,8 @@ func TestGitReader(t *testing.T) {
 		}
 	}
 
-	as.Equal(33, count)
-	as.Equal(33, statz.Value(stats.Traversed))
+	as.Equal(31, count)
+	as.Equal(31, statz.Value(stats.Traversed))
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))
