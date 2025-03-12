@@ -6,31 +6,8 @@ outline: deep
 
 `treefmt` has the following specification:
 
-```
-Usage:
-  treefmt <paths...> [flags]
-
-Flags:
-      --allow-missing-formatter   Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)
-      --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case. (env $TREEFMT_CI)
-  -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)
-      --completion string         [bash|zsh|fish] Generate shell completion scripts for the specified shell.
-      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
-      --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)
-      --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)
-      --fail-on-change            Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)
-  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)
-  -h, --help                      help for treefmt
-  -i, --init                      Create a treefmt.toml file in the current directory.
-      --no-cache                  Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)
-  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level. Possible values are <debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED) (default "warn")
-      --stdin                     Format the context passed in via stdin.
-      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)
-      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)
-  -v, --verbose count             Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)
-      --version                   version for treefmt
-      --walk string               The method used to traverse the files within the tree root. Currently supports <auto|git|filesystem>. (env $TREEFMT_WALK) (default "auto")
-  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (env $TREEFMT_WORKING_DIR) (default ".")
+```console
+--8<-- "docs/snippets/usage.txt"
 ```
 
 Typically, you will execute `treefmt` from the root of your repository with no arguments:
