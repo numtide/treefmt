@@ -217,8 +217,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 }
 
 // resolvePaths checks all paths are contained within the tree root and exist
-// also "normalize" paths so they're relative to cfg.TreeRoot
-// Symlinks are allowed in `paths` and we e resolve them here, since
+// also "normalize" paths so they're relative to `cfg.TreeRoot`
+// Symlinks are allowed in `paths` and we resolve them here, since
 // the readers will ignore symlinks.
 func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
 	for i, path := range paths {
