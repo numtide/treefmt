@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adrg/xdg v0.5.3
-	github.com/charmbracelet/log v0.4.0
+	github.com/charmbracelet/log v0.4.1
 	github.com/gobwas/glob v0.2.3
 	github.com/otiai10/copy v1.14.1
 	github.com/spf13/cobra v1.9.1
@@ -20,7 +20,8 @@ require (
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/lipgloss v0.10.0 // indirect
+	github.com/charmbracelet/lipgloss v1.0.0 // indirect
+	github.com/charmbracelet/x/ansi v0.4.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
