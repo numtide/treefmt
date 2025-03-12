@@ -549,6 +549,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shell-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shell Completion
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ci-integration" class="md-nav__link">
     <span class="md-ellipsis">
       CI integration
@@ -882,6 +891,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shell-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shell Completion
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ci-integration" class="md-nav__link">
     <span class="md-ellipsis">
       CI integration
@@ -933,29 +951,31 @@
 <span class="normal"><a href="#__codelineno-0-20">20</a></span>
 <span class="normal"><a href="#__codelineno-0-21">21</a></span>
 <span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>Usage:
+<span class="normal"><a href="#__codelineno-0-23">23</a></span>
+<span class="normal"><a href="#__codelineno-0-24">24</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>Usage:
 <a id="__codelineno-0-2" name="__codelineno-0-2"></a>  treefmt &lt;paths...&gt; [flags]
 <a id="__codelineno-0-3" name="__codelineno-0-3"></a>
 <a id="__codelineno-0-4" name="__codelineno-0-4"></a>Flags:
 <a id="__codelineno-0-5" name="__codelineno-0-5"></a>      --allow-missing-formatter   Do not exit with error if a configured formatter is missing. (env $TREEFMT_ALLOW_MISSING_FORMATTER)
 <a id="__codelineno-0-6" name="__codelineno-0-6"></a>      --ci                        Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case. (env $TREEFMT_CI)
 <a id="__codelineno-0-7" name="__codelineno-0-7"></a>  -c, --clear-cache               Reset the evaluation cache. Use in case the cache is not precise enough. (env $TREEFMT_CLEAR_CACHE)
-<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
-<a id="__codelineno-0-9" name="__codelineno-0-9"></a>      --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)
-<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)
-<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      --fail-on-change            Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)
-<a id="__codelineno-0-12" name="__codelineno-0-12"></a>  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)
-<a id="__codelineno-0-13" name="__codelineno-0-13"></a>  -h, --help                      help for treefmt
-<a id="__codelineno-0-14" name="__codelineno-0-14"></a>  -i, --init                      Create a treefmt.toml file in the current directory.
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a>      --no-cache                  Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)
-<a id="__codelineno-0-16" name="__codelineno-0-16"></a>  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level. Possible values are &lt;debug|info|warn|error|fatal&gt;. (env $TREEFMT_ON_UNMATCHED) (default &quot;warn&quot;)
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a>      --stdin                     Format the context passed in via stdin.
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a>      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>  -v, --verbose count             Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>      --version                   version for treefmt
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a>      --walk string               The method used to traverse the files within the tree root. Currently supports &lt;auto|git|filesystem&gt;. (env $TREEFMT_WALK) (default &quot;auto&quot;)
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a>  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (env $TREEFMT_WORKING_DIR) (default &quot;.&quot;)
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>      --completion string         [bash|zsh|fish] Generate shell completion scripts for the specified shell.
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>      --config-file string        Load the config file from the given path (defaults to searching upwards for treefmt.toml or .treefmt.toml).
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      --cpu-profile string        The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      --excludes strings          Exclude files or directories matching the specified globs. (env $TREEFMT_EXCLUDES)
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      --fail-on-change            Exit with error if any changes were made. Useful for CI. (env $TREEFMT_FAIL_ON_CHANGE)
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>  -f, --formatters strings        Specify formatters to apply. Defaults to all configured formatters. (env $TREEFMT_FORMATTERS)
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>  -h, --help                      help for treefmt
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>  -i, --init                      Create a treefmt.toml file in the current directory.
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>      --no-cache                  Ignore the evaluation cache entirely. Useful for CI. (env $TREEFMT_NO_CACHE)
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a>  -u, --on-unmatched string       Log paths that did not match any formatters at the specified log level. Possible values are &lt;debug|info|warn|error|fatal&gt;. (env $TREEFMT_ON_UNMATCHED) (default &quot;warn&quot;)
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a>      --stdin                     Format the context passed in via stdin.
+<a id="__codelineno-0-19" name="__codelineno-0-19"></a>      --tree-root string          The root directory from which treefmt will start walking the filesystem (defaults to the directory containing the config file). (env $TREEFMT_TREE_ROOT)
+<a id="__codelineno-0-20" name="__codelineno-0-20"></a>      --tree-root-file string     File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)
+<a id="__codelineno-0-21" name="__codelineno-0-21"></a>  -v, --verbose count             Set the verbosity of logs e.g. -vv. (env $TREEFMT_VERBOSE)
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a>      --version                   version for treefmt
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a>      --walk string               The method used to traverse the files within the tree root. Currently supports &lt;auto|git|filesystem&gt;. (env $TREEFMT_WALK) (default &quot;auto&quot;)
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a>  -C, --working-dir string        Run as if treefmt was started in the specified working directory instead of the current working directory. (env $TREEFMT_WORKING_DIR) (default &quot;.&quot;)
 </code></pre></div></td></tr></table></div>
 <p>Typically, you will execute <code>treefmt</code> from the root of your repository with no arguments:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
@@ -1072,46 +1092,54 @@ output to <code>stdout</code>:</p>
 <a id="__codelineno-6-23" name="__codelineno-6-23"></a><span class="go">in</span>
 <a id="__codelineno-6-24" name="__codelineno-6-24"></a><span class="go">  flake.defaultNix</span>
 </code></pre></div></td></tr></table></div>
+<h2 id="shell-completion">Shell Completion</h2>
+<p>To generate completions for your preferred shell:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="go">❯ treefmt --completion bash</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="go">❯ treefmt --completion fish</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="go">❯ treefmt --completion zsh</span>
+</code></pre></div></td></tr></table></div>
 <h2 id="ci-integration">CI integration</h2>
 <p>We recommend using the <a href="../configure/#ci">CI option</a> in continuous integration environments.</p>
 <p>You can configure a <code>treefmt</code> job in a GitHub pipeline for Ubuntu with <code>nix-shell</code> like this:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-7-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-7-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-7-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-7-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-7-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-7-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-7-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-7-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-7-10">10</a></span>
-<span class="normal"><a href="#__codelineno-7-11">11</a></span>
-<span class="normal"><a href="#__codelineno-7-12">12</a></span>
-<span class="normal"><a href="#__codelineno-7-13">13</a></span>
-<span class="normal"><a href="#__codelineno-7-14">14</a></span>
-<span class="normal"><a href="#__codelineno-7-15">15</a></span>
-<span class="normal"><a href="#__codelineno-7-16">16</a></span>
-<span class="normal"><a href="#__codelineno-7-17">17</a></span>
-<span class="normal"><a href="#__codelineno-7-18">18</a></span>
-<span class="normal"><a href="#__codelineno-7-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">treefmt</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="nt">on</span><span class="p">:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">    </span><span class="nt">pull_request</span><span class="p">:</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">    </span><span class="nt">push</span><span class="p">:</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">        </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="nt">jobs</span><span class="p">:</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">    </span><span class="nt">formatter</span><span class="p">:</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="w">        </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="w">        </span><span class="nt">steps</span><span class="p">:</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cachix/install-nix-action@v26</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="w">              </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13"></a><span class="w">                  </span><span class="nt">nix_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nixpkgs=channel:nixos-unstable</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cachix/cachix-action@v14</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15"></a><span class="w">              </span><span class="nt">with</span><span class="p">:</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nix-community</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17"></a><span class="w">                  </span><span class="nt">authToken</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${{</span><span class="nv"> </span><span class="s">secrets.CACHIX_AUTH_TOKEN</span><span class="nv"> </span><span class="s">}}&quot;</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">treefmt</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19"></a><span class="w">              </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nix-shell -p treefmt --run &quot;treefmt --ci&quot;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span>
+<span class="normal"><a href="#__codelineno-8-11">11</a></span>
+<span class="normal"><a href="#__codelineno-8-12">12</a></span>
+<span class="normal"><a href="#__codelineno-8-13">13</a></span>
+<span class="normal"><a href="#__codelineno-8-14">14</a></span>
+<span class="normal"><a href="#__codelineno-8-15">15</a></span>
+<span class="normal"><a href="#__codelineno-8-16">16</a></span>
+<span class="normal"><a href="#__codelineno-8-17">17</a></span>
+<span class="normal"><a href="#__codelineno-8-18">18</a></span>
+<span class="normal"><a href="#__codelineno-8-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">treefmt</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="nt">on</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">    </span><span class="nt">pull_request</span><span class="p">:</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">    </span><span class="nt">push</span><span class="p">:</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">        </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="nt">jobs</span><span class="p">:</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">    </span><span class="nt">formatter</span><span class="p">:</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">        </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">        </span><span class="nt">steps</span><span class="p">:</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cachix/install-nix-action@v26</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">              </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="w">                  </span><span class="nt">nix_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nixpkgs=channel:nixos-unstable</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cachix/cachix-action@v14</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15"></a><span class="w">              </span><span class="nt">with</span><span class="p">:</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nix-community</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17"></a><span class="w">                  </span><span class="nt">authToken</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${{</span><span class="nv"> </span><span class="s">secrets.CACHIX_AUTH_TOKEN</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">treefmt</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19"></a><span class="w">              </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nix-shell -p treefmt --run &quot;treefmt --ci&quot;</span>
 </code></pre></div></td></tr></table></div>
 
 
