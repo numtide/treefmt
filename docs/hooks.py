@@ -1,4 +1,10 @@
-import os
+import subprocess
+from pathlib import Path
 
 def on_pre_build(**kwargs):
-    os.system('nix run .#treefmt -- --help > ./snippets/usage.txt')
+    with Path("./snippets/usage.txt").open("w") as f:
+        subprocess.run(
+            ["nix", "run", ".#treefmt", "--", "--help"],
+            stdout=f,
+            check=True,
+        )
