@@ -9,7 +9,6 @@ pkgs.mkShellNoCC {
     (with pkgs; [
       go_1_24
       goreleaser
-      golangci-lint
       delve
       pprof
       graphviz

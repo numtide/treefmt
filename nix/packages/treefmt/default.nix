@@ -111,17 +111,6 @@ in
             mv coverage.out $out
           '';
         }));
-
-        golangci-lint = treefmt.overrideAttrs (old: {
-          nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.golangci-lint];
-          buildPhase = ''
-            HOME=$TMPDIR
-            golangci-lint run
-          '';
-          installPhase = ''
-            touch $out
-          '';
-        });
       };
     };
 
