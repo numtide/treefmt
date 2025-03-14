@@ -6,13 +6,13 @@
 pkgs.stdenvNoCC.mkDerivation {
   name = "docs";
 
-  unpackPhase = ''
-    cp -r ${../../docs}/* .
-    ls -alr
-  '';
+  src = ../../.;
 
   nativeBuildInputs =
-    (with pkgs.python3Packages; [
+    [
+      perSystem.self.treefmt
+    ]
+    ++ (with pkgs.python3Packages; [
       mike
       mkdocs
       mkdocs-material
@@ -33,6 +33,7 @@ pkgs.stdenvNoCC.mkDerivation {
     ];
 
   buildPhase = ''
+    cd docs
     mkdocs build
   '';
 
