@@ -193,6 +193,7 @@ func NewReader(
 	walkType Type,
 	root string,
 	path string,
+	includeGitSubmodules bool,
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
@@ -204,9 +205,9 @@ func NewReader(
 	switch walkType {
 	case Auto:
 		// for now, we keep it simple and try git first, filesystem second
-		reader, err = NewReader(Git, root, path, db, statz)
+		reader, err = NewReader(Git, root, path, includeGitSubmodules, db, statz)
 		if err != nil {
-			reader, err = NewReader(Filesystem, root, path, db, statz)
+			reader, err = NewReader(Filesystem, root, path, includeGitSubmodules, db, statz)
 		}
 
 		return reader, err
@@ -215,7 +216,7 @@ func NewReader(
 	case Filesystem:
 		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Git:
-		reader, err = NewGitReader(root, path, statz)
+		reader, err = NewGitReader(root, path, includeGitSubmodules, statz)
 
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)
@@ -239,12 +240,13 @@ func NewCompositeReader(
 	walkType Type,
 	root string,
 	paths []string,
+	includeGitSubmodules bool,
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
 	// if not paths are provided we default to processing the tree root
 	if len(paths) == 0 {
-		return NewReader(walkType, root, "", db, statz)
+		return NewReader(walkType, root, "", includeGitSubmodules, db, statz)
 	}
 
 	readers := make([]Reader, len(paths))
@@ -276,10 +278,10 @@ func NewCompositeReader(
 
 		if info.IsDir() {
 			// for directories, we honour the walk type as we traverse them
-			readers[idx], err = NewReader(walkType, root, relPath, db, statz)
+			readers[idx], err = NewReader(walkType, root, relPath, includeGitSubmodules, db, statz)
 		} else {
 			// for files, we enforce a simple filesystem read
-			readers[idx], err = NewReader(Filesystem, root, relPath, db, statz)
+			readers[idx], err = NewReader(Filesystem, root, relPath, includeGitSubmodules, db, statz)
 		}
 
 		if err != nil {
