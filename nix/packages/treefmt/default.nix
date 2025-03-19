@@ -8,7 +8,7 @@
 }: let
   inherit (pkgs) lib;
 in
-  pkgs.buildGo124Module rec {
+  pkgs.buildGo124Module (finalAttrs: {
     inherit pname;
     # there's no good way of tying in the version to a git tag or branch
     # so for simplicity's sake we set the version as the commit revision hash
@@ -40,7 +40,7 @@ in
       "-s"
       "-w"
       "-X github.com/numtide/treefmt/v2/build.Name=${pname}"
-      "-X github.com/numtide/treefmt/v2/build.Version=v${version}"
+      "-X github.com/numtide/treefmt/v2/build.Version=v${finalAttrs.version}"
     ];
 
     nativeBuildInputs =
@@ -75,10 +75,25 @@ in
     passthru = let
       inherit (perSystem.self) treefmt;
     in {
+      # Some useful config wrappers which helps with generating treefmt config and creating a pre-configured treefmt.
+      # For more complicated use cases use https://github.com/numtide/treefmt-nix.
+      # We inherit these direct from nixpkgs to avoid duplication.
+      withConfig = pkgs.treefmt.withConfig.override {
+        treefmt = finalAttrs.finalPackage;
+      };
+
+      buildConfig = pkgs.treefmt.buildConfig.override {
+        treefmt = finalAttrs.finalPackage;
+      };
+
+      # Provides a version of this package with the vendor hash cleared, which permits `update-vendor-hash` to capture
+      # what the correct `vendorHash` should be.
       no-vendor-hash = treefmt.overrideAttrs {
         vendorHash = "";
       };
 
+      # Build the `no-vendor-hash` variant of this package and, if the build fails, captures the correct `vendorHash`
+      # and updates this file.
       update-vendor-hash = pkgs.writeShellApplication {
         name = "update-vendor-hash";
         runtimeInputs = with pkgs; [
@@ -99,6 +114,8 @@ in
         '';
       };
 
+      # Blueprint will pick up any derivations inside of `passthru.tests` and add them as checks to be run as part of
+      # `nix flake check`.
       tests = {
         coverage = lib.optionalAttrs pkgs.stdenv.isx86_64 (treefmt.overrideAttrs (old: {
           nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.gcc];
@@ -122,6 +139,10 @@ in
             touch $out
           '';
         });
+
+        build-config = pkgs.runCommandLocal "build-config-test" {
+
+        };
       };
     };
 
@@ -131,4 +152,4 @@ in
       license = licenses.mit;
       mainProgram = "treefmt";
     };
-  }
+  })
