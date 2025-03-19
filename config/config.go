@@ -28,6 +28,7 @@ type Config struct {
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
 	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
 	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
+	IncludeGitSubmodules  bool     `mapstructure:"include-git-submodules   toml:"include-git-subsmodules,omitempty"`
 	WorkingDirectory      string   `mapstructure:"working-dir"             toml:"-"`
 	Stdin                 bool     `mapstructure:"stdin"                   toml:"-"` // not allowed in config
 
@@ -119,6 +120,10 @@ func SetFlags(fs *pflag.FlagSet) {
 		"walk", "auto",
 		"The method used to traverse the files within the tree root. Currently supports "+
 			"<auto|git|filesystem>. (env $TREEFMT_WALK)",
+	)
+	fs.Bool(
+		"include-git-submodules", false,
+		"Also format files in submodules",
 	)
 	fs.StringP(
 		"working-dir", "C", ".",
