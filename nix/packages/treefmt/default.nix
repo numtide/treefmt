@@ -74,7 +74,19 @@ in
 
     passthru = let
       inherit (perSystem.self) treefmt;
+
+      # Inherits an attr from pkgs.treefmt, overriding the `treefmt` arg if possible
+      inheritFromNixpkgs = name: let
+        error = "Accessing `${name}` requires a nixpkgs revision that has `treefmt.${name}`.";
+        attr = pkgs.treefmt.${name} or (throw error);
+      in
+        if attr.override.__functionArgs.treefmt or null != null
+        then attr.override {inherit treefmt;}
+        else attr;
     in {
+      withConfig = inheritFromNixpkgs "withConfig";
+      buildConfig = inheritFromNixpkgs "buildConfig";
+
       no-vendor-hash = treefmt.overrideAttrs {
         vendorHash = "";
       };
