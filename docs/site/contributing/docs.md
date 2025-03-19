@@ -1,22 +1,25 @@
 # Documentation
 
-There is a separate [devshell] called `docs` which is provided for working with the docs locally.
+There is a `docs` package which can be built as follows:
 
-It can be entered by running: `nix develop .#docs`
+```console
+❯ nix build .#docs
+```
+
+This produces a static build of the docs and places it in a symlink called `result` in the same directory.
+
+We can re-use this package as a [devshell], relying upon it to provide the necessary dependencies for developing the
+docs.
 
 ```nix title="nix/devshells/docs.nix"
---8<-- "nix/devshells/docs.nix"
+--8<-- "nix/packages/docs.nix"
 ```
 
 The docs are based on [MkDocs] and the [MkDocs Material] theme.
-You will find its configuration and content in the following locations:
-
-- `mkdocs.yaml`
-- `./docs`
 
 ## Serve locally
 
-To serve the docs locally run `mkdocs serve` from the root of the repository:
+To serve the docs locally run `mkdocs serve` from the `docs` directory:
 
 ```console
 ❯ mkdocs serve

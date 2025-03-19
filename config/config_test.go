@@ -603,14 +603,6 @@ func TestSampleConfigFile(t *testing.T) {
 	as.Equal([]string{"*.py"}, python.Includes)
 	as.Nil(python.Excludes)
 
-	// elm
-	elm, ok := cfg.FormatterConfigs["elm"]
-	as.True(ok, "elm formatter not found")
-	as.Equal("elm-format", elm.Command)
-	as.Equal([]string{"--yes"}, elm.Options)
-	as.Equal([]string{"*.elm"}, elm.Includes)
-	as.Nil(elm.Excludes)
-
 	// go
 	golang, ok := cfg.FormatterConfigs["go"]
 	as.True(ok, "go formatter not found")

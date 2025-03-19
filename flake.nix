@@ -1,5 +1,5 @@
 {
-  description = "Treefmt: once CLI to format your repo";
+  description = "treefmt: the formatter multiplexer";
 
   nixConfig = {
     extra-substituters = ["https://numtide.cachix.org"];

@@ -12,8 +12,5 @@ repl-result-*
 # devshell
 /.data
 
-# docs
-site
-
 # goreleaser
 dist/

@@ -6,13 +6,13 @@
 pkgs.stdenvNoCC.mkDerivation {
   name = "docs";
 
-  unpackPhase = ''
-    cp ${../../mkdocs.yml} mkdocs.yaml
-    cp -r ${../../docs} docs
-  '';
+  src = ../../.;
 
-  nativeBuildInputs = with pkgs;
-    (with pkgs.python3Packages; [
+  nativeBuildInputs =
+    [
+      perSystem.self.treefmt
+    ]
+    ++ (with pkgs.python3Packages; [
       mike
       mkdocs
       mkdocs-material
@@ -33,10 +33,11 @@ pkgs.stdenvNoCC.mkDerivation {
     ];
 
   buildPhase = ''
+    cd docs
     mkdocs build
   '';
 
   installPhase = ''
-    mv site $out
+    mv out $out
   '';
 }
