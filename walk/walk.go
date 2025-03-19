@@ -234,6 +234,9 @@ func NewReader(
 	return reader, err
 }
 
+// NewCompositeReader returns a composite reader for the `root` and all `paths`. It
+// never follows symlinks.
+//
 //nolint:ireturn
 func NewCompositeReader(
 	walkType Type,
@@ -268,16 +271,21 @@ func NewCompositeReader(
 		// create a clean absolute path
 		path := filepath.Clean(filepath.Join(root, relPath))
 
-		// check the path exists
+		// check the path exists (don't follow symlinks)
 		info, err = os.Lstat(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to stat %s: %w", path, err)
 		}
 
-		if info.IsDir() {
+		switch {
+		case info.Mode()&os.ModeSymlink == os.ModeSymlink:
+			// for symlinks -> we ignore them since it does not make sense to follow them
+			// as normal files in the `root` will be picked up nevertheless.
+			continue
+		case info.IsDir():
 			// for directories, we honour the walk type as we traverse them
 			readers[idx], err = NewReader(walkType, root, relPath, db, statz)
-		} else {
+		default:
 			// for files, we enforce a simple filesystem read
 			readers[idx], err = NewReader(Filesystem, root, relPath, db, statz)
 		}

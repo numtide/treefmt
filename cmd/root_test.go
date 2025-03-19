@@ -1411,9 +1411,9 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 78,
-			stats.Matched:   78,
-			stats.Formatted: 48, // the echo formatter should only be applied to the new files
+			stats.Traversed: 79,
+			stats.Matched:   79,
+			stats.Formatted: 49, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1463,7 +1463,7 @@ func TestGit(t *testing.T) {
 		withArgs("-C", tempDir, "haskell", "foo"),
 		withConfig(configPath, cfg),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path foo not found")
+			as.ErrorContains(err, "foo not found")
 		}),
 	)
 
@@ -1592,7 +1592,7 @@ func TestPathsArg(t *testing.T) {
 	treefmt(t,
 		withArgs("rust/src/main.rs", "haskell/Nested/Bar.hs"),
 		withError(func(as *require.Assertions, err error) {
-			as.ErrorContains(err, "path haskell/Nested/Bar.hs not found")
+			as.ErrorContains(err, "Bar.hs not found")
 		}),
 	)
 
@@ -1610,7 +1610,7 @@ func TestPathsArg(t *testing.T) {
 
 	// specify a relative path outside the tree root
 	relativeExternalPath := "../outside_tree.go"
-	as.FileExists(relativeExternalPath, "exernal file must exist")
+	as.FileExists(relativeExternalPath, "external file must exist")
 
 	treefmt(t,
 		withArgs(relativeExternalPath),
@@ -1842,7 +1842,7 @@ func TestRunInSubdir(t *testing.T) {
 			treefmt(t,
 				withArgs("-c", "go/main.go", "haskell/Nested/Foo.hs"),
 				withError(func(as *require.Assertions, err error) {
-					as.ErrorContains(err, "path go/main.go not found")
+					as.ErrorContains(err, "go/main.go not found")
 				}),
 			)
 

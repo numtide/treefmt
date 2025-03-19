@@ -88,8 +88,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 		// ensure db is closed after we're finished
 		defer func() {
-			if err := db.Close(); err != nil {
-				log.Errorf("failed to close cache: %v", err)
+			if closeErr := db.Close(); closeErr != nil {
+				log.Errorf("failed to close cache: %v", closeErr)
 			}
 		}()
 	}
@@ -126,30 +126,8 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
-	// checks all paths are contained within the tree root and exist
-	// also "normalize" paths so they're relative to cfg.TreeRoot
-	for i, path := range paths {
-		absolutePath, err := filepath.Abs(path)
-		if err != nil {
-			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
-		}
-
-		relativePath, err := filepath.Rel(cfg.TreeRoot, absolutePath)
-		if err != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %w", cfg.TreeRoot, absolutePath, err)
-		}
-
-		if strings.HasPrefix(relativePath, "..") {
-			return fmt.Errorf("path %s not inside the tree root %s", path, cfg.TreeRoot)
-		}
-
-		paths[i] = relativePath
-
-		if walkType != walk.Stdin {
-			if _, err = os.Stat(absolutePath); err != nil {
-				return fmt.Errorf("path %s not found", path)
-			}
-		}
+	if err = resolvePaths(paths, walkType, cfg.TreeRoot); err != nil {
+		return err
 	}
 
 	// create a composite formatter which will handle applying the correct formatters to each file we traverse
@@ -233,6 +211,43 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	if cfg.FailOnChange && statz.Value(stats.Changed) != 0 {
 		// if fail on change has been enabled, check that no files were actually changed, throwing an error if so
 		return ErrFailOnChange
+	}
+
+	return nil
+}
+
+// resolvePaths checks all paths are contained within the tree root and exist
+// also "normalize" paths so they're relative to `cfg.TreeRoot`
+// Symlinks are allowed in `paths` and we resolve them here, since
+// the readers will ignore symlinks.
+func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
+	for i, path := range paths {
+		log.Errorf("Resolving path '%s': %v", path, walkType)
+
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
+		}
+
+		if walkType != walk.Stdin {
+			realPath, err := filepath.EvalSymlinks(absolutePath)
+			if err != nil {
+				return fmt.Errorf("path %s not found: %w", absolutePath, err)
+			}
+
+			absolutePath = realPath
+		}
+
+		relativePath, err := filepath.Rel(treeRoot, absolutePath)
+		if err != nil {
+			return fmt.Errorf("error computing relative path from %s to %s: %w", treeRoot, absolutePath, err)
+		}
+
+		if strings.HasPrefix(relativePath, "..") {
+			return fmt.Errorf("path %s not inside the tree root %s", path, treeRoot)
+		}
+
+		paths[i] = relativePath
 	}
 
 	return nil
