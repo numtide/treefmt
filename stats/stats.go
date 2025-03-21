@@ -55,14 +55,14 @@ func (s *Stats) PrintToStderr() {
 	)
 }
 
-func New() Stats {
+func New() *Stats {
 	counters := make(map[Type]*atomic.Int64)
 	counters[Traversed] = &atomic.Int64{}
 	counters[Matched] = &atomic.Int64{}
 	counters[Formatted] = &atomic.Int64{}
 	counters[Changed] = &atomic.Int64{}
 
-	return Stats{
+	return &Stats{
 		start:    time.Now(),
 		counters: counters,
 	}

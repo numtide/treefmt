@@ -54,7 +54,7 @@ func TestFilesystemReader(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	statz := stats.New()
 
-	r := walk.NewFilesystemReader(tempDir, "", &statz, 1024)
+	r := walk.NewFilesystemReader(tempDir, "", statz, 1024)
 
 	count := 0
 
