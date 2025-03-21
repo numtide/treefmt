@@ -222,7 +222,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 // the readers will ignore symlinks.
 func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
 	for i, path := range paths {
-		log.Errorf("Resolving path '%s': %v", path, walkType)
+		log.Debugf("Resolving path '%s': %v", path, walkType)
 
 		absolutePath, err := filepath.Abs(path)
 		if err != nil {
