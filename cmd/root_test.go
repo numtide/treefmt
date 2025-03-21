@@ -1359,11 +1359,15 @@ func TestGit(t *testing.T) {
 	as.NoError(gitCmd.Run(), "failed to init git repository")
 
 	// run before adding anything to the index
+	// we should pick up untracked files since we use `git ls-files -o`
 	treefmt(t,
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 0,
+			stats.Traversed: 31,
+			stats.Matched:   31,
+			stats.Formatted: 31,
+			stats.Changed:   0,
 		}),
 	)
 
@@ -1377,14 +1381,13 @@ func TestGit(t *testing.T) {
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 31,
 			stats.Matched:   31,
-			stats.Formatted: 31,
+			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
 	)
 
-	// remove python directory from the index
-	gitCmd = exec.Command("git", "rm", "--cached", "python/*")
-	as.NoError(gitCmd.Run(), "failed to remove python directory from the index")
+	// remove python directory
+	as.NoError(os.RemoveAll(filepath.Join(tempDir, "python")), "failed to remove python directory")
 
 	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
 	// are impacted
@@ -1411,8 +1414,8 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 79,
-			stats.Matched:   79,
+			stats.Traversed: 76,
+			stats.Matched:   76,
 			stats.Formatted: 49, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
