@@ -24,7 +24,7 @@ func TestInvalidFormatterName(t *testing.T) {
 	statz := stats.New()
 
 	// simple "empty" config
-	_, err := NewCompositeFormatter(cfg, &statz, batchSize)
+	_, err := NewCompositeFormatter(cfg, statz, batchSize)
 	as.NoError(err)
 
 	// valid name using all the acceptable characters
@@ -35,7 +35,7 @@ func TestInvalidFormatterName(t *testing.T) {
 		},
 	}
 
-	_, err = NewCompositeFormatter(cfg, &statz, batchSize)
+	_, err = NewCompositeFormatter(cfg, statz, batchSize)
 	as.NoError(err)
 
 	// test with some bad examples
@@ -48,7 +48,7 @@ func TestInvalidFormatterName(t *testing.T) {
 			},
 		}
 
-		_, err = NewCompositeFormatter(cfg, &statz, batchSize)
+		_, err = NewCompositeFormatter(cfg, statz, batchSize)
 		as.ErrorIs(err, ErrInvalidName)
 	}
 }
@@ -108,7 +108,7 @@ func TestFormatSignature(t *testing.T) {
 	})
 
 	t.Run("modify formatter options", func(_ *testing.T) {
-		f, err := NewCompositeFormatter(cfg, &statz, batchSize)
+		f, err := NewCompositeFormatter(cfg, statz, batchSize)
 		as.NoError(err)
 
 		oldSignature = assertSignatureChangedAndStable(t, as, cfg, nil)
@@ -169,7 +169,7 @@ func assertSignatureChangedAndStable(
 	t.Helper()
 
 	statz := stats.New()
-	f, err := NewCompositeFormatter(cfg, &statz, 1024)
+	f, err := NewCompositeFormatter(cfg, statz, 1024)
 	as.NoError(err)
 
 	newHash, err := f.signature()

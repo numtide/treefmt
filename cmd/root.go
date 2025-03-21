@@ -34,7 +34,7 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 			DisableDefaultCmd: true,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(v, &statz, cmd, args)
+			return runE(v, statz, cmd, args)
 		},
 	}
 
@@ -70,6 +70,9 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 		"[bash|zsh|fish] Generate shell completion scripts for the specified shell.",
 	)
 
+	// add a flag for git merge tool sub command
+	fs.Bool("git-mergetool", false, "Use treefmt as a git merge tool. Accepts four arguments: current base other merged.")
+
 	// bind our command's flags to viper
 	if err := v.BindPFlags(fs); err != nil {
 		cobra.CheckErr(fmt.Errorf("failed to bind global config to viper: %w", err))
@@ -79,7 +82,7 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 	// conforms with https://github.com/numtide/prj-spec/blob/main/PRJ_SPEC.md
 	cobra.CheckErr(v.BindPFlag("prj_root", fs.Lookup("tree-root")))
 
-	return cmd, &statz
+	return cmd, statz
 }
 
 func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string) error {
@@ -173,6 +176,13 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		default:
 			log.SetLevel(log.DebugLevel)
 		}
+	}
+
+	// git mergetool
+	if merge, err := flags.GetBool("git-mergetool"); err != nil {
+		cobra.CheckErr(fmt.Errorf("failed to read git-mergetool flag: %w", err))
+	} else if merge {
+		return gitMergetool(v, statz, cmd, args)
 	}
 
 	// format
