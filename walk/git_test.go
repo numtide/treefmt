@@ -29,12 +29,12 @@ func TestGitReader(t *testing.T) {
 	reader, err := walk.NewGitReader(tempDir, "", &statz)
 	as.NoError(err)
 
-	files := make([]*walk.File, 8)
+	files := make([]*walk.File, 32)
 	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	n, err := reader.Read(ctx, files)
 
 	cancel()
-	as.Equal(0, n)
+	as.Equal(31, n)
 	as.ErrorIs(err, io.EOF)
 
 	// add everything to the git index
@@ -42,6 +42,7 @@ func TestGitReader(t *testing.T) {
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to add everything to the index")
 
+	statz = stats.New()
 	reader, err = walk.NewGitReader(tempDir, "", &statz)
 	as.NoError(err)
 
