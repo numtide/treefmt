@@ -38,7 +38,7 @@ func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) 
 		r, w := io.Pipe()
 
 		// create a command which will execute from the specified sub path within root
-		cmd := exec.Command("git", "ls-files", "--cached", "--others")
+		cmd := exec.Command("git", "ls-files", "--cached", "--others", "--exclude-standard")
 		cmd.Dir = filepath.Join(g.root, g.path)
 		cmd.Stdout = w
 
