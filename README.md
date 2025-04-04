@@ -120,7 +120,7 @@ formatters.
 
 ## Compatibility
 
-`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/content/reference/formatter-spec.md).
+`treefmt` works with any formatter that adheres to the [following specification](https://github.com/numtide/treefmt/blob/main/docs/site/reference/formatter-spec.md).
 
 For instance, you can go for:
 
