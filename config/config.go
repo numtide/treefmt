@@ -1,11 +1,14 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
@@ -25,6 +28,7 @@ type Config struct {
 	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
 	Quiet                 bool     `mapstructure:"quiet"                   toml:"-"` // not allowed in config
 	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
+	TreeRootCmd           string   `mapstructure:"tree-root-cmd"           toml:"tree-root-cmd,omitempty"`
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
 	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
 	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
@@ -103,6 +107,11 @@ func SetFlags(fs *pflag.FlagSet) {
 		"tree-root", "",
 		"The root directory from which treefmt will start walking the filesystem (defaults to the directory "+
 			"containing the config file). (env $TREEFMT_TREE_ROOT)",
+	)
+	fs.String(
+		"tree-root-cmd", "",
+		"Command to run to find the tree root (if --tree-root or --tree-root-file is not passed). (env"+
+			" $TREEFMT_TREE_ROOT_CMD)",
 	)
 	fs.String(
 		"tree-root-file", "",
@@ -186,19 +195,46 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		cfg.Walk = walk.Stdin.String()
 	}
 
+	// set git-based tree root command if the walker is Git
+	if cfg.Walk == walk.Git.String() {
+		cfg.TreeRootCmd = "git rev-parse --show-toplevel"
+	}
+
 	// determine the tree root
+	//nolint:nestif
 	if cfg.TreeRoot == "" {
-		// if none was specified, we first try with tree-root-file
+		// at the treefmt command level we ensure that `--tree-root-file` and `--tree-root-cmd` are mutually exclusive
 		if cfg.TreeRootFile != "" {
 			// search the tree root using the --tree-root-file if specified
 			_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find tree-root based on tree-root-file: %w", err)
 			}
-		} else {
-			// otherwise fallback to the directory containing the config file
-			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
 		}
+
+		if cfg.TreeRootCmd != "" {
+			// use the output of the tree root command as the tree root
+			parts := strings.Fields(cfg.TreeRootCmd)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			//nolint:gosec
+			cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
+			cmd.Dir = cfg.WorkingDirectory
+
+			out, cmdErr := cmd.CombinedOutput()
+			if cmdErr != nil {
+				return nil, fmt.Errorf("failed to run tree-root-cmd: %w", cmdErr)
+			}
+
+			cfg.TreeRoot = strings.TrimSpace(string(out))
+		}
+	}
+
+	if cfg.TreeRoot == "" {
+		// fallback to the directory containing the config file
+		cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
 	}
 
 	// resolve tree root to an absolute path
