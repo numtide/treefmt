@@ -1,12 +1,21 @@
 package config
 
 import (
+	"bufio"
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/shlex"
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -25,6 +34,7 @@ type Config struct {
 	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
 	Quiet                 bool     `mapstructure:"quiet"                   toml:"-"` // not allowed in config
 	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
+	TreeRootCmd           string   `mapstructure:"tree-root-cmd"           toml:"tree-root-cmd,omitempty"`
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
 	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
 	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
@@ -101,12 +111,19 @@ func SetFlags(fs *pflag.FlagSet) {
 	)
 	fs.String(
 		"tree-root", "",
-		"The root directory from which treefmt will start walking the filesystem (defaults to the directory "+
-			"containing the config file). (env $TREEFMT_TREE_ROOT)",
+		"The root directory from which treefmt will start walking the filesystem. "+
+			"Defaults to the root of the current git worktree. If not in a git repo, defaults to the directory "+
+			"containing the config file. (env $TREEFMT_TREE_ROOT)",
+	)
+	fs.String(
+		"tree-root-cmd", "",
+		"Command to run to find the tree root. It is parsed using shlex, to allow quoting arguments that "+
+			"contain whitespace. If you wish to pass arguments containing quotes, you should use nested quotes "+
+			"e.g. \"'\" or '\"'. (env $TREEFMT_TREE_ROOT_CMD)",
 	)
 	fs.String(
 		"tree-root-file", "",
-		"File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)",
+		"File to search for to find the tree root. (env $TREEFMT_TREE_ROOT_FILE)",
 	)
 	fs.CountP(
 		"verbose", "v",
@@ -153,6 +170,8 @@ func NewViper() (*viper.Viper, error) {
 
 // FromViper takes a viper instance and produces a Config instance.
 func FromViper(v *viper.Viper) (*Config, error) {
+	logger := log.WithPrefix("config")
+
 	configReset := map[string]any{
 		"ci":          false,
 		"clear-cache": false,
@@ -186,24 +205,9 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		cfg.Walk = walk.Stdin.String()
 	}
 
-	// determine the tree root
-	if cfg.TreeRoot == "" {
-		// if none was specified, we first try with tree-root-file
-		if cfg.TreeRootFile != "" {
-			// search the tree root using the --tree-root-file if specified
-			_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find tree-root based on tree-root-file: %w", err)
-			}
-		} else {
-			// otherwise fallback to the directory containing the config file
-			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
-		}
-	}
-
-	// resolve tree root to an absolute path
-	if cfg.TreeRoot, err = filepath.Abs(cfg.TreeRoot); err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for tree root: %w", err)
+	// determine tree root
+	if err = determineTreeRoot(v, cfg, logger); err != nil {
+		return nil, fmt.Errorf("failed to determine tree root: %w", err)
 	}
 
 	// prefer top level excludes, falling back to global.excludes for backwards compatibility
@@ -212,7 +216,6 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	}
 
 	// validate formatter names do not contain invalid characters
-
 	nameRegex := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
 
 	for name := range cfg.FormatterConfigs {
@@ -261,6 +264,178 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
+	var err error
+
+	// enforce the various tree root options are mutually exclusive
+	// some of this is being done for us at the flag level, but you can also set these values in config or environment
+	// variables.
+	count := 0
+
+	if cfg.TreeRoot != "" {
+		count++
+	}
+
+	if cfg.TreeRootCmd != "" {
+		count++
+	}
+
+	if cfg.TreeRootFile != "" {
+		count++
+	}
+
+	if count > 1 {
+		return errors.New("at most one of tree-root, tree-root-cmd or tree-root-file can be specified")
+	}
+
+	// set git-based tree root command if the walker is git and no tree root has been specified
+	if cfg.Walk == walk.Git.String() && count == 0 {
+		cfg.TreeRootCmd = "git rev-parse --show-toplevel"
+
+		logger.Infof(
+			"git walker enabled and tree root has not been specified: defaulting tree-root-cmd to '%s'",
+			cfg.TreeRootCmd,
+		)
+	}
+
+	switch {
+	case cfg.TreeRoot != "":
+		logger.Debugf("tree root specified explicitly: %s", cfg.TreeRoot)
+
+	case cfg.TreeRootFile != "":
+		logger.Debugf("searching for tree root using tree-root-file: %s", cfg.TreeRootFile)
+
+		_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
+		if err != nil {
+			return fmt.Errorf("failed to find tree-root based on tree-root-file: %w", err)
+		}
+
+	case cfg.TreeRootCmd != "":
+		logger.Debugf("searching for tree root using tree-root-cmd: %s", cfg.TreeRootCmd)
+
+		if cfg.TreeRoot, err = execTreeRootCmd(cfg); err != nil {
+			return err
+		}
+
+	default:
+		// no tree root was specified
+		logger.Debugf(
+			"no tree root specified, defaulting to the directory containing the config file: %s",
+			v.ConfigFileUsed(),
+		)
+
+		cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+	}
+
+	// resolve tree root to an absolute path
+	if cfg.TreeRoot, err = filepath.Abs(cfg.TreeRoot); err != nil {
+		return fmt.Errorf("failed to get absolute path for tree root: %w", err)
+	}
+
+	logger.Debugf("tree root: %s", cfg.TreeRoot)
+
+	return nil
+}
+
+func execTreeRootCmd(cfg *Config) (string, error) {
+	// split the command first, resolving any '' and "" entries
+	parts, splitErr := shlex.Split(cfg.TreeRootCmd)
+	if splitErr != nil {
+		return "", fmt.Errorf("failed to parse tree-root-cmd: %w", splitErr)
+	}
+
+	// set a reasonable timeout of 2 seconds to wait for the command to return
+	// it shouldn't take anywhere near this amount of time unless there's a problem
+	executionTimeout := 2 * time.Second
+
+	ctx, cancel := context.WithTimeout(context.Background(), executionTimeout)
+	defer cancel()
+
+	// construct the command, setting the correct working directory
+	//nolint:gosec
+	cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
+	cmd.Dir = cfg.WorkingDirectory
+
+	// setup some pipes to capture stdout and stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to create stdout pipe for tree-root-cmd: %w", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to create stderr pipe for tree-root-cmd: %w", err)
+	}
+
+	// start processing stderr before we begin executing the command
+	go func() {
+		// capture stderr line by line and log
+		l := log.WithPrefix("tree-root-cmd | stderr")
+
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			l.Debugf("%s", scanner.Text())
+		}
+	}()
+
+	// start executing without waiting
+	if cmdErr := cmd.Start(); cmdErr != nil {
+		return "", fmt.Errorf("failed to start tree-root-cmd: %w", cmdErr)
+	}
+
+	// read stdout until it is closed (command exits)
+	output, err := io.ReadAll(stdout)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stdout from tree-root-cmd: %w", err)
+	}
+
+	log.WithPrefix("tree-root-cmd | stdout").Debugf("%s", output)
+
+	// check execution error
+	if cmdErr := cmd.Wait(); cmdErr != nil {
+		var exitErr *exec.ExitError
+
+		// by experimenting, I noticed that sometimes we received the deadline exceeded error first, other times
+		// the exit error indicating the process was killed, therefore, we look for both
+		tookTooLong := errors.Is(cmdErr, context.DeadlineExceeded)
+		tookTooLong = tookTooLong || (errors.As(cmdErr, &exitErr) && exitErr.ProcessState.String() == "signal: killed")
+
+		if tookTooLong {
+			return "", fmt.Errorf(
+				"tree-root-cmd was killed after taking more than %v to execute",
+				executionTimeout,
+			)
+		}
+
+		// otherwise, some other kind of error occurred
+		return "", fmt.Errorf("failed to execute tree-root-cmd: %w", cmdErr)
+	}
+
+	// validate the output
+	outputStr := string(output)
+
+	lines := strings.Split(outputStr, "\n")
+	nonEmptyLines := slices.DeleteFunc(lines, func(line string) bool {
+		return line == ""
+	})
+
+	switch len(nonEmptyLines) {
+	case 1:
+		// return the first line as the tree root
+		return nonEmptyLines[0], nil
+
+	case 0:
+		// no output was received on stdout
+		return "", fmt.Errorf("empty output received after executing tree-root-cmd: %s", cfg.TreeRootCmd)
+
+	default:
+		// multiple lines received on stdout, dump the output to make it clear what happened and throw an error
+		log.WithPrefix("tree-root-cmd | stdout").Errorf("\n%s", outputStr)
+
+		return "", fmt.Errorf("tree-root-cmd cannot output multiple lines: %s", cfg.TreeRootCmd)
+	}
 }
 
 func Find(searchDir string, fileNames ...string) (path string, err error) {

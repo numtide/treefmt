@@ -1531,6 +1531,221 @@ func TestGit(t *testing.T) {
 	)
 }
 
+func TestTreeRootCmd(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
+
+	// basic config
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo", // will not generate any underlying changes in the file
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	// construct a tree root command with some error logging and dumping output on stdout
+	treeRootCmd := func(output string) string {
+		return fmt.Sprintf("bash -c '>&2 echo -e \"some error text\nsome more error text\" && echo %s'", output)
+	}
+
+	// helper for checking the contents of stderr matches our expected debug output
+	checkStderr := func(buf []byte) {
+		output := string(buf)
+		as.Contains(output, "DEBU tree-root-cmd | stderr: some error text\n")
+		as.Contains(output, "DEBU tree-root-cmd | stderr: some more error text\n")
+	}
+
+	// run treefmt with DEBUG logging enabled and with tree root cmd being the root of the temp directory
+	treefmt(t,
+		withArgs("-vv", "--tree-root-cmd", treeRootCmd(tempDir)),
+		withNoError(t),
+		withStderr(checkStderr),
+		withConfig(configPath, cfg),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
+
+	// run from a subdirectory, mixing things up by specifying the command via an env variable
+	treefmt(t,
+		withArgs("-vv"),
+		withEnv(map[string]string{
+			"TREEFMT_TREE_ROOT_CMD": treeRootCmd(filepath.Join(tempDir, "go")),
+		}),
+		withNoError(t),
+		withStderr(checkStderr),
+		withConfig(configPath, cfg),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 2,
+			stats.Changed:   0,
+		}),
+	)
+
+	// run from a subdirectory, mixing things up by specifying the command via config
+	cfg.TreeRootCmd = treeRootCmd(filepath.Join(tempDir, "haskell"))
+
+	treefmt(t,
+		withArgs("-vv"),
+		withNoError(t),
+		withStderr(checkStderr),
+		withConfig(configPath, cfg),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 7,
+			stats.Matched:   7,
+			stats.Formatted: 7,
+			stats.Changed:   0,
+		}),
+	)
+
+	// run with a long-running command (2 seconds or more)
+	treefmt(t,
+		withArgs(
+			"-vv",
+			"--tree-root-cmd", fmt.Sprintf(
+				"bash -c 'sleep 2 && echo %s'",
+				tempDir,
+			),
+		),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "tree-root-cmd was killed after taking more than 2s to execute")
+		}),
+		withConfig(configPath, cfg),
+	)
+
+	// run with a command that outputs multiple lines
+	treefmt(t,
+		withArgs(
+			"--tree-root-cmd", fmt.Sprintf(
+				"bash -c 'echo %s && echo %s'",
+				tempDir, tempDir,
+			),
+		),
+		withStderr(func(buf []byte) {
+			as.Contains(string(buf), fmt.Sprintf("ERRO tree-root-cmd | stdout: \n%s\n%s\n", tempDir, tempDir))
+		}),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "tree-root-cmd cannot output multiple lines")
+		}),
+		withConfig(configPath, cfg),
+	)
+}
+
+func TestTreeRootExclusivity(t *testing.T) {
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	formatterConfigs := map[string]*config.Formatter{
+		"echo": {
+			Command:  "echo", // will not generate any underlying changes in the file
+			Includes: []string{"*"},
+		},
+	}
+
+	test.ChangeWorkDir(t, tempDir)
+
+	assertExclusiveFlag := func(as *require.Assertions, err error) {
+		as.ErrorContains(err,
+			"if any flags in the group [tree-root tree-root-cmd tree-root-file] are set none of the others can be;",
+		)
+	}
+
+	assertExclusiveConfig := func(as *require.Assertions, err error) {
+		as.ErrorContains(err,
+			"at most one of tree-root, tree-root-cmd or tree-root-file can be specified",
+		)
+	}
+
+	envValues := map[string][]string{
+		"tree-root":      {"TREEFMT_TREE_ROOT", "bar"},
+		"tree-root-cmd":  {"TREEFMT_TREE_ROOT_CMD", "echo /foo/bar"},
+		"tree-root-file": {"TREEFMT_TREE_ROOT_FILE", ".git/config"},
+	}
+
+	flagValues := map[string][]string{
+		"tree-root":      {"--tree-root", "bar"},
+		"tree-root-cmd":  {"--tree-root-cmd", "'echo /foo/bar'"},
+		"tree-root-file": {"--tree-root-file", ".git/config"},
+	}
+
+	configValues := map[string]func(*config.Config){
+		"tree-root": func(cfg *config.Config) {
+			cfg.TreeRoot = "bar"
+		},
+		"tree-root-cmd": func(cfg *config.Config) {
+			cfg.TreeRootCmd = "'echo /foo/bar'"
+		},
+		"tree-root-file": func(cfg *config.Config) {
+			cfg.TreeRootFile = ".git/config"
+		},
+	}
+
+	invalidCombinations := [][]string{
+		{"tree-root", "tree-root-cmd"},
+		{"tree-root", "tree-root-file"},
+		{"tree-root-cmd", "tree-root-file"},
+		{"tree-root", "tree-root-cmd", "tree-root-file"},
+	}
+
+	// TODO we should also test mixing the various methods in the same test e.g. env variable and config value
+	// Given that ultimately everything is being reduced into the config object after parsing from viper, I'm fairly
+	// confident if these tests all pass then the mixed methods should yield the same result.
+
+	// for each set of invalid args, test them with flags, environment variables, and config entries.
+	for _, combination := range invalidCombinations {
+		// test flags
+		var args []string
+		for _, key := range combination {
+			args = append(args, flagValues[key]...)
+		}
+
+		treefmt(t,
+			withArgs(args...),
+			withError(assertExclusiveFlag),
+		)
+
+		// test env variables
+		env := make(map[string]string)
+
+		for _, key := range combination {
+			entry := envValues[key]
+			env[entry[0]] = entry[1]
+		}
+
+		treefmt(t,
+			withEnv(env),
+			withError(assertExclusiveConfig),
+		)
+
+		// test config
+		cfg := &config.Config{
+			FormatterConfigs: formatterConfigs,
+		}
+
+		for _, key := range combination {
+			entry := configValues[key]
+			entry(cfg)
+		}
+
+		treefmt(t,
+			withConfig(configPath, cfg),
+			withError(assertExclusiveConfig),
+		)
+	}
+}
+
 func TestPathsArg(t *testing.T) {
 	as := require.New(t)
 
@@ -1998,6 +2213,7 @@ func treefmt(
 
 	// set env
 	for k, v := range opts.env {
+		t.Logf("setting env %s=%s", k, v)
 		t.Setenv(k, v)
 	}
 

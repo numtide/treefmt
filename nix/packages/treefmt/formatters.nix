@@ -1,5 +1,8 @@
 pkgs:
 with pkgs; [
+  bash # used in tree-root-cmd tests
+
+  # rest are formatters
   alejandra
   gotools
   haskellPackages.cabal-fmt

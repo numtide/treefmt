@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +27,17 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	tempDir := t.TempDir()
 	v.SetConfigFile(filepath.Join(tempDir, "treefmt.toml"))
 
+	// initialise a git repo to help with tree-root-cmd testing
+	cmd := exec.Command("git", "init")
+	cmd.Dir = tempDir
+
+	if err = cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	// change working directory to the temp dir
+	t.Chdir(tempDir)
+
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	config.SetFlags(flags)
 
@@ -36,7 +48,7 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	return v, flags
 }
 
-func readValue(t *testing.T, v *viper.Viper, cfg *config.Config, test func(*config.Config)) {
+func writeAndReadBack(t *testing.T, v *viper.Viper, cfg *config.Config) {
 	t.Helper()
 
 	// serialise the config and read it into viper
@@ -48,6 +60,25 @@ func readValue(t *testing.T, v *viper.Viper, cfg *config.Config, test func(*conf
 	} else if err = v.ReadConfig(bufio.NewReader(buf)); err != nil {
 		t.Fatal(fmt.Errorf("failed to read config: %w", err))
 	}
+}
+
+func readError(t *testing.T, v *viper.Viper, cfg *config.Config, test func(error)) {
+	t.Helper()
+
+	writeAndReadBack(t, v, cfg)
+
+	_, err := config.FromViper(v)
+	if err == nil {
+		t.Fatal("error was expected but none was thrown")
+	}
+
+	test(err)
+}
+
+func readValue(t *testing.T, v *viper.Viper, cfg *config.Config, test func(*config.Config)) {
+	t.Helper()
+
+	writeAndReadBack(t, v, cfg)
 
 	//
 	decodedCfg, err := config.FromViper(v)
@@ -455,6 +486,48 @@ func TestTreeRootFile(t *testing.T) {
 	// should match the root of the temp directory structure
 	as.NoError(flags.Set("tree-root-file", ".git/config"))
 	checkValue(tempDir, ".git/config")
+}
+
+func TestTreeRootCmd(t *testing.T) {
+	as := require.New(t)
+
+	cfg := &config.Config{}
+	v, flags := newViper(t)
+
+	checkValue := func(treeRoot string) {
+		readValue(t, v, cfg, func(cfg *config.Config) {
+			as.Equal(treeRoot, cfg.TreeRoot)
+		})
+	}
+
+	tempDir := t.TempDir()
+	as.NoError(os.MkdirAll(filepath.Join(tempDir, "foo"), 0o755))
+	as.NoError(os.MkdirAll(filepath.Join(tempDir, "bar"), 0o755))
+
+	// default with no flag, env or config
+	// should match the absolute path of the directory in which the config file is located
+	checkValue(filepath.Dir(v.ConfigFileUsed()))
+
+	// set config value
+	cfg.TreeRootCmd = "echo " + tempDir
+	checkValue(tempDir)
+
+	// env override
+	// should match the directory above
+	t.Setenv("TREEFMT_TREE_ROOT_CMD", fmt.Sprintf("echo \"%s/foo\"", tempDir))
+	checkValue(filepath.Join(tempDir, "foo"))
+
+	// flag override
+	// should match the root of the temp directory structure
+	as.NoError(flags.Set("tree-root-cmd", fmt.Sprintf("echo '%s/bar'", tempDir)))
+	checkValue(filepath.Join(tempDir, "bar"))
+
+	// empty output from tree-root-cmd
+	// should throw an error
+	as.NoError(flags.Set("tree-root-cmd", "echo ''"))
+	readError(t, v, cfg, func(err error) {
+		as.ErrorContains(err, "empty output received after executing tree-root-cmd: echo ''")
+	})
 }
 
 func TestVerbosity(t *testing.T) {

@@ -46,8 +46,12 @@ func NewRoot() (*cobra.Command, *stats.Stats) {
 	// add our config flags to the command's flag set
 	config.SetFlags(fs)
 
-	// xor tree-root and tree-root-file flags
-	cmd.MarkFlagsMutuallyExclusive("tree-root", "tree-root-file")
+	// xor tree-root, tree-root-cmd and tree-root-file flags
+	cmd.MarkFlagsMutuallyExclusive(
+		"tree-root",
+		"tree-root-cmd",
+		"tree-root-file",
+	)
 
 	cmd.HelpTemplate()
 

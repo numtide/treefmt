@@ -28,13 +28,19 @@
 # on-unmatched = "info"
 
 # The root directory from which treefmt will start walking the filesystem
-# Defaults to the directory containing the config file
+# Defaults to the root of the current git worktree.
+# If not in a git repo, defaults to the directory containing the config file.
 # Env $TREEFMT_TREE_ROOT
 # tree-root = "/tmp/foo"
 
 # File to search for to find the tree root (if tree-root is not set)
 # Env $TREEFMT_TREE_ROOT_FILE
 # tree-root-file = ".git/config"
+
+# Command to run to find the tree root. It is parsed using shlex, to allow quoting arguments that contain whitespace.
+# If you wish to pass arguments containing quotes, you should use nested quotes e.g. "'" or '"'
+# Env $TREEFMT_TREE_ROOT_CMD
+# tree-root-cmd = "git rev-parse --show-toplevel"
 
 # Set the verbosity of logs
 # 0 = warn, 1 = info, 2 = debug
