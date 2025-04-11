@@ -202,9 +202,18 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	}
 
 	// resolve tree root to an absolute path
-	if cfg.TreeRoot, err = filepath.Abs(cfg.TreeRoot); err != nil {
+	absTreeRoot, err := filepath.Abs(cfg.TreeRoot);
+	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path for tree root: %w", err)
 	}
+
+	// resolve symlinks in tree root
+	evalSymlinkTreeRoot, err := filepath.EvalSymlinks(absTreeRoot)
+	if err != nil {
+		return nil, fmt.Errorf("tree root %s not found: %w", absTreeRoot, err)
+	}
+
+	cfg.TreeRoot = evalSymlinkTreeRoot
 
 	// prefer top level excludes, falling back to global.excludes for backwards compatibility
 	if len(cfg.Excludes) == 0 {
