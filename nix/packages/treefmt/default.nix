@@ -32,7 +32,7 @@ in
         ];
       };
 
-    vendorHash = "sha256-47yOjk3eO5K0T01GUDvheJxoAJz0ZmiV2RdqTv01pYQ=";
+    vendorHash = "sha256-a43fwdsXHKzM5FrJBPCdeU+zwaL6fLhV1PHfCpBFsv8=";
 
     env.CGO_ENABLED = 0;
 
@@ -117,7 +117,7 @@ in
           env.CGO_ENABLED = 1;
           buildPhase = ''
             HOME=$TMPDIR
-            go test -race -covermode=atomic -coverprofile=coverage.out -v ./...
+            go test -race -covermode=atomic -coverprofile="coverage.out" -v ./...
           '';
           installPhase = ''
             mv coverage.out $out

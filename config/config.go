@@ -1,12 +1,17 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/charmbracelet/log"
+	"github.com/google/shlex"
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -25,6 +30,7 @@ type Config struct {
 	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
 	Quiet                 bool     `mapstructure:"quiet"                   toml:"-"` // not allowed in config
 	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
+	TreeRootCmd           string   `mapstructure:"tree-root-cmd"           toml:"tree-root-cmd,omitempty"`
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
 	Verbose               uint8    `mapstructure:"verbose"                 toml:"verbose,omitempty"`
 	Walk                  string   `mapstructure:"walk"                    toml:"walk,omitempty"`
@@ -105,8 +111,12 @@ func SetFlags(fs *pflag.FlagSet) {
 			"containing the config file). (env $TREEFMT_TREE_ROOT)",
 	)
 	fs.String(
+		"tree-root-cmd", "",
+		"Command to run to find the tree root. (env $TREEFMT_TREE_ROOT_CMD)",
+	)
+	fs.String(
 		"tree-root-file", "",
-		"File to search for to find the tree root (if --tree-root is not passed). (env $TREEFMT_TREE_ROOT_FILE)",
+		"File to search for to find the tree root. (env $TREEFMT_TREE_ROOT_FILE)",
 	)
 	fs.CountP(
 		"verbose", "v",
@@ -186,19 +196,51 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		cfg.Walk = walk.Stdin.String()
 	}
 
+	// set git-based tree root command if the walker is Git
+	if cfg.Walk == walk.Git.String() {
+		cfg.TreeRootCmd = "git rev-parse --show-toplevel"
+	}
+
 	// determine the tree root
-	if cfg.TreeRoot == "" {
-		// if none was specified, we first try with tree-root-file
-		if cfg.TreeRootFile != "" {
-			// search the tree root using the --tree-root-file if specified
-			_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
-			if err != nil {
-				return nil, fmt.Errorf("failed to find tree-root based on tree-root-file: %w", err)
-			}
-		} else {
-			// otherwise fallback to the directory containing the config file
-			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+	// NOTE: at the treefmt command level we ensure that `--tree-root`, `--tree-root-cmd` and `--tree-root-file` are
+	// mutually exclusive
+	if cfg.TreeRoot == "" && cfg.TreeRootFile != "" {
+		// search the tree root using the --tree-root-file if specified
+		_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find tree-root based on tree-root-file: %w", err)
 		}
+	}
+
+	if cfg.TreeRoot == "" && cfg.TreeRootCmd != "" {
+		// use the output of the tree root command as the tree root
+		parts, splitErr := shlex.Split(cfg.TreeRootCmd)
+		if splitErr != nil {
+			return nil, fmt.Errorf("failed to parse tree-root-cmd: %w", splitErr)
+		}
+
+		// set a reasonable timeout of 2 seconds to wait for the command to return
+		// it shouldn't take anywhere near this amount of time unless there's a problem
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		//nolint:gosec
+		cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
+		cmd.Dir = cfg.WorkingDirectory
+
+		out, cmdErr := cmd.CombinedOutput()
+		if cmdErr != nil {
+			log.Errorf("tree-root-cmd output: \n%s", out)
+
+			return nil, fmt.Errorf("failed to run tree-root-cmd: %w", cmdErr)
+		}
+
+		cfg.TreeRoot = strings.TrimSpace(string(out))
+	}
+
+	if cfg.TreeRoot == "" {
+		// no tree root was specified, so we fall back to the directory containing the config file
+		cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
 	}
 
 	// resolve tree root to an absolute path
@@ -212,7 +254,6 @@ func FromViper(v *viper.Viper) (*Config, error) {
 	}
 
 	// validate formatter names do not contain invalid characters
-
 	nameRegex := regexp.MustCompile("^[a-zA-Z0-9_-]+$")
 
 	for name := range cfg.FormatterConfigs {
