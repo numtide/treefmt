@@ -1462,7 +1462,13 @@ You can change this behaviour using the <a href="#config-file_1">config-file</a>
 <span class="normal"><a href="#__codelineno-0-58">58</a></span>
 <span class="normal"><a href="#__codelineno-0-59">59</a></span>
 <span class="normal"><a href="#__codelineno-0-60">60</a></span>
-<span class="normal"><a href="#__codelineno-0-61">61</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># The formatter multiplexer - https://github.com/numtide/treefmt</span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span>
+<span class="normal"><a href="#__codelineno-0-67">67</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># The formatter multiplexer - https://github.com/numtide/treefmt</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="c1"># Do not exit with error if a configured formatter is missing</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="c1"># Env $TREEFMT_ALLOW_MISSING_FORMATTER</span>
@@ -1492,37 +1498,43 @@ You can change this behaviour using the <a href="#config-file_1">config-file</a>
 <a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="c1"># on-unmatched = &quot;info&quot;</span>
 <a id="__codelineno-0-29" name="__codelineno-0-29"></a>
 <a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="c1"># The root directory from which treefmt will start walking the filesystem</span>
-<a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="c1"># Defaults to the directory containing the config file</span>
-<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="c1"># Env $TREEFMT_TREE_ROOT</span>
-<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="c1"># tree-root = &quot;/tmp/foo&quot;</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="c1"># File to search for to find the tree root (if tree-root is not set)</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="c1"># Env $TREEFMT_TREE_ROOT_FILE</span>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="c1"># tree-root-file = &quot;.git/config&quot;</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="c1"># Set the verbosity of logs</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="c1"># 0 = warn, 1 = info, 2 = debug</span>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="c1"># Env $TREEFMT_VERBOSE</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="c1"># verbose = 2</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="c1"># The method used to traverse the files within the tree root</span>
-<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="c1"># Currently, we support &#39;auto&#39;, &#39;git&#39; or &#39;filesystem&#39;</span>
-<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="c1"># Env $TREEFMT_WALK</span>
-<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="c1"># walk = &quot;filesystem&quot;</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="p">[</span>formatter<span class="o">.</span>mylanguage<span class="p">]</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="c1"># Command to execute</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="ss">command</span> <span class="o">=</span> <span class="s2">&quot;command-to-run&quot;</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="c1"># Command-line arguments for the command</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="ss">options</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="c1"># Glob pattern of files to include</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="ss">includes</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;*.&lt;language-extension&gt;&quot;</span> <span class="p">]</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="c1"># Glob patterns of files to exclude</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="ss">excludes</span> <span class="o">=</span> <span class="p">[]</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="c1"># Controls the order of application when multiple formatters match the same file</span>
-<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="c1"># Lower the number, the higher the precedence</span>
-<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="c1"># Default is 0</span>
-<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="ss">priority</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="c1"># Defaults to the root of the current git worktree.</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="c1"># If not in a git repo, defaults to the directory containing the config file.</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="c1"># Env $TREEFMT_TREE_ROOT</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="c1"># tree-root = &quot;/tmp/foo&quot;</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="c1"># File to search for to find the tree root (if tree-root is not set)</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="c1"># Env $TREEFMT_TREE_ROOT_FILE</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="c1"># tree-root-file = &quot;.git/config&quot;</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="c1"># Command to run to find the tree root. It is parsed using shlex, to allow quoting arguments that contain whitespace.</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="c1"># If you wish to pass arguments containing quotes, you should use nested quotes e.g. &quot;&#39;&quot; or &#39;&quot;&#39;</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="c1"># Env $TREEFMT_TREE_ROOT_CMD</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="c1"># tree-root-cmd = &quot;git rev-parse --show-toplevel&quot;</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="c1"># Set the verbosity of logs</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="c1"># 0 = warn, 1 = info, 2 = debug</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="c1"># Env $TREEFMT_VERBOSE</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="c1"># verbose = 2</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="c1"># The method used to traverse the files within the tree root</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="c1"># Currently, we support &#39;auto&#39;, &#39;git&#39; or &#39;filesystem&#39;</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="c1"># Env $TREEFMT_WALK</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="c1"># walk = &quot;filesystem&quot;</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="p">[</span>formatter<span class="o">.</span>mylanguage<span class="p">]</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="c1"># Command to execute</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="ss">command</span> <span class="o">=</span> <span class="s2">&quot;command-to-run&quot;</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="c1"># Command-line arguments for the command</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="ss">options</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="c1"># Glob pattern of files to include</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="ss">includes</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;*.&lt;language-extension&gt;&quot;</span> <span class="p">]</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="c1"># Glob patterns of files to exclude</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="ss">excludes</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="c1"># Controls the order of application when multiple formatters match the same file</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="c1"># Lower the number, the higher the precedence</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="c1"># Default is 0</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="ss">priority</span> <span class="o">=</span> <span class="mi">0</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="global-options">Global Options</h2>
 <h3 id="allow-missing-formatter"><code>allow-missing-formatter</code></h3>
