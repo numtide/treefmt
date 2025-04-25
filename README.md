@@ -128,7 +128,7 @@ For instance, you can go for:
 - gofmt for Golang
 - Prettier for JavaScript/HTML/CSS
 
-Find the full list of supported formatters [here](https://treefmt.com/configure.html#supported-formatters).
+You can find information on supported formatters [here](https://treefmt.com/latest/getting-started/configure/#supported-formatters).
 
 ## IDE Integration
 
