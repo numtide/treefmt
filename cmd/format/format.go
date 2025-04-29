@@ -221,21 +221,20 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 // Symlinks are allowed in `paths` and we resolve them here, since
 // the readers will ignore symlinks.
 func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
-	for i, path := range paths {
-		log.Debugf("Resolving path '%s': %v", path, walkType)
+	// Note: `treeRoot` may itself be or contain a symlink (e.g. it is in
+	// `$TMPDIR` on macOS or a user has set a symlink to shorten the repository
+	// path for path length restrictions), so we resolve it here first.
+	//
+	// See: https://github.com/numtide/treefmt/issues/578
+	treeRoot, err := resolvePath(walkType, treeRoot)
+	if err != nil {
+		return fmt.Errorf("error computing absolute path of %s: %w", treeRoot, err)
+	}
 
-		absolutePath, err := filepath.Abs(path)
+	for i, path := range paths {
+		absolutePath, err := resolvePath(walkType, path)
 		if err != nil {
 			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
-		}
-
-		if walkType != walk.Stdin {
-			realPath, err := filepath.EvalSymlinks(absolutePath)
-			if err != nil {
-				return fmt.Errorf("path %s not found: %w", absolutePath, err)
-			}
-
-			absolutePath = realPath
 		}
 
 		relativePath, err := filepath.Rel(treeRoot, absolutePath)
@@ -251,4 +250,25 @@ func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
 	}
 
 	return nil
+}
+
+// Resolve a path to an absolute path, resolving symlinks if necessary.
+func resolvePath(walkType walk.Type, path string) (string, error) {
+	log.Debugf("Resolving path '%s': %v", path, walkType)
+
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("error computing absolute path of %s: %w", path, err)
+	}
+
+	if walkType != walk.Stdin {
+		realPath, err := filepath.EvalSymlinks(absolutePath)
+		if err != nil {
+			return "", fmt.Errorf("path %s not found: %w", absolutePath, err)
+		}
+
+		absolutePath = realPath
+	}
+
+	return absolutePath, nil
 }

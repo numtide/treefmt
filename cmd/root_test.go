@@ -2099,6 +2099,44 @@ func TestRunInSubdir(t *testing.T) {
 	}
 }
 
+// Check that supplying paths on the command-line works when an element of the
+// project root is a symlink.
+//
+// Regression test for #578.
+//
+// See: https://github.com/numtide/treefmt/issues/578
+func TestProjectRootIsSymlink(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := t.TempDir()
+	realRoot := filepath.Join(tempDir, "/real-root")
+	test.TempExamplesInDir(t, realRoot)
+
+	symlinkRoot := filepath.Join(tempDir, "/project-root")
+	err := os.Symlink(realRoot, symlinkRoot)
+	as.NoError(err)
+
+	test.ChangeWorkDir(t, symlinkRoot)
+
+	// basic config
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	configPath := filepath.Join(symlinkRoot, "/treefmt.toml")
+	test.WriteConfig(t, configPath, cfg)
+
+	treefmt(t,
+		withArgs("-c", "go/main.go"),
+		withNoError(t),
+	)
+}
+
 type options struct {
 	args []string
 	env  map[string]string
