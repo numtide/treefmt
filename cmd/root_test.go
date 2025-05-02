@@ -2012,6 +2012,97 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 	}
 }
 
+func TestFormatterBatchSize(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := tempDir + "/treefmt.toml"
+
+	test.ChangeWorkDir(t, tempDir)
+
+	cfg := config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"one-path": {
+				Command:   "test-fmt-one-path",
+				Includes:  []string{"*"},
+				BatchSize: 1,
+				Priority:  1,
+			},
+			"two-paths": {
+				Command:   "test-fmt-two-paths",
+				Includes:  []string{"*"},
+				BatchSize: 2,
+				Priority:  2,
+			},
+			"four-paths": {
+				Command:   "test-fmt-four-paths",
+				Includes:  []string{"*"},
+				BatchSize: 4,
+				Priority:  3,
+			},
+		},
+	}
+	test.WriteConfig(t, configPath, &cfg)
+
+	treefmt(t,
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   32,
+		}),
+	)
+
+	// configure a batch size larger than the formatters will accept
+	cfg.FormatterConfigs["one-path"].BatchSize = 2
+
+	test.WriteConfig(t, configPath, &cfg)
+
+	tooManyArguments := func(name string) func([]byte) {
+		return func(buf []byte) {
+			str := string(buf)
+
+			as.Contains(str, "ERRO formatter | "+name)
+			as.Contains(str, "Error: Too many arguments")
+		}
+	}
+
+	treefmt(t,
+		withArgs("-c"),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
+		}),
+		withStderr(tooManyArguments("one-path")),
+	)
+
+	cfg.FormatterConfigs["one-path"].BatchSize = 1
+	cfg.FormatterConfigs["two-paths"].BatchSize = 3
+
+	test.WriteConfig(t, configPath, &cfg)
+
+	treefmt(t,
+		withArgs("-c"),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
+		}),
+		withStderr(tooManyArguments("two-paths")),
+	)
+
+	cfg.FormatterConfigs["two-paths"].BatchSize = 2
+	cfg.FormatterConfigs["four-paths"].BatchSize = 5
+
+	test.WriteConfig(t, configPath, &cfg)
+
+	treefmt(t,
+		withArgs("-c"),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorIs(err, format.ErrFormattingFailures)
+		}),
+		withStderr(tooManyArguments("four-paths")),
+	)
+}
+
 func TestRunInSubdir(t *testing.T) {
 	as := require.New(t)
 

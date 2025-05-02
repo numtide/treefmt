@@ -65,3 +65,6 @@ excludes = []
 # Lower the number, the higher the precedence
 # Default is 0
 priority = 0
+# Maximum number of files to be passed to this formatter when invoking it.
+# Optional
+# batch-size = 128

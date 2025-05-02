@@ -45,4 +45,37 @@ with pkgs; [
       done
     '';
   })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-one-path";
+    text = ''
+      if [ $# -gt 1 ]; then
+        echo "Error: Too many arguments"
+        exit 1
+      fi
+
+      test-fmt-four-paths
+    '';
+  })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-two-paths";
+    text = ''
+      if [ $# -gt 2 ]; then
+        echo "Error: Too many arguments"
+        exit 1
+      fi
+
+      test-fmt-four-paths
+    '';
+  })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-four-paths";
+    text = ''
+      if [ $# -gt 4 ]; then
+        echo "Error: Too many arguments"
+        exit 1
+      fi
+
+      test-fmt-append "foo" "$@"
+    '';
+  })
 ]

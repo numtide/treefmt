@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func (f *Formatter) Name() string {
 	return f.name
 }
 
-func (f *Formatter) Priority() int {
+func (f *Formatter) Priority() uint {
 	return f.config.Priority
 }
 
@@ -62,7 +63,8 @@ func (f *Formatter) Hash(h hash.Hash) error {
 	// if options change, the outcome of applying the formatter might be different
 	h.Write([]byte(strings.Join(f.config.Options, " ")))
 	// if priority changes, the outcome of applying a sequence of formatters might be different
-	h.Write([]byte(strconv.Itoa(f.config.Priority)))
+	//nolint:gosec
+	h.Write([]byte(strconv.Itoa(int(f.config.Priority))))
 
 	// stat the formatter's executable
 	info, err := os.Lstat(f.executable)
@@ -77,9 +79,29 @@ func (f *Formatter) Hash(h hash.Hash) error {
 	return nil
 }
 
-func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
+func (f *Formatter) Apply(ctx context.Context, files batch) error {
 	start := time.Now()
 
+	// determine batch size
+	//nolint:gosec
+	batchSize := int(f.config.BatchSize)
+	if batchSize == 0 {
+		batchSize = len(files)
+	}
+
+	// format each chunk
+	for chunk := range slices.Chunk(files, batchSize) {
+		if err := f.apply(ctx, chunk); err != nil {
+			return err
+		}
+	}
+
+	f.log.Infof("%v file(s) processed in %v", len(files), time.Since(start))
+
+	return nil
+}
+
+func (f *Formatter) apply(ctx context.Context, files batch) error {
 	// construct args, starting with config
 	args := f.config.Options
 
@@ -113,8 +135,6 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
 	}
-
-	f.log.Infof("%v file(s) processed in %v", len(files), time.Since(start))
 
 	return nil
 }

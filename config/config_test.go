@@ -705,7 +705,7 @@ func TestSampleConfigFile(t *testing.T) {
 	as.Nil(alejandra.Options)
 	as.Equal([]string{"*.nix"}, alejandra.Includes)
 	as.Equal([]string{"examples/nix/sources.nix"}, alejandra.Excludes)
-	as.Equal(1, alejandra.Priority)
+	as.Equal(uint(1), alejandra.Priority)
 
 	// deadnix
 	deadnix, ok := cfg.FormatterConfigs["deadnix"]
@@ -714,7 +714,7 @@ func TestSampleConfigFile(t *testing.T) {
 	as.Equal([]string{"-e"}, deadnix.Options)
 	as.Equal([]string{"*.nix"}, deadnix.Includes)
 	as.Nil(deadnix.Excludes)
-	as.Equal(2, deadnix.Priority)
+	as.Equal(uint(2), deadnix.Priority)
 
 	// ruby
 	ruby, ok := cfg.FormatterConfigs["ruby"]
@@ -755,7 +755,7 @@ func TestSampleConfigFile(t *testing.T) {
 	shellcheck, ok := cfg.FormatterConfigs["shellcheck"]
 	as.True(ok, "shellcheck formatter not found")
 	as.Equal("shellcheck", shellcheck.Command)
-	as.Equal(1, shellcheck.Priority)
+	as.Equal(uint(1), shellcheck.Priority)
 	as.Nil(shellcheck.Options)
 	as.Equal([]string{"*.sh"}, shellcheck.Includes)
 	as.Nil(shellcheck.Excludes)
@@ -764,7 +764,7 @@ func TestSampleConfigFile(t *testing.T) {
 	shfmt, ok := cfg.FormatterConfigs["shfmt"]
 	as.True(ok, "shfmt formatter not found")
 	as.Equal("shfmt", shfmt.Command)
-	as.Equal(2, shfmt.Priority)
+	as.Equal(uint(2), shfmt.Priority)
 	as.Equal([]string{"-i", "2", "-s", "-w"}, shfmt.Options)
 	as.Equal([]string{"*.sh"}, shfmt.Includes)
 	as.Nil(shfmt.Excludes)

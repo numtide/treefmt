@@ -228,7 +228,8 @@ func formatterSortFunc(a, b *Formatter) int {
 	priorityA := a.Priority()
 	priorityB := b.Priority()
 
-	result := priorityA - priorityB
+	//nolint:gosec
+	result := int(priorityA - priorityB)
 	if result == 0 {
 		// formatters with the same priority are sorted lexicographically to ensure a deterministic outcome
 		result = cmp.Compare(a.Name(), b.Name())

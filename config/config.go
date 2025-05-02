@@ -59,7 +59,9 @@ type Formatter struct {
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
 	Excludes []string `mapstructure:"excludes,omitempty" toml:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
-	Priority int `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
+	Priority uint `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
+	// Maximum number of files to be passed to this formatter when invoking it.
+	BatchSize uint `mapstructure:"batch-size,omitempty" toml:"batch-size,omitempty"`
 }
 
 // SetFlags appends our flags to the provided flag set.
