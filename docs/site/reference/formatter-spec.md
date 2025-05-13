@@ -60,3 +60,54 @@ outputs.
 ### 4. Reliable
 
 We expect the formatter to be reliable and not break the semantics of the formatted files.
+
+## Stdin Specification
+
+Formatters **MAY** also implement the [Stdin Specification](#stdin-specification), which allows
+formatting "virtual files" passed via stdin.
+
+A formatter **MUST** implement the [Stdin Specification](#stdin-specification) if its formatting behavior
+can depend on the name of the file being formatted.
+
+### Rules
+
+In order for the formatter to comply with this spec, it **MUST** satisfy the following:
+
+#### 1. `--stdin` flag
+
+The formatter's CLI must be of the form:
+
+```
+<command> [options] [--stdin] [...<files>]
+```
+
+Where:
+
+- `<command>` is the name of the formatting tool.
+- `[options]` is any number of flags and options that the formatter accepts.
+- `--stdin` is an optional flag that puts the formatter in "stdin mode". In
+  stdin mode, the formatter reads file contents from stdin rather than the
+  filesystem.
+- `[...<files>]` is one or more files given to the formatter for processing. If
+  `--stdin` is specified, then exactly 1 must be present, and is treated as a
+  filename.
+
+Example:
+
+```
+$ echo "{}" | nixfmt --stdin path/to/file.nix
+```
+
+!!! note
+
+    This CLI _MUST_ be implemented in a way that is compatibile with the
+    vanilla [Formatter Specification](#1-files-passed-as-arguments).
+
+#### 2. Print to stdout, do not assume file is present on filesystem
+
+When in stdin mode, the formatter:
+
+1. **MUST** print the formatted file to stdout.
+2. **MUST NOT** attempt to read the file on the filesystem. Instead, it
+   **MUST** read from stdin.
+3. **MUST NOT** write to the file on the filesytem.
