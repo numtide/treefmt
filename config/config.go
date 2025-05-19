@@ -16,6 +16,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/shlex"
+	"github.com/numtide/treefmt/v2/git"
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -290,22 +291,12 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 		return errors.New("at most one of tree-root, tree-root-cmd or tree-root-file can be specified")
 	}
 
-	// set git-based tree root command if the walker is git and no tree root has been specified
-	if cfg.Walk == walk.Git.String() && count == 0 {
-		cfg.TreeRootCmd = "git rev-parse --show-toplevel"
-
-		logger.Infof(
-			"git walker enabled and tree root has not been specified: defaulting tree-root-cmd to '%s'",
-			cfg.TreeRootCmd,
-		)
-	}
-
 	switch {
 	case cfg.TreeRoot != "":
-		logger.Debugf("tree root specified explicitly: %s", cfg.TreeRoot)
+		logger.Infof("tree root specified explicitly: %s", cfg.TreeRoot)
 
 	case cfg.TreeRootFile != "":
-		logger.Debugf("searching for tree root using tree-root-file: %s", cfg.TreeRootFile)
+		logger.Infof("searching for tree root using tree-root-file: %s", cfg.TreeRootFile)
 
 		_, cfg.TreeRoot, err = FindUp(cfg.WorkingDirectory, cfg.TreeRootFile)
 		if err != nil {
@@ -313,20 +304,40 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 		}
 
 	case cfg.TreeRootCmd != "":
-		logger.Debugf("searching for tree root using tree-root-cmd: %s", cfg.TreeRootCmd)
+		logger.Infof("searching for tree root using tree-root-cmd: %s", cfg.TreeRootCmd)
 
-		if cfg.TreeRoot, err = execTreeRootCmd(cfg); err != nil {
+		if cfg.TreeRoot, err = execTreeRootCmd(cfg.TreeRootCmd, cfg.WorkingDirectory); err != nil {
 			return err
 		}
 
 	default:
 		// no tree root was specified
-		logger.Debugf(
-			"no tree root specified, defaulting to the directory containing the config file: %s",
-			v.ConfigFileUsed(),
-		)
+		logger.Infof("no tree root specified")
 
-		cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+		// attempt to resolve with git
+		if cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Git.String() {
+			logger.Infof("attempting to resolve tree root using git: %s", git.TreeRootCmd)
+
+			// attempt to resolve the tree root with git
+			cfg.TreeRoot, err = execTreeRootCmd(git.TreeRootCmd, cfg.WorkingDirectory)
+			if err != nil && cfg.Walk == walk.Git.String() {
+				return fmt.Errorf("failed to resolve tree root with git: %w", err)
+			}
+
+			if err != nil {
+				logger.Infof("failed to resolve tree root with git: %v", err)
+			}
+		}
+
+		if cfg.TreeRoot == "" {
+			// fallback to the directory containing the config file
+			logger.Infof(
+				"setting tree root to the directory containing the config file: %s",
+				v.ConfigFileUsed(),
+			)
+
+			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+		}
 	}
 
 	// resolve tree root to an absolute path
@@ -334,14 +345,14 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 		return fmt.Errorf("failed to get absolute path for tree root: %w", err)
 	}
 
-	logger.Debugf("tree root: %s", cfg.TreeRoot)
+	logger.Infof("tree root: %s", cfg.TreeRoot)
 
 	return nil
 }
 
-func execTreeRootCmd(cfg *Config) (string, error) {
+func execTreeRootCmd(treeRootCmd string, workingDir string) (string, error) {
 	// split the command first, resolving any '' and "" entries
-	parts, splitErr := shlex.Split(cfg.TreeRootCmd)
+	parts, splitErr := shlex.Split(treeRootCmd)
 	if splitErr != nil {
 		return "", fmt.Errorf("failed to parse tree-root-cmd: %w", splitErr)
 	}
@@ -356,7 +367,7 @@ func execTreeRootCmd(cfg *Config) (string, error) {
 	// construct the command, setting the correct working directory
 	//nolint:gosec
 	cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
-	cmd.Dir = cfg.WorkingDirectory
+	cmd.Dir = workingDir
 
 	// setup some pipes to capture stdout and stderr
 	stdout, err := cmd.StdoutPipe()
@@ -428,13 +439,13 @@ func execTreeRootCmd(cfg *Config) (string, error) {
 
 	case 0:
 		// no output was received on stdout
-		return "", fmt.Errorf("empty output received after executing tree-root-cmd: %s", cfg.TreeRootCmd)
+		return "", fmt.Errorf("empty output received after executing tree-root-cmd: %s", treeRootCmd)
 
 	default:
 		// multiple lines received on stdout, dump the output to make it clear what happened and throw an error
 		log.WithPrefix("tree-root-cmd | stdout").Errorf("\n%s", outputStr)
 
-		return "", fmt.Errorf("tree-root-cmd cannot output multiple lines: %s", cfg.TreeRootCmd)
+		return "", fmt.Errorf("tree-root-cmd cannot output multiple lines: %s", treeRootCmd)
 	}
 }
 

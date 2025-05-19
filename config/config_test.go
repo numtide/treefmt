@@ -617,12 +617,14 @@ func TestWorkingDirectory(t *testing.T) {
 	checkValue(cwd)
 
 	// env override
-	t.Setenv("TREEFMT_WORKING_DIR", "/fizz/buzz/..")
-	checkValue("/fizz")
+	cwd = t.TempDir()
+	t.Setenv("TREEFMT_WORKING_DIR", cwd+"/buzz/..")
+	checkValue(cwd)
 
 	// flag override
-	as.NoError(flags.Set("working-dir", "/flip/flop"))
-	checkValue("/flip/flop")
+	cwd = t.TempDir()
+	as.NoError(flags.Set("working-dir", cwd))
+	checkValue(cwd)
 }
 
 func TestStdin(t *testing.T) {
