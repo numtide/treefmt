@@ -306,6 +306,38 @@ Defaults to the directory containing the config file.
     tree-root = "/tmp/foo"
     ```
 
+### `tree-root-cmd`
+
+Command to run to find the tree root.
+It is parsed using [shlex](https://github.com/google/shlex/tree/master), to allow quoting arguments that contain whitespace.
+If you wish to pass arguments containing quotes, you should use nested quotes e.g. `"'"` or `'"'`.
+
+!!!note
+
+    If [walk](#walk) is set to `git` and no tree root option has been defined, `tree-root-cmd` will be defaulted to
+    `git rev-parse --show-toplevel`.
+
+    if [walk](#walk) is set to `auto` (the default), `treefmt` will check if the [working directory](#working-dir) is
+    inside a git worktree. If it is, `tree-root-cmd` will be defaulted as described above for `git`.
+
+=== "Flag"
+
+    ```console
+    treefmt --tree-root-cmd "git rev-parse --show-toplevel"
+    ```
+
+=== "Env"
+
+    ```console
+    TREEFMT_TREE_ROOT_CMD="git rev-parse --show-toplevel" treefmt
+    ```
+
+=== "Config"
+
+    ```toml
+    tree-root-cmd = "git rev-parse --show-toplevel"
+    ```
+
 ### `tree-root-file`
 
 File to search for to find the tree root (if `tree-root` is not set)
