@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/charmbracelet/log"
+	"github.com/numtide/treefmt/v2/git"
 	"github.com/numtide/treefmt/v2/stats"
 	"golang.org/x/sync/errgroup"
 )
@@ -143,12 +143,12 @@ func NewGitReader(
 	statz *stats.Stats,
 ) (*GitReader, error) {
 	// check if the root is a git repository
-	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
-	cmd.Dir = root
-
-	if out, err := cmd.Output(); err != nil {
+	isGit, err := git.IsInsideWorktree(root)
+	if err != nil {
 		return nil, fmt.Errorf("failed to check if %s is a git repository: %w", root, err)
-	} else if strings.Trim(string(out), "\n") != "true" {
+	}
+
+	if !isGit {
 		return nil, fmt.Errorf("%s is not a git repository", root)
 	}
 

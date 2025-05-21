@@ -502,6 +502,10 @@ func TestConfigFile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tempDir := test.TempExamples(t)
 
+			// change to a temp directory to avoid interference with config file and auto walk detection from
+			// the treefmt repository
+			test.ChangeWorkDir(t, t.TempDir())
+
 			// use a config file in a different temp directory
 			configPath := filepath.Join(t.TempDir(), name)
 
