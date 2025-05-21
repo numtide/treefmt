@@ -84,6 +84,7 @@ in
         then attr.override {inherit treefmt;}
         else attr;
     in {
+      evalConfig = inheritFromNixpkgs "evalConfig";
       withConfig = inheritFromNixpkgs "withConfig";
       buildConfig = inheritFromNixpkgs "buildConfig";
 
