@@ -627,6 +627,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#tree-root-cmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      tree-root-cmd
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tree-root-file" class="md-nav__link">
     <span class="md-ellipsis">
       tree-root-file
@@ -1216,6 +1225,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#tree-root-cmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      tree-root-cmd
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tree-root-file" class="md-nav__link">
     <span class="md-ellipsis">
       tree-root-file
@@ -1790,20 +1808,47 @@ Defaults to the directory containing the config file.</p>
 </div>
 </div>
 </div>
-<h3 id="tree-root-file"><code>tree-root-file</code></h3>
-<p>File to search for to find the tree root (if <code>tree-root</code> is not set)</p>
+<h3 id="tree-root-cmd"><code>tree-root-cmd</code></h3>
+<p>Command to run to find the tree root.
+It is parsed using <a href="https://github.com/google/shlex/tree/master">shlex</a>, to allow quoting arguments that contain whitespace.
+If you wish to pass arguments containing quotes, you should use nested quotes e.g. <code>"'"</code> or <code>'"'</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <a href="#walk">walk</a> is set to <code>git</code> and no tree root option has been defined, <code>tree-root-cmd</code> will be defaulted to
+<code>git rev-parse --show-toplevel</code>.</p>
+<p>if <a href="#walk">walk</a> is set to <code>auto</code> (the default), <code>treefmt</code> will check if the <a href="#working-dir">working directory</a> is
+inside a git worktree. If it is, <code>tree-root-cmd</code> will be defaulted as described above for <code>git</code>.</p>
+</div>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:3"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><input id="__tabbed_14_3" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">Flag</label><label for="__tabbed_14_2">Env</label><label for="__tabbed_14_3">Config</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="go">treefmt --tree-root-file .git/config</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="go">treefmt --tree-root-cmd &quot;git rev-parse --show-toplevel&quot;</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="go">TREEFMT_TREE_ROOT_FILE=.git/config treefmt</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="go">TREEFMT_TREE_ROOT_CMD=&quot;git rev-parse --show-toplevel&quot; treefmt</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="n">tree-root-file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.git/config&quot;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="n">tree-root-cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;git rev-parse --show-toplevel&quot;</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div>
+</div>
+<h3 id="tree-root-file"><code>tree-root-file</code></h3>
+<p>File to search for to find the tree root (if <code>tree-root</code> is not set)</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="15:3"><input checked="checked" id="__tabbed_15_1" name="__tabbed_15" type="radio" /><input id="__tabbed_15_2" name="__tabbed_15" type="radio" /><input id="__tabbed_15_3" name="__tabbed_15" type="radio" /><div class="tabbed-labels"><label for="__tabbed_15_1">Flag</label><label for="__tabbed_15_2">Env</label><label for="__tabbed_15_3">Config</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="go">treefmt --tree-root-file .git/config</span>
+</code></pre></div></td></tr></table></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="go">TREEFMT_TREE_ROOT_FILE=.git/config treefmt</span>
+</code></pre></div></td></tr></table></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="n">tree-root-file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.git/config&quot;</span>
 </code></pre></div></td></tr></table></div>
 </div>
 </div>
@@ -1815,19 +1860,19 @@ Defaults to the directory containing the config file.</p>
 <li><code>1</code> =&gt; <code>info</code></li>
 <li><code>2</code> =&gt; <code>debug</code></li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="15:3"><input checked="checked" id="__tabbed_15_1" name="__tabbed_15" type="radio" /><input id="__tabbed_15_2" name="__tabbed_15" type="radio" /><input id="__tabbed_15_3" name="__tabbed_15" type="radio" /><div class="tabbed-labels"><label for="__tabbed_15_1">Flag</label><label for="__tabbed_15_2">Env</label><label for="__tabbed_15_3">Config</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="16:3"><input checked="checked" id="__tabbed_16_1" name="__tabbed_16" type="radio" /><input id="__tabbed_16_2" name="__tabbed_16" type="radio" /><input id="__tabbed_16_3" name="__tabbed_16" type="radio" /><div class="tabbed-labels"><label for="__tabbed_16_1">Flag</label><label for="__tabbed_16_2">Env</label><label for="__tabbed_16_3">Config</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>The number of <code>v</code>'s passed matches the level set.</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="go">treefmt -vv</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="go">treefmt -vv</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="go">TREEFMT_VERBOSE=1 treefmt</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="go">TREEFMT_VERBOSE=1 treefmt</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
 </code></pre></div></td></tr></table></div>
 </div>
 </div>
@@ -1835,34 +1880,34 @@ Defaults to the directory containing the config file.</p>
 <h3 id="walk"><code>walk</code></h3>
 <p>The method used to traverse the files within the tree root.
 Currently, we support 'auto', 'git' or 'filesystem'</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="16:3"><input checked="checked" id="__tabbed_16_1" name="__tabbed_16" type="radio" /><input id="__tabbed_16_2" name="__tabbed_16" type="radio" /><input id="__tabbed_16_3" name="__tabbed_16" type="radio" /><div class="tabbed-labels"><label for="__tabbed_16_1">Flag</label><label for="__tabbed_16_2">Env</label><label for="__tabbed_16_3">Config</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="17:3"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><input id="__tabbed_17_3" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">Flag</label><label for="__tabbed_17_2">Env</label><label for="__tabbed_17_3">Config</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="go">treefmt --walk filesystem</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="go">treefmt --walk filesystem</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="go">TREEFMT_WALK=filesystem treefmt</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-43-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1"></a><span class="go">TREEFMT_WALK=filesystem treefmt</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="n">walk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;filesystem&quot;</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-44-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1"></a><span class="n">walk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;filesystem&quot;</span>
 </code></pre></div></td></tr></table></div>
 </div>
 </div>
 </div>
 <h3 id="working-dir"><code>working-dir</code></h3>
 <p>Run as if <code>treefmt</code> was started in the specified working directory instead of the current working directory.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="17:2"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">Flag</label><label for="__tabbed_17_2">Env</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="18:2"><input checked="checked" id="__tabbed_18_1" name="__tabbed_18" type="radio" /><input id="__tabbed_18_2" name="__tabbed_18" type="radio" /><div class="tabbed-labels"><label for="__tabbed_18_1">Flag</label><label for="__tabbed_18_2">Env</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1">1</a></span>
-<span class="normal"><a href="#__codelineno-42-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="go">treefmt -C /tmp/foo</span>
-<a id="__codelineno-42-2" name="__codelineno-42-2"></a><span class="go">treefmt --working-dir /tmp/foo</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-45-1">1</a></span>
+<span class="normal"><a href="#__codelineno-45-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1"></a><span class="go">treefmt -C /tmp/foo</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2"></a><span class="go">treefmt --working-dir /tmp/foo</span>
 </code></pre></div></td></tr></table></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-43-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1"></a><span class="go">TREEFMT_WORKING_DIR=/tmp/foo treefmt</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-46-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1"></a><span class="go">TREEFMT_WORKING_DIR=/tmp/foo treefmt</span>
 </code></pre></div></td></tr></table></div>
 </div>
 </div>
@@ -1870,27 +1915,27 @@ Currently, we support 'auto', 'git' or 'filesystem'</p>
 <h2 id="formatter-options">Formatter Options</h2>
 <p>Formatters are configured using a <a href="https://toml.io/en/v1.0.0#table">table</a> entry in <code>treefmt.toml</code> of the form
 <code>[formatter.&lt;name&gt;]</code>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-44-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-44-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-44-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-44-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-44-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-44-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-44-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-44-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-44-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-44-10">10</a></span>
-<span class="normal"><a href="#__codelineno-44-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1"></a><span class="k">[formatter.alejandra]</span>
-<a id="__codelineno-44-2" name="__codelineno-44-2"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;alejandra&quot;</span>
-<a id="__codelineno-44-3" name="__codelineno-44-3"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
-<a id="__codelineno-44-4" name="__codelineno-44-4"></a><span class="n">excludes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;examples/nix/sources.nix&quot;</span><span class="p">]</span>
-<a id="__codelineno-44-5" name="__codelineno-44-5"></a><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
-<a id="__codelineno-44-6" name="__codelineno-44-6"></a>
-<a id="__codelineno-44-7" name="__codelineno-44-7"></a><span class="k">[formatter.deadnix]</span>
-<a id="__codelineno-44-8" name="__codelineno-44-8"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;deadnix&quot;</span>
-<a id="__codelineno-44-9" name="__codelineno-44-9"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-e&quot;</span><span class="p">]</span>
-<a id="__codelineno-44-10" name="__codelineno-44-10"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
-<a id="__codelineno-44-11" name="__codelineno-44-11"></a><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-47-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-47-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-47-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-47-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-47-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-47-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-47-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-47-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-47-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-47-10">10</a></span>
+<span class="normal"><a href="#__codelineno-47-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1"></a><span class="k">[formatter.alejandra]</span>
+<a id="__codelineno-47-2" name="__codelineno-47-2"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;alejandra&quot;</span>
+<a id="__codelineno-47-3" name="__codelineno-47-3"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
+<a id="__codelineno-47-4" name="__codelineno-47-4"></a><span class="n">excludes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;examples/nix/sources.nix&quot;</span><span class="p">]</span>
+<a id="__codelineno-47-5" name="__codelineno-47-5"></a><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-47-6" name="__codelineno-47-6"></a>
+<a id="__codelineno-47-7" name="__codelineno-47-7"></a><span class="k">[formatter.deadnix]</span>
+<a id="__codelineno-47-8" name="__codelineno-47-8"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;deadnix&quot;</span>
+<a id="__codelineno-47-9" name="__codelineno-47-9"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-e&quot;</span><span class="p">]</span>
+<a id="__codelineno-47-10" name="__codelineno-47-10"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
+<a id="__codelineno-47-11" name="__codelineno-47-11"></a><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
 </code></pre></div></td></tr></table></div>
 <h3 id="command"><code>command</code></h3>
 <p>The command to invoke when applying the formatter.</p>
