@@ -80,7 +80,7 @@ in
         error = "Accessing `${name}` requires a nixpkgs revision that has `treefmt.${name}`.";
         attr = pkgs.treefmt.${name} or (throw error);
       in
-        if attr.override.__functionArgs.treefmt or null != null
+        if attr ? override.__functionArgs.treefmt
         then attr.override {inherit treefmt;}
         else attr;
     in {
