@@ -77,6 +77,13 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		}()
 	}
 
+	// Remove the cache first before potentially opening a new one.
+	if cfg.ClearCache {
+		if err := cache.Remove(cfg.TreeRoot); err != nil {
+			return fmt.Errorf("failed to clear cache: %w", err)
+		}
+	}
+
 	var db *bolt.DB
 
 	// open the db unless --no-cache was specified
@@ -92,15 +99,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 				log.Errorf("failed to close cache: %v", closeErr)
 			}
 		}()
-	}
-
-	if db != nil {
-		// clear the cache if desired
-		if cfg.ClearCache {
-			if err = cache.Clear(db); err != nil {
-				return fmt.Errorf("failed to clear cache: %w", err)
-			}
-		}
 	}
 
 	// create an overall app context

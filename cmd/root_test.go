@@ -24,6 +24,7 @@ import (
 	"github.com/numtide/treefmt/v2/walk"
 	cp "github.com/otiai10/copy"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestOnUnmatched(t *testing.T) {
@@ -2139,6 +2140,79 @@ func TestProjectRootIsSymlink(t *testing.T) {
 		withArgs("-c", "go/main.go"),
 		withNoError(t),
 	)
+}
+
+func TestConcurrentInvocation(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
+
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+			"slow": {
+				Command: "test-fmt-delayed-append",
+				// connect timeout for the db is 1 second
+				// wait 2 seconds before appending ' ' to each provided path
+				Options:  []string{"2", " "},
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	eg := errgroup.Group{}
+
+	// concurrent invocation with one slow instance and one not
+
+	eg.Go(func() error {
+		treefmt(t,
+			withArgs("--formatters", "slow"),
+			withConfig(configPath, cfg),
+			withNoError(t),
+		)
+
+		return nil
+	})
+
+	time.Sleep(500 * time.Millisecond)
+
+	treefmt(t,
+		withArgs("--formatters", "echo"),
+		withConfig(configPath, cfg),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "failed to open cache")
+		}),
+	)
+
+	as.NoError(eg.Wait())
+
+	// concurrent invocation with one slow instance and one configured to clear the cache
+
+	eg.Go(func() error {
+		treefmt(t,
+			withArgs("--formatters", "slow"),
+			withConfig(configPath, cfg),
+			withNoError(t),
+		)
+
+		return nil
+	})
+
+	time.Sleep(500 * time.Millisecond)
+
+	treefmt(t,
+		withArgs("-c", "--formatters", "echo"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+	)
+
+	as.NoError(eg.Wait())
 }
 
 type options struct {
