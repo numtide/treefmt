@@ -9,7 +9,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/v2/stats"
 	bolt "go.etcd.io/bbolt"
 )
@@ -245,7 +247,17 @@ func NewCompositeReader(
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
-	// if not paths are provided we default to processing the tree root
+	// Note: `root` may itself be or contain a symlink (e.g. it is in
+	// `$TMPDIR` on macOS or a user has set a symlink to shorten the repository
+	// path for path length restrictions), so we resolve it here first.
+	//
+	// See: https://github.com/numtide/treefmt/issues/578
+	root, err := resolvePath(root)
+	if err != nil {
+		return nil, fmt.Errorf("error resolving path %s: %w", root, err)
+	}
+
+	// if no paths are provided we default to processing the tree root
 	if len(paths) == 0 {
 		return NewReader(walkType, root, "", db, statz)
 	}
@@ -258,44 +270,73 @@ func NewCompositeReader(
 			return nil, errors.New("stdin walk requires exactly one path")
 		}
 
-		return NewStdinReader(root, paths[0], statz), nil
+		path := paths[0]
+
+		if strings.HasPrefix(path, "..") {
+			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
+		}
+
+		return NewStdinReader(root, path, statz), nil
 	}
 
 	// create a reader for each provided path
-	for idx, relPath := range paths {
+	for idx, path := range paths {
 		var (
 			err  error
 			info os.FileInfo
 		)
 
-		// create a clean absolute path
-		path := filepath.Clean(filepath.Join(root, relPath))
-
-		// check the path exists (don't follow symlinks)
-		info, err = os.Lstat(path)
+		resolvedPath, err := resolvePath(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to stat %s: %w", path, err)
+			return nil, fmt.Errorf("error resolving path %s: %w", path, err)
 		}
 
-		switch {
-		case info.Mode()&os.ModeSymlink == os.ModeSymlink:
-			// for symlinks -> we ignore them since it does not make sense to follow them
-			// as normal files in the `root` will be picked up nevertheless.
-			continue
-		case info.IsDir():
+		relativePath, err := filepath.Rel(root, resolvedPath)
+		if err != nil {
+			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
+		}
+
+		if strings.HasPrefix(relativePath, "..") {
+			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
+		}
+
+		// check the path exists
+		info, err = os.Lstat(resolvedPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat %s: %w", resolvedPath, err)
+		}
+
+		if info.IsDir() {
 			// for directories, we honour the walk type as we traverse them
-			readers[idx], err = NewReader(walkType, root, relPath, db, statz)
-		default:
+			readers[idx], err = NewReader(walkType, root, relativePath, db, statz)
+		} else {
 			// for files, we enforce a simple filesystem read
-			readers[idx], err = NewReader(Filesystem, root, relPath, db, statz)
+			readers[idx], err = NewReader(Filesystem, root, relativePath, db, statz)
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to create reader for %s: %w", relPath, err)
+			return nil, fmt.Errorf("failed to create reader for %s: %w", relativePath, err)
 		}
 	}
 
 	return &CompositeReader{
 		readers: readers,
 	}, nil
+}
+
+// Resolve a path to an absolute path, resolving any symlinks along the way.
+func resolvePath(path string) (string, error) {
+	log.Debugf("Resolving path '%s'", path)
+
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("error computing absolute path of %s: %w", path, err)
+	}
+
+	resolvedPath, err := filepath.EvalSymlinks(absolutePath)
+	if err != nil {
+		return "", fmt.Errorf("path %s not found: %w", absolutePath, err)
+	}
+
+	return resolvedPath, nil
 }
