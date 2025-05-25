@@ -7,9 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/pprof"
-	"strings"
 	"syscall"
 	"time"
 
@@ -126,10 +124,6 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
 
-	if err = resolvePaths(paths, walkType, cfg.TreeRoot); err != nil {
-		return err
-	}
-
 	// create a composite formatter which will handle applying the correct formatters to each file we traverse
 	formatter, err := format.NewCompositeFormatter(cfg, statz, BatchSize)
 	if err != nil {
@@ -214,61 +208,4 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	return nil
-}
-
-// resolvePaths checks all paths are contained within the tree root and exist
-// also "normalize" paths so they're relative to `cfg.TreeRoot`
-// Symlinks are allowed in `paths` and we resolve them here, since
-// the readers will ignore symlinks.
-func resolvePaths(paths []string, walkType walk.Type, treeRoot string) error {
-	// Note: `treeRoot` may itself be or contain a symlink (e.g. it is in
-	// `$TMPDIR` on macOS or a user has set a symlink to shorten the repository
-	// path for path length restrictions), so we resolve it here first.
-	//
-	// See: https://github.com/numtide/treefmt/issues/578
-	treeRoot, err := resolvePath(walkType, treeRoot)
-	if err != nil {
-		return fmt.Errorf("error computing absolute path of %s: %w", treeRoot, err)
-	}
-
-	for i, path := range paths {
-		absolutePath, err := resolvePath(walkType, path)
-		if err != nil {
-			return fmt.Errorf("error computing absolute path of %s: %w", path, err)
-		}
-
-		relativePath, err := filepath.Rel(treeRoot, absolutePath)
-		if err != nil {
-			return fmt.Errorf("error computing relative path from %s to %s: %w", treeRoot, absolutePath, err)
-		}
-
-		if strings.HasPrefix(relativePath, "..") {
-			return fmt.Errorf("path %s not inside the tree root %s", path, treeRoot)
-		}
-
-		paths[i] = relativePath
-	}
-
-	return nil
-}
-
-// Resolve a path to an absolute path, resolving symlinks if necessary.
-func resolvePath(walkType walk.Type, path string) (string, error) {
-	log.Debugf("Resolving path '%s': %v", path, walkType)
-
-	absolutePath, err := filepath.Abs(path)
-	if err != nil {
-		return "", fmt.Errorf("error computing absolute path of %s: %w", path, err)
-	}
-
-	if walkType != walk.Stdin {
-		realPath, err := filepath.EvalSymlinks(absolutePath)
-		if err != nil {
-			return "", fmt.Errorf("path %s not found: %w", absolutePath, err)
-		}
-
-		absolutePath = realPath
-	}
-
-	return absolutePath, nil
 }
