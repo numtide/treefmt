@@ -45,4 +45,16 @@ with pkgs; [
       done
     '';
   })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-delayed-append";
+    text = ''
+      DELAY="$1"
+      shift
+
+      # sleep first
+      sleep "$DELAY"
+
+      test-fmt-append "$@"
+    '';
+  })
 ]
