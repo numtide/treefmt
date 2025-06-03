@@ -1439,9 +1439,9 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 79,
-			stats.Matched:   79,
-			stats.Formatted: 51, // the echo formatter should only be applied to the new files
+			stats.Traversed: 80,
+			stats.Matched:   80,
+			stats.Formatted: 52, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1923,7 +1923,7 @@ func TestStdin(t *testing.T) {
 			as.ErrorContains(err, "path ../test.nix not inside the tree root "+tempDir)
 		}),
 		withStderr(func(out []byte) {
-			as.Contains(string(out), "Error: path ../test.nix not inside the tree root")
+			as.Contains(string(out), "Error: failed to create walker: path ../test.nix not inside the tree root")
 		}),
 	)
 
@@ -2136,9 +2136,40 @@ func TestProjectRootIsSymlink(t *testing.T) {
 	configPath := filepath.Join(symlinkRoot, "/treefmt.toml")
 	test.WriteConfig(t, configPath, cfg)
 
+	// Verify we can format a specific file.
 	treefmt(t,
 		withArgs("-c", "go/main.go"),
 		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   0,
+		}),
+	)
+
+	// Verify we can format a specific directory that is a symlink.
+	treefmt(t,
+		withArgs("-c", "symlink-to-yaml-dir"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   0,
+		}),
+	)
+
+	// Verify we can format the current directory (which is a symlink!).
+	treefmt(t,
+		withArgs("-c", "."),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
 	)
 }
 
