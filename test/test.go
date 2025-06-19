@@ -14,6 +14,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func SetenvXdgConfigDir(t *testing.T) {
+	t.Helper()
+
+	configPath, err := filepath.Abs("../test/config")
+	if err != nil {
+		t.Fatalf("failed to get the path to the config directory: %v", err)
+	}
+
+	t.Setenv("XDG_CONFIG_HOME", configPath)
+}
+
 func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	t.Helper()
 

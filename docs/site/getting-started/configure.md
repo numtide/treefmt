@@ -317,8 +317,13 @@ If you wish to pass arguments containing quotes, you should use nested quotes e.
     If [walk](#walk) is set to `git` and no tree root option has been defined, `tree-root-cmd` will be defaulted to
     `git rev-parse --show-toplevel`.
 
+    If [walk](#walk) is set to `jujutsu` and no tree root option has been defined, `tree-root-cmd` will be defaulted to
+    `jj workspace root`.
+
     if [walk](#walk) is set to `auto` (the default), `treefmt` will check if the [working directory](#working-dir) is
-    inside a git worktree. If it is, `tree-root-cmd` will be defaulted as described above for `git`.
+    inside a git worktree. If it is, `tree-root-cmd` will be defaulted as described above for `git`. If the [working
+    directory](#working-dir) is inside a jujutsu worktree the `tree-root-cmd` will be defaulted as described above for
+    `jujutsu`.
 
 === "Flag"
 
@@ -391,7 +396,7 @@ Set the verbosity level of logs:
 ### `walk`
 
 The method used to traverse the files within the tree root.
-Currently, we support 'auto', 'git' or 'filesystem'
+Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'
 
 === "Flag"
 
