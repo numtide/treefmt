@@ -13,7 +13,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
-	go.etcd.io/bbolt v1.3.11
+	go.etcd.io/bbolt v1.4.2
 	golang.org/x/sync v0.14.0
 	golang.org/x/sys v0.33.0
 	mvdan.cc/sh/v3 v3.11.0
