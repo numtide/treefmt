@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/v2/jujutsu"
@@ -61,19 +60,10 @@ func (j *JujutsuReader) Read(ctx context.Context, files []*File) (n int, err err
 		j.scanner = bufio.NewScanner(r)
 	}
 
-	nextLine := func() (string, error) {
+	nextLine := func() string {
 		line := j.scanner.Text()
 
-		if len(line) == 0 || line[0] != '"' {
-			return line, nil
-		}
-
-		unquoted, err := strconv.Unquote(line)
-		if err != nil {
-			return "", fmt.Errorf("failed to unquote line %s: %w", line, err)
-		}
-
-		return unquoted, nil
+		return line
 	}
 
 LOOP:
@@ -92,10 +82,7 @@ LOOP:
 		default:
 			// read the next file
 			if j.scanner.Scan() {
-				entry, err := nextLine()
-				if err != nil {
-					return n, err
-				}
+				entry := nextLine()
 
 				path := filepath.Join(j.root, entry)
 
