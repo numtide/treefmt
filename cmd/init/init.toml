@@ -48,7 +48,7 @@
 # verbose = 2
 
 # The method used to traverse the files within the tree root
-# Currently, we support 'auto', 'git' or 'filesystem'
+# Currently, we support 'auto', 'git', 'jujutsu', or 'filesystem'
 # Env $TREEFMT_WALK
 # walk = "filesystem"
 

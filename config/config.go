@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/google/shlex"
 	"github.com/numtide/treefmt/v2/git"
+	"github.com/numtide/treefmt/v2/jujutsu"
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -113,8 +114,8 @@ func SetFlags(fs *pflag.FlagSet) {
 	fs.String(
 		"tree-root", "",
 		"The root directory from which treefmt will start walking the filesystem. "+
-			"Defaults to the root of the current git worktree. If not in a git repo, defaults to the directory "+
-			"containing the config file. (env $TREEFMT_TREE_ROOT)",
+			"Defaults to the root of the current git or jujutsu worktree. If not in a git or jujutsu repo, defaults to the "+
+			"directory containing the config file. (env $TREEFMT_TREE_ROOT)",
 	)
 	fs.String(
 		"tree-root-cmd", "",
@@ -136,7 +137,7 @@ func SetFlags(fs *pflag.FlagSet) {
 	fs.String(
 		"walk", "auto",
 		"The method used to traverse the files within the tree root. Currently supports "+
-			"<auto|git|filesystem>. (env $TREEFMT_WALK)",
+			"<auto|git|jujutsu|filesystem>. (env $TREEFMT_WALK)",
 	)
 	fs.StringP(
 		"working-dir", "C", ".",
@@ -326,6 +327,21 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 
 			if err != nil {
 				logger.Infof("failed to resolve tree root with git: %v", err)
+			}
+		}
+
+		// attempt to resolve with jujutsu
+		if cfg.TreeRoot == "" && (cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Jujutsu.String()) {
+			logger.Infof("attempting to resolve tree root using jujutsu: %s", jujutsu.TreeRootCmd)
+
+			// attempt to resolve the tree root with jujutsu
+			cfg.TreeRoot, err = execTreeRootCmd(jujutsu.TreeRootCmd, cfg.WorkingDirectory)
+			if err != nil && cfg.Walk == walk.Git.String() {
+				return fmt.Errorf("failed to resolve tree root with jujutsu: %w", err)
+			}
+
+			if err != nil {
+				logger.Infof("failed to resolve tree root with jujutsu: %v", err)
 			}
 		}
 
