@@ -1536,6 +1536,218 @@ func TestGit(t *testing.T) {
 	)
 }
 
+func TestJujutsu(t *testing.T) {
+	as := require.New(t)
+
+	test.SetenvXdgConfigDir(t)
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
+
+	// basic config
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo", // will not generate any underlying changes in the file
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	// init a jujutsu repo
+	jjCmd := exec.Command("jj", "git", "init")
+	as.NoError(jjCmd.Run(), "failed to init jujutsu repository")
+
+	// run treefmt before adding anything to the jj index
+	// Jujutsu depends on updating the index with a `jj` command. So, until we do
+	// that, the treefmt should return nothing, since the walker is executed with
+	// `--ignore-working-copy` which does not update the index.
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 0,
+			stats.Matched:   0,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	// update jujutsu's index
+	jjCmd = exec.Command("jj")
+	as.NoError(jjCmd.Run(), "failed to update the index")
+
+	// This is our first pass, since previously the files were not in the index. This should format all files.
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 32,
+			stats.Changed:   0,
+		}),
+	)
+
+	// create a file which should be in .gitignore
+	f, err := os.CreateTemp(tempDir, "test-*.txt")
+	as.NoError(err, "failed to create temp file")
+
+	// update jujutsu's index
+	jjCmd = exec.Command("jj")
+	as.NoError(jjCmd.Run(), "failed to update the index")
+
+	t.Cleanup(func() {
+		_ = f.Close()
+	})
+
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 32,
+			stats.Matched:   32,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	// remove python directory
+	as.NoError(os.RemoveAll(filepath.Join(tempDir, "python")), "failed to remove python directory")
+
+	// update jujutsu's index
+	jjCmd = exec.Command("jj")
+	as.NoError(jjCmd.Run(), "failed to update the index")
+
+	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
+	// are impacted
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 29,
+			stats.Matched:   29,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	// remove nixpkgs.toml from the filesystem but leave it in the index
+	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
+
+	// walk with filesystem instead of with jujutsu
+	// the .jj folder contains 100 additional files
+	// when added to the 30 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
+	// traverse 130 files.
+	treefmt(t,
+		withArgs("--walk", "filesystem"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 130,
+			stats.Matched:   130,
+			stats.Formatted: 102, // the echo formatter should only be applied to the new files
+			stats.Changed:   0,
+		}),
+	)
+
+	// format specific sub paths
+	// we should traverse and match against those files, but without any underlying change to their files or their
+	// formatting config, we will not format them
+
+	treefmt(t,
+		withArgs("go"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	treefmt(t,
+		withArgs("go", "haskell"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 9,
+			stats.Matched:   9,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	treefmt(t,
+		withArgs("-C", tempDir, "go", "haskell", "ruby"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 10,
+			stats.Matched:   10,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	// try with a bad path
+	treefmt(t,
+		withArgs("-C", tempDir, "haskell", "foo"),
+		withConfig(configPath, cfg),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "foo not found")
+		}),
+	)
+
+	// try with a path not in the jj index
+	_, err = os.Create(filepath.Join(tempDir, "foo.txt"))
+	as.NoError(err)
+
+	// update jujutsu's index
+	jjCmd = exec.Command("jj")
+	as.NoError(jjCmd.Run(), "failed to update the index")
+
+	treefmt(t,
+		withArgs("haskell", "foo.txt", "-vv"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 8,
+			stats.Matched:   8,
+			stats.Formatted: 1, // we only format foo.txt, which is new to the cache
+			stats.Changed:   0,
+		}),
+	)
+
+	treefmt(t,
+		withArgs("go", "foo.txt"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 3,
+			stats.Matched:   3,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+
+	treefmt(t,
+		withArgs("foo.txt"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+	)
+}
+
 func TestTreeRootCmd(t *testing.T) {
 	as := require.New(t)
 

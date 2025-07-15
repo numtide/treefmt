@@ -25,6 +25,7 @@ const (
 	Stdin
 	Filesystem
 	Git
+	Jujutsu
 
 	BatchSize = 1024
 )
@@ -205,10 +206,13 @@ func NewReader(
 
 	switch walkType {
 	case Auto:
-		// for now, we keep it simple and try git first, filesystem second
+		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
 		reader, err = NewReader(Git, root, path, db, statz)
 		if err != nil {
-			reader, err = NewReader(Filesystem, root, path, db, statz)
+			reader, err = NewReader(Jujutsu, root, path, db, statz)
+			if err != nil {
+				reader, err = NewReader(Filesystem, root, path, db, statz)
+			}
 		}
 
 		return reader, err
@@ -218,6 +222,8 @@ func NewReader(
 		reader = NewFilesystemReader(root, path, statz, BatchSize)
 	case Git:
 		reader, err = NewGitReader(root, path, statz)
+	case Jujutsu:
+		reader, err = NewJujutsuReader(root, path, statz)
 
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)

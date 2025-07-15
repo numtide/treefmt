@@ -46,6 +46,7 @@ in
     nativeBuildInputs =
       (with pkgs; [
         git
+        jujutsu
         installShellFiles
       ])
       ++
