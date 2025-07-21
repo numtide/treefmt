@@ -54,7 +54,7 @@ If there are no changes to the original file, the formatter **MUST NOT** write t
 
 ### 3. Idempotent
 
-The formatter _SHOULD_ be indempotent. Meaning that it produces stable
+The formatter _SHOULD_ be idempotent. Meaning that it produces stable
 outputs.
 
 ### 4. Reliable
