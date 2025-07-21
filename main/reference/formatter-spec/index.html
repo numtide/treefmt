@@ -923,7 +923,7 @@
 <p>To keep the design of <code>treefmt</code> simple, we only support formatters that adhere to a certain standard.
 This document outlines that standard.</p>
 <p>In this design, we rely on <code>treefmt</code> to do the tree traversal, and only invoke
-the code formatter on the selected files.</p>
+the formatter on the selected files.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If the formatter you would like to use doesn't comply with the rules, it's often possible to create a wrapper script
@@ -937,7 +937,7 @@ that transforms the usage to match the specification.</p>
 </code></pre></div></td></tr></table></div>
 <p>Where:</p>
 <ul>
-<li><code>&lt;command&gt;</code> is the name of the formatting tool.</li>
+<li><code>&lt;command&gt;</code> is the name of the formatter executable.</li>
 <li><code>[options]</code> is any number of flags and options that the formatter accepts.</li>
 <li><code>[...&lt;files&gt;]</code> is one or more files given to the formatter for processing.</li>
 </ul>
@@ -946,15 +946,15 @@ that transforms the usage to match the specification.</p>
 </code></pre></div></td></tr></table></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>It <em>MUST</em> process the specified files. For example, it <em>MUST</em> NOT ignore files because they are not tracked by a VCS.</p>
+<p>It <strong>MUST</strong> process the specified files. For example, it <strong>MUST NOT</strong> ignore files because they are not tracked by a VCS.</p>
 <p>It <em>SHOULD</em> processes only the specified files. Files that are not passed <em>SHOULD</em> never be formatted.</p>
 </div>
 <h3 id="2-write-to-changed-files">2. Write to changed files</h3>
-<p>Whenever there is a change to the code formatting, the code formatter <strong>MUST</strong> write those changes back to the
+<p>Whenever there is a change to the code formatting, the formatter <strong>MUST</strong> write those changes back to the
 original location.</p>
 <p>If there are no changes to the original file, the formatter <strong>MUST NOT</strong> write to the original location.</p>
 <h3 id="3-idempotent">3. Idempotent</h3>
-<p>The code formatter <em>SHOULD</em> be indempotent. Meaning that it produces stable
+<p>The formatter <em>SHOULD</em> be idempotent. Meaning that it produces stable
 outputs.</p>
 <h3 id="4-reliable">4. Reliable</h3>
 <p>We expect the formatter to be reliable and not break the semantics of the formatted files.</p>
