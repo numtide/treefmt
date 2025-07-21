@@ -8,7 +8,7 @@ To keep the design of `treefmt` simple, we only support formatters that adhere t
 This document outlines that standard.
 
 In this design, we rely on `treefmt` to do the tree traversal, and only invoke
-the code formatter on the selected files.
+the formatter on the selected files.
 
 !!! note
 
@@ -29,7 +29,7 @@ The formatter's CLI must be of the form:
 
 Where:
 
-- `<command>` is the name of the formatting tool.
+- `<command>` is the name of the formatter executable.
 - `[options]` is any number of flags and options that the formatter accepts.
 - `[...<files>]` is one or more files given to the formatter for processing.
 
@@ -47,14 +47,14 @@ $ rustfmt --edition 2018 src/main.rs src/lib.rs
 
 ### 2. Write to changed files
 
-Whenever there is a change to the code formatting, the code formatter **MUST** write those changes back to the
+Whenever there is a change to the code formatting, the formatter **MUST** write those changes back to the
 original location.
 
 If there are no changes to the original file, the formatter **MUST NOT** write to the original location.
 
 ### 3. Idempotent
 
-The code formatter _SHOULD_ be indempotent. Meaning that it produces stable
+The formatter _SHOULD_ be indempotent. Meaning that it produces stable
 outputs.
 
 ### 4. Reliable
