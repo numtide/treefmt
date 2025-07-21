@@ -43,15 +43,16 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 		return 0, fmt.Errorf("failed to get file info for temporary file: %w", err)
 	}
 
-	relPath, err := filepath.Rel(s.root, file.Name())
+	relPath, err := filepath.Rel(s.root, s.path)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get relative path for temporary file: %w", err)
+		return 0, fmt.Errorf("failed to get relative path for file: %w", err)
 	}
 
 	files[0] = &File{
-		Path:    file.Name(),
-		RelPath: relPath,
-		Info:    info,
+		Path:         s.path,
+		RelPath:      relPath,
+		Info:         info,
+		PathToFormat: file.Name(),
 	}
 
 	// dump the temp file to stdout and remove it once the file is finished being processed
