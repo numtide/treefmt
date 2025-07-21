@@ -785,18 +785,27 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-idempotent" class="md-nav__link">
+  <a href="#3-exit-nonzero-on-error" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Idempotent
+      3. Exit nonzero on error
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-reliable" class="md-nav__link">
+  <a href="#4-idempotent" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Reliable
+      4. Idempotent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-reliable" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Reliable
     </span>
   </a>
   
@@ -878,18 +887,27 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-idempotent" class="md-nav__link">
+  <a href="#3-exit-nonzero-on-error" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Idempotent
+      3. Exit nonzero on error
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-reliable" class="md-nav__link">
+  <a href="#4-idempotent" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Reliable
+      4. Idempotent
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-reliable" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Reliable
     </span>
   </a>
   
@@ -953,10 +971,15 @@ that transforms the usage to match the specification.</p>
 <p>Whenever there is a change to the code formatting, the formatter <strong>MUST</strong> write those changes back to the
 original location.</p>
 <p>If there are no changes to the original file, the formatter <strong>MUST NOT</strong> write to the original location.</p>
-<h3 id="3-idempotent">3. Idempotent</h3>
+<h3 id="3-exit-nonzero-on-error">3. Exit nonzero on error</h3>
+<p>When something goes wrong when formatting (for example, the source code is
+syntactically invalid), the formatter <strong>MUST</strong> exit nonzero.</p>
+<p>The formatter <em>SHOULD</em> print useful information about what went wrong to
+stderr.</p>
+<h3 id="4-idempotent">4. Idempotent</h3>
 <p>The formatter <em>SHOULD</em> be idempotent. Meaning that it produces stable
 outputs.</p>
-<h3 id="4-reliable">4. Reliable</h3>
+<h3 id="5-reliable">5. Reliable</h3>
 <p>We expect the formatter to be reliable and not break the semantics of the formatted files.</p>
 
 
