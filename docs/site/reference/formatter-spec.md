@@ -52,11 +52,19 @@ original location.
 
 If there are no changes to the original file, the formatter **MUST NOT** write to the original location.
 
-### 3. Idempotent
+### 3. Exit nonzero on error
+
+When something goes wrong when formatting (for example, the source code is
+syntactically invalid), the formatter **MUST** exit nonzero.
+
+The formatter _SHOULD_ print useful information about what went wrong to
+stderr.
+
+### 4. Idempotent
 
 The code formatter _SHOULD_ be indempotent. Meaning that it produces stable
 outputs.
 
-### 4. Reliable
+### 5. Reliable
 
 We expect the formatter to be reliable and not break the semantics of the formatted files.
