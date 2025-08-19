@@ -38,6 +38,9 @@ type File struct {
 	RelPath string
 	Info    fs.FileInfo
 
+	// PathToFormat is an optional override for Path, allowing us to match against Path but format PathToFormat.
+	PathToFormat string
+
 	// FormattedInfo is the result of os.stat after formatting the file.
 	FormattedInfo fs.FileInfo
 

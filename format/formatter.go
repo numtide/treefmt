@@ -90,7 +90,18 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 	// append paths to the args
 	for _, file := range files {
-		args = append(args, file.RelPath)
+		// start with the path override, fallback to the normal path
+		path := file.PathToFormat
+		if path == "" {
+			path = file.RelPath
+		}
+
+		// sanity check that a path has been set
+		if path == "" {
+			return fmt.Errorf("file has no path: %v", file)
+		}
+
+		args = append(args, path)
 	}
 
 	// execute the command
