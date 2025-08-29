@@ -15,6 +15,7 @@ pkgs.mkShellNoCC {
       graphviz
       cobra-cli
       enumer
+      jujutsu
     ])
     ++ # include formatters for development and testing
     (import ../packages/treefmt/formatters.nix pkgs);

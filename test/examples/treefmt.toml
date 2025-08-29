@@ -89,3 +89,8 @@ includes = ["*.yaml"]
 
 [formatter.foo-fmt]
 command = "foo-fmt"
+
+[formatter.just]
+command = "just"
+options = ["--fmt", "--unstable", "--justfile"]
+includes = ["**/justfile"]
