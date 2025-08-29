@@ -90,7 +90,11 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 	// append paths to the args
 	for _, file := range files {
-		args = append(args, file.RelPath)
+		if file.TmpPath != "" {
+			args = append(args, file.TmpPath)
+		} else {
+			args = append(args, file.RelPath)
+		}
 	}
 
 	// execute the command

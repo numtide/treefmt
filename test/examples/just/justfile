@@ -1,0 +1,7 @@
+# print this message
+help:
+        just --list --list-submodules --unsorted
+
+# interactive recipes launcher
+choose:
+    just --choose --unsorted

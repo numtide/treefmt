@@ -17,6 +17,7 @@ with pkgs; [
   shfmt
   statix
   deadnix
+  just
   opentofu
   dos2unix
   yamlfmt
