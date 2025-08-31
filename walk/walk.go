@@ -36,6 +36,7 @@ type ReleaseFunc func(ctx context.Context) error
 type File struct {
 	Path    string
 	RelPath string
+	TmpPath string
 	Info    fs.FileInfo
 
 	// FormattedInfo is the result of os.stat after formatting the file.
@@ -111,8 +112,13 @@ func (f *File) AddReleaseFunc(fn ReleaseFunc) {
 // Stat checks if the file has changed by comparing its current state (size, mod time) to when it was first read.
 // It returns a boolean indicating if the file has changed, the current file info, and an error if any.
 func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
+	p := f.Path
+	if f.TmpPath != "" {
+		p = f.TmpPath
+	}
+
 	// Get the file's current state
-	current, err := os.Stat(f.Path)
+	current, err := os.Stat(p)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to stat %s: %w", f.Path, err)
 	}

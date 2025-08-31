@@ -106,7 +106,7 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 
 			// set a release function which inserts this file into the update channel
 			file.AddReleaseFunc(func(ctx context.Context) error {
-				if !GetNoCache(ctx) {
+				if !GetNoCache(ctx) && file.TmpPath == "" {
 					c.updateCh <- file
 				}
 
