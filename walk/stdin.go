@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/numtide/treefmt/v2/stats"
@@ -25,10 +26,11 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	// read stdin into a temporary file with the same file extension
-	pattern := "*" + filepath.Ext(s.path)
+	// we attempt to preserve any file extensions as some formatters will not behave correctly without it
+	pattern := "treefmt-stdin-*" + filepath.Ext(s.path)
 
-	file, err := os.CreateTemp(s.root, pattern)
+	// create a temporary file to dump stdin into
+	file, err := os.CreateTemp("", pattern)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create a temporary file for processing stdin: %w", err)
 	}
@@ -43,14 +45,10 @@ func (s StdinReader) Read(_ context.Context, files []*File) (n int, err error) {
 		return 0, fmt.Errorf("failed to get file info for temporary file: %w", err)
 	}
 
-	relPath, err := filepath.Rel(s.root, file.Name())
-	if err != nil {
-		return 0, fmt.Errorf("failed to get relative path for temporary file: %w", err)
-	}
-
 	files[0] = &File{
-		Path:    file.Name(),
-		RelPath: relPath,
+		Path:    path.Join(s.root, s.path),
+		RelPath: s.path,
+		TmpPath: file.Name(),
 		Info:    info,
 	}
 

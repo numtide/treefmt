@@ -211,7 +211,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 			withArgs("--allow-missing-formatter"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   0,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -258,7 +258,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 3,
 				stats.Changed:   3,
@@ -272,7 +272,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -284,7 +284,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -296,7 +296,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withModtimeBump(tempDir, time.Second),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   1,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -319,7 +319,7 @@ func TestSpecifyingFormatters(t *testing.T) {
 			withNoError(t),
 			withModtimeBump(tempDir, time.Second),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -394,9 +394,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
@@ -409,9 +409,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   31,
-			stats.Formatted: 31,
+			stats.Traversed: 33,
+			stats.Matched:   32,
+			stats.Formatted: 32,
 			stats.Changed:   0,
 		}),
 	)
@@ -424,9 +424,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   25,
-			stats.Formatted: 25,
+			stats.Traversed: 33,
+			stats.Matched:   26,
+			stats.Formatted: 26,
 			stats.Changed:   0,
 		}),
 	)
@@ -441,9 +441,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   23,
-			stats.Formatted: 23,
+			stats.Traversed: 33,
+			stats.Matched:   24,
+			stats.Formatted: 24,
 			stats.Changed:   0,
 		}),
 	)
@@ -456,9 +456,9 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   22,
-			stats.Formatted: 22,
+			stats.Traversed: 33,
+			stats.Matched:   23,
+			stats.Formatted: 23,
 			stats.Changed:   0,
 		}),
 	)
@@ -473,7 +473,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
+			stats.Traversed: 33,
 			stats.Matched:   1,
 			stats.Formatted: 1,
 			stats.Changed:   0,
@@ -488,7 +488,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
+			stats.Traversed: 33,
 			stats.Matched:   2,
 			stats.Formatted: 2,
 			stats.Changed:   0,
@@ -534,9 +534,9 @@ func TestConfigFile(t *testing.T) {
 				withArgs("--config-file", configPath, "--tree-root", tempDir),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 32,
-					stats.Matched:   32,
-					stats.Formatted: 32,
+					stats.Traversed: 33,
+					stats.Matched:   33,
+					stats.Formatted: 33,
 					stats.Changed:   0,
 				}),
 			)
@@ -565,8 +565,8 @@ func TestConfigFile(t *testing.T) {
 				}),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 32,
-					stats.Matched:   32,
+					stats.Traversed: 33,
+					stats.Matched:   33,
 					stats.Formatted: 0,
 					stats.Changed:   0,
 				}),
@@ -612,10 +612,10 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
-			stats.Changed:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
+			stats.Changed:   33,
 		}),
 	)
 
@@ -623,8 +623,8 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -635,10 +635,10 @@ func TestCache(t *testing.T) {
 		withArgs("-c"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
-			stats.Changed:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
+			stats.Changed:   33,
 		}),
 	)
 
@@ -646,8 +646,8 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -658,10 +658,10 @@ func TestCache(t *testing.T) {
 		withNoError(t),
 		withModtimeBump(tempDir, time.Second),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
-			stats.Changed:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
+			stats.Changed:   33,
 		}),
 	)
 
@@ -670,10 +670,10 @@ func TestCache(t *testing.T) {
 		withArgs("--no-cache"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
-			stats.Changed:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
+			stats.Changed:   33,
 		}),
 	)
 
@@ -699,7 +699,7 @@ func TestCache(t *testing.T) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
+			stats.Traversed: 33,
 			stats.Matched:   6,
 			stats.Formatted: 0,
 			stats.Changed:   0,
@@ -712,7 +712,7 @@ func TestCache(t *testing.T) {
 			as.ErrorIs(err, format.ErrFormattingFailures)
 		}),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
+			stats.Traversed: 33,
 			stats.Matched:   6,
 			stats.Formatted: 0,
 			stats.Changed:   0,
@@ -732,7 +732,7 @@ func TestCache(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
+			stats.Traversed: 33,
 			stats.Matched:   6,
 			stats.Formatted: 6,
 			stats.Changed:   6,
@@ -786,7 +786,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 			}),
 		)
 	})
@@ -823,7 +823,7 @@ func TestChangeWorkingDirectory(t *testing.T) {
 				withConfig(configPath, cfg),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 32,
+					stats.Traversed: 33,
 				}),
 			)
 		})
@@ -873,7 +873,7 @@ func TestFailOnChange(t *testing.T) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -886,7 +886,7 @@ func TestFailOnChange(t *testing.T) {
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -934,7 +934,7 @@ func TestFailOnChange(t *testing.T) {
 				as.ErrorIs(err, formatCmd.ErrFailOnChange)
 			}),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   7,
 				stats.Formatted: 7,
 				stats.Changed:   7,
@@ -947,7 +947,7 @@ func TestFailOnChange(t *testing.T) {
 			withArgs("--fail-on-change"),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   7,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -985,7 +985,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   8,
 				stats.Formatted: 8,
 				stats.Changed:   6,
@@ -999,7 +999,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   8,
 				stats.Formatted: 6,
 				stats.Changed:   6,
@@ -1010,7 +1010,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   8,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1024,7 +1024,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   8,
 				stats.Formatted: 6,
 				stats.Changed:   0, // echo doesn't affect the files so no changes expected
@@ -1035,7 +1035,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   8,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1050,7 +1050,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   6,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1065,7 +1065,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   5,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1112,7 +1112,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 34,
 				stats.Matched:   3,
 				stats.Formatted: 3,
 				stats.Changed:   1,
@@ -1127,7 +1127,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 34,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1138,7 +1138,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 34,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1158,7 +1158,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 34,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1169,7 +1169,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 33,
+				stats.Traversed: 34,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1198,7 +1198,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1210,7 +1210,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1229,7 +1229,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 1,
 				stats.Changed:   1,
@@ -1248,7 +1248,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1260,7 +1260,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1276,7 +1276,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1288,7 +1288,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1303,7 +1303,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 2,
 				stats.Changed:   2,
@@ -1315,7 +1315,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   3,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1331,7 +1331,7 @@ func TestCacheBusting(t *testing.T) {
 			withConfig(configPath, cfg),
 			withNoError(t),
 			withStats(t, map[stats.Type]int{
-				stats.Traversed: 32,
+				stats.Traversed: 33,
 				stats.Matched:   2,
 				stats.Formatted: 0,
 				stats.Changed:   0,
@@ -1370,9 +1370,9 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
@@ -1385,8 +1385,8 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1404,8 +1404,8 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1420,8 +1420,8 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 29,
-			stats.Matched:   29,
+			stats.Traversed: 30,
+			stats.Matched:   30,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1439,9 +1439,9 @@ func TestGit(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 80,
-			stats.Matched:   80,
-			stats.Formatted: 52, // the echo formatter should only be applied to the new files
+			stats.Traversed: 82,
+			stats.Matched:   82,
+			stats.Formatted: 53, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1585,9 +1585,9 @@ func TestJujutsu(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
@@ -1608,8 +1608,8 @@ func TestJujutsu(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1628,8 +1628,8 @@ func TestJujutsu(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 29,
-			stats.Matched:   29,
+			stats.Traversed: 30,
+			stats.Matched:   30,
 			stats.Formatted: 0,
 			stats.Changed:   0,
 		}),
@@ -1647,9 +1647,9 @@ func TestJujutsu(t *testing.T) {
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 130,
-			stats.Matched:   130,
-			stats.Formatted: 102, // the echo formatter should only be applied to the new files
+			stats.Traversed: 133,
+			stats.Matched:   133,
+			stats.Formatted: 104, // the echo formatter should only be applied to the new files
 			stats.Changed:   0,
 		}),
 	)
@@ -1787,9 +1787,9 @@ func TestTreeRootCmd(t *testing.T) {
 		withStderr(checkStderr),
 		withConfig(configPath, cfg),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
@@ -2009,9 +2009,9 @@ func TestPathsArg(t *testing.T) {
 	treefmt(t,
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
@@ -2165,6 +2165,32 @@ func TestStdin(t *testing.T) {
 `, string(out))
 		}),
 	)
+
+	// try with a justfile and a path which doesn't exist within the project root
+	contents = `
+# print this message
+help:
+        just --list --list-submodules --unsorted
+
+`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	treefmt(t,
+		withArgs("--stdin", "foo/justfile"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`# print this message
+help:
+    just --list --list-submodules --unsorted
+`, string(out))
+		}),
+	)
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {
@@ -2285,9 +2311,9 @@ func TestRunInSubdir(t *testing.T) {
 			treefmt(t,
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 32,
-					stats.Matched:   32,
-					stats.Formatted: 32,
+					stats.Traversed: 33,
+					stats.Matched:   33,
+					stats.Formatted: 33,
 					stats.Changed:   0,
 				}),
 			)
@@ -2377,9 +2403,9 @@ func TestProjectRootIsSymlink(t *testing.T) {
 		withArgs("-c", "."),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 32,
-			stats.Matched:   32,
-			stats.Formatted: 32,
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
 			stats.Changed:   0,
 		}),
 	)
