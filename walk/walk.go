@@ -303,7 +303,7 @@ func NewCompositeReader(
 		}
 
 		if strings.HasPrefix(relativePath, "..") {
-			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
+			return nil, fmt.Errorf("path %s not inside the tree root %s (relative path: %s)", path, root, relativePath)
 		}
 
 		// check the path exists
