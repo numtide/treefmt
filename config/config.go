@@ -62,6 +62,8 @@ type Formatter struct {
 	Excludes []string `mapstructure:"excludes,omitempty" toml:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
 	Priority int `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
+	// The maximum number of files we should pass to this Formatter at once.
+	MaxBatchSize *int `mapstructure:"max-batch-size" toml:"max-batch-size"`
 }
 
 // SetFlags appends our flags to the provided flag set.

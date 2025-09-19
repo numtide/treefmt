@@ -2484,6 +2484,35 @@ func TestConcurrentInvocation(t *testing.T) {
 	as.NoError(eg.Wait())
 }
 
+func TestMaxBatchSize(t *testing.T) {
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
+
+	maxBatchSize := 1
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:      "test-fmt-only-one-file-at-a-time",
+				Includes:     []string{"*"},
+				MaxBatchSize: &maxBatchSize,
+			},
+		},
+	}
+
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 33,
+			stats.Matched:   33,
+			stats.Formatted: 33,
+			stats.Changed:   33,
+		}),
+	)
+}
+
 type options struct {
 	args []string
 	env  map[string]string
