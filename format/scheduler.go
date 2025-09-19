@@ -145,8 +145,10 @@ func (s *scheduler) schedule(ctx context.Context, key batchKey, batch []*walk.Fi
 		for _, name := range key.sequence() {
 			formatter := s.formatters[name]
 
-			if err := formatter.Apply(ctx, batch); err != nil {
-				formatErrors = append(formatErrors, err)
+			for chunk := range slices.Chunk(batch, formatter.MaxBatchSize()) {
+				if err := formatter.Apply(ctx, chunk); err != nil {
+					formatErrors = append(formatErrors, err)
+				}
 			}
 		}
 
