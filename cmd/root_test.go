@@ -1382,7 +1382,6 @@ func TestGit(t *testing.T) {
 	as.NoError(gitCmd.Run(), "failed to add everything to the index")
 
 	treefmt(t,
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 33,
@@ -1401,7 +1400,6 @@ func TestGit(t *testing.T) {
 	})
 
 	treefmt(t,
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 33,
@@ -1417,7 +1415,6 @@ func TestGit(t *testing.T) {
 	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
 	// are impacted
 	treefmt(t,
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 30,
@@ -1436,7 +1433,6 @@ func TestGit(t *testing.T) {
 	// traverse 82 files.
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 82,
@@ -1605,7 +1601,6 @@ func TestJujutsu(t *testing.T) {
 	})
 
 	treefmt(t,
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 33,
@@ -1625,7 +1620,6 @@ func TestJujutsu(t *testing.T) {
 	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
 	// are impacted
 	treefmt(t,
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 30,
@@ -1644,7 +1638,6 @@ func TestJujutsu(t *testing.T) {
 	// traverse 130 files.
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
-		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 133,

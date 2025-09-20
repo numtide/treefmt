@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 	"time"
 
@@ -28,6 +29,16 @@ func SetenvXdgConfigDir(t *testing.T) {
 func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	t.Helper()
 
+	oldInfo, err := os.Lstat(path)
+
+	switch {
+	case os.IsNotExist(err):
+		// It's fine if there was no old config file, the new file is guaranteed to appear new =)
+		oldInfo = nil
+	case err != nil:
+		t.Fatalf("failed to stat old config file: %v", path)
+	}
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("failed to create a new config file: %v", err)
@@ -36,6 +47,35 @@ func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	encoder := toml.NewEncoder(f)
 	if err = encoder.Encode(cfg); err != nil {
 		t.Fatalf("failed to write to config file: %v", err)
+	}
+
+	// Ensure the modtime of the config file always increases
+	// (even if this requires setting it to the future!)
+	// If we don't do this, we end up with flaky tests that behave differently
+	// depending on if they run quickly enough for the modtime to stay constant throughout the test.
+	newInfo, err := os.Lstat(path)
+	if err != nil {
+		t.Fatalf("failed to create a new config file: %v", err)
+	}
+	// Note: we're comparing `Unix()` (which is only 1 second granularity) for consistency with
+	// `walk.go::formatSignature`.
+	if oldInfo != nil && oldInfo.ModTime().Unix() == newInfo.ModTime().Unix() {
+		// No change to atime.
+		sysStat, ok := newInfo.Sys().(*syscall.Stat_t)
+		if !ok {
+			t.Fatalf("failed to cast stat Sys")
+		}
+
+		atime := sysStat.Atim
+		newAtime := time.Unix(atime.Sec, atime.Nsec)
+
+		// Increase the mtime so it's different.
+		newMtime := oldInfo.ModTime().Add(time.Second)
+
+		err = Lutimes(t, path, newAtime, newMtime)
+		if err != nil {
+			t.Fatalf("failed to change file times: %v", err)
+		}
 	}
 }
 
