@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 	"time"
 
@@ -60,14 +59,9 @@ func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 	// Note: we're comparing `Unix()` (which is only 1 second granularity) for consistency with
 	// `walk.go::formatSignature`.
 	if oldInfo != nil && oldInfo.ModTime().Unix() == newInfo.ModTime().Unix() {
-		// No change to atime.
-		sysStat, ok := newInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			t.Fatalf("failed to cast stat Sys")
-		}
-
-		atime := sysStat.Atim
-		newAtime := time.Unix(atime.Sec, atime.Nsec)
+		// Ideally we wouldn't change the atime at all, but it's hard to fetch
+		// the original atime in a cross-platform manner.
+		newAtime := time.Now()
 
 		// Increase the mtime so it's different.
 		newMtime := oldInfo.ModTime().Add(time.Second)
