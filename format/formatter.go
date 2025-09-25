@@ -46,6 +46,14 @@ func (f *Formatter) Name() string {
 	return f.name
 }
 
+func (f *Formatter) MaxBatchSize() int {
+	if f.config.MaxBatchSize == nil {
+		return 1024 //<<<
+	} else {
+		return *f.config.MaxBatchSize
+	}
+}
+
 func (f *Formatter) Priority() int {
 	return f.config.Priority
 }
@@ -78,6 +86,24 @@ func (f *Formatter) Hash(h hash.Hash) error {
 }
 
 func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
+	for i := 0; i < len(files); i += f.MaxBatchSize() {
+		end := min(i+f.MaxBatchSize(), len(files))
+		if err := f.apply(ctx, files[i:end]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Formatter) apply(ctx context.Context, files []*walk.File) error {
+	if len(files) > f.MaxBatchSize() {
+		//<<< learn me some go >>>
+		//<<< this error gets swallowed by scheduler.schedule and turned into a generic "Error: failed to finalise formatting: formatting failures detected" >>>
+		//<<< should we update that code to print more information? or should this be a panic instead? >>>
+		return fmt.Errorf("formatter cannot format %d files at once (max batch size: %d)", len(files), f.MaxBatchSize())
+	}
+
 	start := time.Now()
 
 	// construct args, starting with config
