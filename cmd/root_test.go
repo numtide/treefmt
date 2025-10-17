@@ -2246,6 +2246,30 @@ func TestDeterministicOrderingInPipeline(t *testing.T) {
 			idx++
 		}
 	}
+
+	// test with a file that is in global excludes
+	// all toml files are globally excluded in the test config
+	badToml := `
+	foo = "bla"
+		bar = [ "bla" ]
+	adsfadf;
+`
+	os.Stdin = test.TempFile(t, "", "stdin", &badToml)
+
+	treefmt(t,
+		withArgs("--stdin", "treefmt.toml"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   0,
+			stats.Formatted: 0,
+			stats.Changed:   0,
+		}),
+		withStdout(func(out []byte) {
+			// it should not have been modified, simply emitted again
+			as.Equal(badToml, string(out))
+		}),
+	)
 }
 
 func TestRunInSubdir(t *testing.T) {

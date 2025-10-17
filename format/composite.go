@@ -67,6 +67,8 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 
 		// if the file is globally excluded, we do not emit a warning
 		if globalExclude {
+			toRelease = append(toRelease, file)
+
 			continue
 		}
 
