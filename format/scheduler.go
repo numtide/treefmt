@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/md5" //nolint:gosec
 	"fmt"
+	"os"
 	"runtime"
 	"slices"
 	"strings"
@@ -127,6 +128,7 @@ func (s *scheduler) submit(
 	s.batches[key] = append(s.batches[key], file)
 
 	// schedule the batch for processing if it's full
+	// <<< TODO: impedance mismatch? instead compute LCM (up to some max) of max-batch-size of all matched formatters? >>>
 	if len(s.batches[key]) == s.batchSize {
 		s.schedule(ctx, key, s.batches[key])
 		// reset the batch
@@ -146,6 +148,7 @@ func (s *scheduler) schedule(ctx context.Context, key batchKey, batch []*walk.Fi
 			formatter := s.formatters[name]
 
 			if err := formatter.Apply(ctx, batch); err != nil {
+				fmt.Fprintf(os.Stderr, "formatter failed with error: %s\n", err) //<<<
 				formatErrors = append(formatErrors, err)
 			}
 		}
