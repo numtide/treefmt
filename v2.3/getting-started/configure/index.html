@@ -1536,7 +1536,7 @@ You can change this behaviour using the <a href="#config-file_1">config-file</a>
 <a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="c1"># verbose = 2</span>
 <a id="__codelineno-0-49" name="__codelineno-0-49"></a>
 <a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="c1"># The method used to traverse the files within the tree root</span>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="c1"># Currently, we support &#39;auto&#39;, &#39;git&#39; or &#39;filesystem&#39;</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="c1"># Currently, we support &#39;auto&#39;, &#39;git&#39;, &#39;jujutsu&#39;, or &#39;filesystem&#39;</span>
 <a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="c1"># Env $TREEFMT_WALK</span>
 <a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="c1"># walk = &quot;filesystem&quot;</span>
 <a id="__codelineno-0-54" name="__codelineno-0-54"></a>
@@ -1816,8 +1816,12 @@ If you wish to pass arguments containing quotes, you should use nested quotes e.
 <p class="admonition-title">Note</p>
 <p>If <a href="#walk">walk</a> is set to <code>git</code> and no tree root option has been defined, <code>tree-root-cmd</code> will be defaulted to
 <code>git rev-parse --show-toplevel</code>.</p>
+<p>If <a href="#walk">walk</a> is set to <code>jujutsu</code> and no tree root option has been defined, <code>tree-root-cmd</code> will be defaulted to
+<code>jj workspace root</code>.</p>
 <p>if <a href="#walk">walk</a> is set to <code>auto</code> (the default), <code>treefmt</code> will check if the <a href="#working-dir">working directory</a> is
-inside a git worktree. If it is, <code>tree-root-cmd</code> will be defaulted as described above for <code>git</code>.</p>
+inside a git worktree. If it is, <code>tree-root-cmd</code> will be defaulted as described above for <code>git</code>. If the <a href="#working-dir">working
+directory</a> is inside a jujutsu worktree the <code>tree-root-cmd</code> will be defaulted as described above for
+<code>jujutsu</code>.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:3"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><input id="__tabbed_14_3" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">Flag</label><label for="__tabbed_14_2">Env</label><label for="__tabbed_14_3">Config</label></div>
 <div class="tabbed-content">
@@ -1879,7 +1883,7 @@ inside a git worktree. If it is, <code>tree-root-cmd</code> will be defaulted as
 </div>
 <h3 id="walk"><code>walk</code></h3>
 <p>The method used to traverse the files within the tree root.
-Currently, we support 'auto', 'git' or 'filesystem'</p>
+Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="17:3"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><input id="__tabbed_17_3" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">Flag</label><label for="__tabbed_17_2">Env</label><label for="__tabbed_17_3">Config</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
