@@ -1,3 +1,5 @@
+[MIME types]: https://github.com/gabriel-vasile/mimetype/blob/17b303270b920bc619feadef12cad28d70fcb6e0/supported_mimes.md
+
 # Configure
 
 `treefmt`'s behaviour can be influenced in one of three ways:
@@ -125,6 +127,28 @@ The file into which a [pprof](https://github.com/google/pprof) cpu profile will 
 
     ```toml
     cpu-profile = "./cpu.pprof"
+    ```
+
+### `disallowed-mimetypes`
+
+An optional list of [MIME types][] used to exclude files from all formatters.
+
+=== "Flag"
+
+    ```console
+    treefmt --disallowed-mimetypes application/json,image/png
+    ```
+
+=== "Env"
+
+    ```console
+    TREEFMT_DISALLOWED_MIMETYPES="application/json,image/png" treefmt
+    ```
+
+=== "Config"
+
+    ```toml
+    disallowed-mimetypes = ["application/json", "image/png"]
     ```
 
 ### `excludes`
@@ -450,6 +474,11 @@ command = "deadnix"
 options = ["-e"]
 includes = ["*.nix"]
 priority = 2
+
+[formatter.shfmt]
+command = "shfmt"
+options = ["-i", "2", "-w"]
+allowed-mimetypes = ["text/x-shellscript"]
 ```
 
 ### `command`
@@ -462,11 +491,19 @@ An optional list of args to be passed to `command`.
 
 ### `includes`
 
-A list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
+An optional list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
 
 ### `excludes`
 
 An optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from this formatter.
+
+### `allowed-mimetypes`
+
+An optional list of [MIME types][] used to determine whether the formatter should be applied against a given path.
+
+### `disallowed-mimetypes`
+
+An optional list of [MIME types][] used to exclude certain files from this formatter.
 
 ### `priority`
 
@@ -474,7 +511,7 @@ Influences the order of execution. Greater precedence is given to lower numbers,
 
 ## Same file, multiple formatters?
 
-For each file, `treefmt` determines a list of formatters based on the configured `includes` / `excludes` rules. This list is
+For each file, `treefmt` determines a list of formatters based on the configured `includes` / `excludes` and `allowed-mimetypes` / `disallowed-mimetypes` rules. This list is
 then sorted, first by priority (lower the value, higher the precedence) and secondly by formatter name (lexicographically).
 
 The resultant sequence of formatters is used to create a batch key, and similarly matched files get added to that batch
@@ -485,6 +522,10 @@ Another consequence is that formatting is deterministic for a given file and a g
 
 By setting the priority fields appropriately, you can control the order in which those formatters are applied for any
 files they _both happen to match on_.
+
+## Required settings
+
+Each formatter must have at least one entry in the `includes` list **or** the `allowed-mimetypes` list. This is the minimal requirement for `treefmt` to identify which files are subject to a given formatter.
 
 ## Glob patterns format
 

@@ -29,6 +29,7 @@ type Config struct {
 	CI                    bool     `mapstructure:"ci"                      toml:"-"` // not allowed in config
 	ClearCache            bool     `mapstructure:"clear-cache"             toml:"-"` // not allowed in config
 	CPUProfile            string   `mapstructure:"cpu-profile"             toml:"cpu-profile,omitempty"`
+	DisallowedMimetypes   []string `mapstructure:"disallowed-mimetypes"    toml:"excludes,omitempty"`
 	Excludes              []string `mapstructure:"excludes"                toml:"excludes,omitempty"`
 	FailOnChange          bool     `mapstructure:"fail-on-change"          toml:"fail-on-change,omitempty"`
 	Formatters            []string `mapstructure:"formatters"              toml:"formatters,omitempty"`
@@ -56,6 +57,11 @@ type Formatter struct {
 	Command string `mapstructure:"command" toml:"command"`
 	// Options are an optional list of args to be passed to Command.
 	Options []string `mapstructure:"options,omitempty" toml:"options,omitempty"`
+	// AllowedMimetypes is an optional list of MIME types used to determine whether this Formatter
+	// should be applied against a path.
+	AllowedMimetypes []string `mapstructure:"allowed-mimetypes,omitempty" toml:"includes,omitempty"`
+	// DisallowedMimetypes is an optional list of MIME types used to exclude certain files from this Formatter.
+	DisallowedMimetypes []string `mapstructure:"disallowed-mimetypes,omitempty" toml:"includes,omitempty"`
 	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
 	Includes []string `mapstructure:"includes,omitempty" toml:"includes,omitempty"`
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
@@ -85,6 +91,10 @@ func SetFlags(fs *pflag.FlagSet) {
 	fs.String(
 		"cpu-profile", "",
 		"The file into which a cpu profile will be written. (env $TREEFMT_CPU_PROFILE)",
+	)
+	fs.StringSlice(
+		"disallowed-mimetypes", nil,
+		"Exclude files matching the specified MIME types. (env $TREEFMT_DISALLOWED_MIMETYPES)",
 	)
 	fs.StringSlice(
 		"excludes", nil,
