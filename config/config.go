@@ -35,6 +35,7 @@ type Config struct {
 	NoCache               bool     `mapstructure:"no-cache"                toml:"-"` // not allowed in config
 	OnUnmatched           string   `mapstructure:"on-unmatched"            toml:"on-unmatched,omitempty"`
 	Quiet                 bool     `mapstructure:"quiet"                   toml:"-"` // not allowed in config
+	Reject                []string `mapstructure:"reject"                  toml:"reject,omitempty"`
 	TreeRoot              string   `mapstructure:"tree-root"               toml:"tree-root,omitempty"`
 	TreeRootCmd           string   `mapstructure:"tree-root-cmd"           toml:"tree-root-cmd,omitempty"`
 	TreeRootFile          string   `mapstructure:"tree-root-file"          toml:"tree-root-file,omitempty"`
@@ -56,10 +57,16 @@ type Formatter struct {
 	Command string `mapstructure:"command" toml:"command"`
 	// Options are an optional list of args to be passed to Command.
 	Options []string `mapstructure:"options,omitempty" toml:"options,omitempty"`
-	// Includes is a list of glob patterns used to determine whether this Formatter should be applied against a path.
+	// Includes is an optional list of glob patterns used to determine whether this Formatter
+	// should be applied against a path.
 	Includes []string `mapstructure:"includes,omitempty" toml:"includes,omitempty"`
 	// Excludes is an optional list of glob patterns used to exclude certain files from this Formatter.
 	Excludes []string `mapstructure:"excludes,omitempty" toml:"excludes,omitempty"`
+	// Select is an optional list of `text/template` texts used to determine whether this Formatter
+	// should be applied against a path.
+	Select []string `mapstructure:"select,omitempty" toml:"select,omitempty"`
+	// Reject is an optional list of `text/template` texts used to exclude certain files from this Formatter.
+	Reject []string `mapstructure:"reject,omitempty" toml:"reject,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
 	Priority int `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
 }
@@ -106,6 +113,10 @@ func SetFlags(fs *pflag.FlagSet) {
 		"on-unmatched", "u", "info",
 		"Log paths that did not match any formatters at the specified log level. Possible values are "+
 			"<debug|info|warn|error|fatal>. (env $TREEFMT_ON_UNMATCHED)",
+	)
+	fs.StringSlice(
+		"reject", nil,
+		"Exclude files or directories for which the specified templates evaluate to `true`. (env $TREEFMT_REJECT)",
 	)
 	fs.Bool(
 		"stdin", false,

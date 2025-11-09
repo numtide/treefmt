@@ -30,7 +30,7 @@ func TestJujutsuReader(t *testing.T) {
 	reader, err := walk.NewJujutsuReader(tempDir, "", &statz)
 	as.NoError(err)
 
-	files := make([]*walk.File, 33) // The number of files in `test/examples` used for testing
+	files := make([]*walk.File, 34) // The number of files in `test/examples` used for testing
 	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	n, err := reader.Read(ctx, files)
 
@@ -67,8 +67,8 @@ func TestJujutsuReader(t *testing.T) {
 		}
 	}
 
-	as.Equal(33, count)
-	as.Equal(33, statz.Value(stats.Traversed))
+	as.Equal(34, count)
+	as.Equal(34, statz.Value(stats.Traversed))
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))

@@ -61,6 +61,10 @@ options = []
 includes = [ "*.<language-extension>" ]
 # Glob patterns of files to exclude
 excludes = []
+# Template filters for selecting files
+select = [ "{{ and .LooksLikeScript (eq `myinterpreter` .InterpreterName) }}" ]
+# Template filters for rejecting files
+reject = []
 # Controls the order of application when multiple formatters match the same file
 # Lower the number, the higher the precedence
 # Default is 0

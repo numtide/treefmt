@@ -1,3 +1,6 @@
+[glob patterns]: #glob-patterns-format
+[filter templates]: #filter-templates
+
 # Configure
 
 `treefmt`'s behaviour can be influenced in one of three ways:
@@ -129,7 +132,7 @@ The file into which a [pprof](https://github.com/google/pprof) cpu profile will 
 
 ### `excludes`
 
-An optional list of [glob patterns](#glob-patterns-format) used to exclude files from all formatters.
+An optional list of [glob patterns][] used to exclude files from all formatters.
 
 === "Flag"
 
@@ -147,6 +150,28 @@ An optional list of [glob patterns](#glob-patterns-format) used to exclude files
 
     ```toml
     excludes = ["*.toml", "*.php", "README"]
+    ```
+
+### `reject`
+
+An optional list of [filter templates][] used to exclude files from all formatters.
+
+=== "Flag"
+
+    ```console
+    treefmt --reject "{{ rematch `/sh$` .Shebang }}"
+    ```
+
+=== "Env"
+
+    ```console
+    TREEFMT_EXCLUDES="{{ rematch `/sh$` .Shebang }}" treefmt
+    ```
+
+=== "Config"
+
+    ```toml
+    excludes = ["{{ rematch `/sh$` .Shebang }}"]
     ```
 
 ### `fail-on-change`
@@ -450,6 +475,10 @@ command = "deadnix"
 options = ["-e"]
 includes = ["*.nix"]
 priority = 2
+
+[formatter.shfmt]
+command = "shfmt"
+options = ["-i", "2", "-w"]
 ```
 
 ### `command`
@@ -462,11 +491,19 @@ An optional list of args to be passed to `command`.
 
 ### `includes`
 
-A list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
+An optional list of [glob patterns][] used to determine whether the formatter should be applied against a given path.
 
 ### `excludes`
 
-An optional list of [glob patterns](#glob-patterns-format) used to exclude certain files from this formatter.
+An optional list of [glob patterns][] used to exclude certain files from this formatter.
+
+### `select`
+
+An optional list of [filter templates][] used to determine whether the formatter should be applied against a given path.
+
+### `reject`
+
+An optional list of [filter templates][] used to exclude certain files from this formatter.
 
 ### `priority`
 
@@ -474,7 +511,7 @@ Influences the order of execution. Greater precedence is given to lower numbers,
 
 ## Same file, multiple formatters?
 
-For each file, `treefmt` determines a list of formatters based on the configured `includes` / `excludes` rules. This list is
+For each file, `treefmt` determines a list of formatters based on the configured `includes` / `excludes` and `select` / `reject` rules. This list is
 then sorted, first by priority (lower the value, higher the precedence) and secondly by formatter name (lexicographically).
 
 The resultant sequence of formatters is used to create a batch key, and similarly matched files get added to that batch
@@ -486,15 +523,100 @@ Another consequence is that formatting is deterministic for a given file and a g
 By setting the priority fields appropriately, you can control the order in which those formatters are applied for any
 files they _both happen to match on_.
 
+## Required settings
+
+Each formatter must have at least one entry in the `includes` list **or** the `select` list. This is the minimal requirement for `treefmt` to identify which files are subject to a given formatter.
+
 ## Glob patterns format
 
-This is a variant of the Unix glob pattern. It supports all the usual
-selectors such as `*` and `?`.
+This is a variant of the Unix glob pattern. It supports all the usual selectors such as `*` and `?`.
 
 ### Examples
 
 - `*.go` - match all files in the project that end with a ".go" file extension.
 - `vendor/*` - match all files under the vendor folder, recursively.
+
+## Filter templates
+
+`treefmt` supports selecting and rejecting files using [`text/template`](https://pkg.go.dev/text/template)-based filters.
+
+These filters **must** evaluate to `true` or `false`; `treefmt` will exit with an error if a filter evaluates to any other value.
+
+### Filter template context
+
+Filter templates are evaluated in the context of a structure representing the file currently under consideration for formatting.
+
+This structure includes a number of attributes and methods useful for determining whether or not formatting should be performed:
+
+#### `.Ext`
+
+The file name's extension, or the empty string if the file has no extension.
+
+#### `.HasExt`
+
+Whether or the file name has an extension.
+
+#### `.Shebang`
+
+The file's shebang (minus the leading "#!"), or the empty string if the file contains no shebang.
+
+#### `.HasShebang`
+
+Whether or not the file contains a shebang.
+
+#### `.Interpreter`
+
+The interpreter portion of the shebang (the program used to run the file in question), or the empty string if the file contains no shebang.
+
+#### `.InterpreterName`
+
+The basename of the interpreter, or the empty string if the file contains no shebang.
+
+#### `.IsExecutable`
+
+Whether or not the file has the executable bit set.
+
+#### `.LooksLikeScript`
+
+A convenience method for selecting or rejecting scripts. Returns `true` if the file name does not have an extension, the file has a shebang, and the file is executable; returns `false` otherwise.
+
+### Filter template functions
+
+In addition to [`text/template`'s builtin functions](https://pkg.go.dev/text/template#hdr-Functions), `treefmt` provides the following functions in filter templates:
+
+#### `fnmatch`
+
+Usage:
+
+```
+{{ fnmatch `mypattern` `mytext` }}
+```
+
+`fnmatch` returns `true` if the `mytext` string matches the `mypattern` [glob pattern][glob patterns], `false` otherwise.
+
+#### `rematch`
+
+Usage:
+
+```
+{{ rematch `mypattern` `mytext` }}
+```
+
+`rematch` returns `true` if the `mytext` string matches the `mypattern` [regular expression](https://pkg.go.dev/regexp), `false` otherwise.
+
+### Filter template examples
+
+Match Python scripts:
+
+```
+{{ and .LooksLikeScript (rematch `^python[[:digit:]]*$` .InterpreterName) }}
+```
+
+Match any non-executable `*.sh` files **and** any executables whose interpreter name ends with "sh":
+
+```
+{{ or (and (eq `.sh` .Ext) (not .IsExecutable)) (and .IsExecutable (fnmatch `*sh` .InterpreterName)) }}
+```
 
 ## Supported Formatters
 

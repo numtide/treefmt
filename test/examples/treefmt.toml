@@ -65,12 +65,16 @@ includes = ["*.rs"]
 [formatter.shellcheck]
 command = "shellcheck"
 includes = ["*.sh"]
+select = ["{{ and (not .HasExt) .IsExecutable }}"]
+reject = ["{{ not (rematch `^(?:(?:b|d)?a)?sh$` .InterpreterName) }}"]
 priority = 1
 
 [formatter.shfmt]
 command = "shfmt"
 options = ["-i", "2", "-s", "-w"]
 includes = ["*.sh"]
+select = ["{{ and (not .HasExt) .IsExecutable }}"]
+reject = ["{{ not (rematch `^(?:(?:b|d)?a)?sh$` .InterpreterName) }}"]
 priority = 2
 
 [formatter.opentofu]

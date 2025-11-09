@@ -760,6 +760,14 @@ func TestSampleConfigFile(t *testing.T) {
 	as.Equal(1, shellcheck.Priority)
 	as.Nil(shellcheck.Options)
 	as.Equal([]string{"*.sh"}, shellcheck.Includes)
+	as.Equal(
+		[]string{"{{ and (not .HasExt) .IsExecutable }}"},
+		shellcheck.Select,
+	)
+	as.Equal(
+		[]string{"{{ not (rematch `^(?:(?:b|d)?a)?sh$` .InterpreterName) }}"},
+		shellcheck.Reject,
+	)
 	as.Nil(shellcheck.Excludes)
 
 	// shfmt
@@ -769,6 +777,14 @@ func TestSampleConfigFile(t *testing.T) {
 	as.Equal(2, shfmt.Priority)
 	as.Equal([]string{"-i", "2", "-s", "-w"}, shfmt.Options)
 	as.Equal([]string{"*.sh"}, shfmt.Includes)
+	as.Equal(
+		[]string{"{{ and (not .HasExt) .IsExecutable }}"},
+		shfmt.Select,
+	)
+	as.Equal(
+		[]string{"{{ not (rematch `^(?:(?:b|d)?a)?sh$` .InterpreterName) }}"},
+		shfmt.Reject,
+	)
 	as.Nil(shfmt.Excludes)
 
 	// opentofu

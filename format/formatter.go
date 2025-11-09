@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/gobwas/glob"
 	"github.com/numtide/treefmt/v2/config"
+	"github.com/numtide/treefmt/v2/matcher"
 	"github.com/numtide/treefmt/v2/walk"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
@@ -37,9 +37,8 @@ type Formatter struct {
 	executable string // path to the executable described by Command
 	workingDir string
 
-	// internal, compiled versions of Includes and Excludes.
-	includes []glob.Glob
-	excludes []glob.Glob
+	// internal, compiled versions of inclusion and exclusion matchers.
+	matcher *matcher.CompositeMatcher
 }
 
 func (f *Formatter) Name() string {
@@ -123,16 +122,20 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 	return nil
 }
 
-// Wants is used to determine if a Formatter wants to process a path based on it's configured Includes and Excludes
-// patterns.
-// Returns true if the Formatter should be applied to file, false otherwise.
-func (f *Formatter) Wants(file *walk.File) bool {
-	match := !pathMatches(file.RelPath, f.excludes) && pathMatches(file.RelPath, f.includes)
-	if match {
+// Wants is used to determine if a Formatter wants to process a path based on
+// its configured Includes and Excludes patterns and Select and Reject
+// templates.
+func (f *Formatter) Wants(file *walk.File) (matcher.Result, error) {
+	result, err := f.matcher.Wants(file)
+	if err != nil {
+		return result, fmt.Errorf("error applying matcher to %s: %w", file.RelPath, err)
+	}
+
+	if result == matcher.Wanted {
 		f.log.Debugf("match: %v", file)
 	}
 
-	return match
+	return result, nil
 }
 
 // newFormatter is used to create a new Formatter.
@@ -171,20 +174,34 @@ func newFormatter(
 		f.log = log.WithPrefix("formatter | " + name)
 	}
 
-	// check there is at least one include
-	if len(cfg.Includes) == 0 {
-		return nil, fmt.Errorf("formatter '%v' has no includes", f.name)
+	// check there is at least one include or select filter
+	if len(cfg.Includes) == 0 && len(cfg.Select) == 0 {
+		return nil, fmt.Errorf("formatter '%v' has no includes or select filters", f.name)
 	}
 
-	f.includes, err = compileGlobs(cfg.Includes)
+	matchers := make([]matcher.Matcher, 4)
+
+	matchers[0], err = matcher.NewGlobInclusionMatcher(cfg.Includes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)
 	}
 
-	f.excludes, err = compileGlobs(cfg.Excludes)
+	matchers[1], err = matcher.NewGlobExclusionMatcher(cfg.Excludes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
 	}
+
+	matchers[2], err = matcher.NewTemplateInclusionMatcher(cfg.Select)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile formatter '%v' select: %w", f.name, err)
+	}
+
+	matchers[3], err = matcher.NewTemplateExclusionMatcher(cfg.Reject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile formatter '%v' reject: %w", f.name, err)
+	}
+
+	f.matcher = matcher.NewCompositeMatcher(matchers)
 
 	return &f, nil
 }
