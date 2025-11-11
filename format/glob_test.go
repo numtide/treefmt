@@ -4,7 +4,6 @@ package format
 import (
 	"testing"
 
-	"github.com/gobwas/glob"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,29 +11,31 @@ func TestGlobs(t *testing.T) {
 	r := require.New(t)
 
 	var (
-		globs []glob.Glob
-		err   error
+		matcher *globMatcher
+		err     error
 	)
 
+	cache := NewMatcherCache()
+
 	// File extension
-	globs, err = compileGlobs([]string{"*.txt"})
+	matcher, err = newGlobMatcher([]string{"*.txt"})
 	r.NoError(err)
-	r.True(pathMatches("test/foo/bar.txt", globs))
-	r.False(pathMatches("test/foo/bar.txtz", globs))
-	r.False(pathMatches("test/foo/bar.flob", globs))
+	r.True(matcher.MatchesPath("test/foo/bar.txt", cache))
+	r.False(matcher.MatchesPath("test/foo/bar.txtz", cache))
+	r.False(matcher.MatchesPath("test/foo/bar.flob", cache))
 
 	// Prefix matching
-	globs, err = compileGlobs([]string{"test/*"})
+	matcher, err = newGlobMatcher([]string{"test/*"})
 	r.NoError(err)
-	r.True(pathMatches("test/bar.txt", globs))
-	r.True(pathMatches("test/foo/bar.txt", globs))
-	r.False(pathMatches("/test/foo/bar.txt", globs))
+	r.True(matcher.MatchesPath("test/bar.txt", cache))
+	r.True(matcher.MatchesPath("test/foo/bar.txt", cache))
+	r.False(matcher.MatchesPath("/test/foo/bar.txt", cache))
 
 	// Exact matches
 	// File extension
-	globs, err = compileGlobs([]string{"LICENSE"})
+	matcher, err = newGlobMatcher([]string{"LICENSE"})
 	r.NoError(err)
-	r.True(pathMatches("LICENSE", globs))
-	r.False(pathMatches("test/LICENSE", globs))
-	r.False(pathMatches("LICENSE.txt", globs))
+	r.True(matcher.MatchesPath("LICENSE", cache))
+	r.False(matcher.MatchesPath("test/LICENSE", cache))
+	r.False(matcher.MatchesPath("LICENSE.txt", cache))
 }

@@ -36,7 +36,7 @@ $ treefmt --on-unmatched warn
 ### Enforcing Strict Matching
 
 Another stricter policy approach is to fail the run if any unmatched files are found.
-This can be paired with an `excludes` list to ignore specific files:
+This can be paired with `excludes` and/or `disallowed-mimetypes` lists to ignore specific files:
 
 `treefmt.toml`:
 
@@ -48,5 +48,11 @@ on-unmatched = "fatal"
 excludes = [
   "LICENCE",
   "go.sum",
+]
+
+# List MIME types to explicity ignore
+disallowed-mimetypes = [
+  "image/x-portable-pixmap",
+  "text/rtf",
 ]
 ```
