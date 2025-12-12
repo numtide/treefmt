@@ -9,67 +9,59 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testGlobMatcher(t *testing.T, as *require.Assertions, create func([]string) (matcher.Matcher, error)) {
+func mockFile(t *testing.T, path string) *walk.File {
 	t.Helper()
 
-	f := func(path string) *walk.File {
-		return &walk.File{
-			Path:    path,
-			RelPath: path,
-		}
+	return &walk.File{
+		Path:    path,
+		RelPath: path,
 	}
+}
 
-	var (
-		m      matcher.Matcher
-		err    error
-		target matcher.Result
-	)
+func testGlobMatcher(t *testing.T, factory func(patterns []string) (matcher.MatchFn, error), expected matcher.Result) {
+	t.Helper()
+
+	as := require.New(t)
 
 	// Empty list; `Wants` should always return `true`.
-	m, err = create([]string{})
+	matchFn, err := factory(nil)
 	as.NoError(err)
-	testutil.MatcherTestEmpty(t, as, m)
 
-	if m.Invert() {
-		target = matcher.Unwanted
-	} else {
-		target = matcher.Wanted
-	}
+	result, err := matchFn(&walk.File{RelPath: "test/foo/bar.txt"})
+	as.NoError(err)
+	as.Equal(matcher.Indifferent, result)
 
 	// File extension
-	m, err = create([]string{"*.txt"})
+	matchFn, err = factory([]string{"*.txt"})
 	as.NoError(err)
-	testutil.MatcherTestResults(t, as, m, map[matcher.Result][]*walk.File{
-		target:              {f("test/foo/bar.txt")},
-		matcher.Indifferent: {f("test/foo/bar.txtz"), f("test/foo/bar.flob")},
+
+	testutil.MatcherTestResults(t, as, matchFn, map[matcher.Result][]*walk.File{
+		expected:            {mockFile(t, "test/foo/bar.txt")},
+		matcher.Indifferent: {mockFile(t, "test/foo/bar.txtz"), mockFile(t, "test/foo/bar.flob")},
 	})
 
 	// Prefix matching
-	m, err = create([]string{"test/*"})
+	matchFn, err = factory([]string{"test/*"})
 	as.NoError(err)
-	testutil.MatcherTestResults(t, as, m, map[matcher.Result][]*walk.File{
-		target:              {f("test/bar.txt"), f("test/foo/bar.txt")},
-		matcher.Indifferent: {f("/test/foo/bar.txt")},
+	testutil.MatcherTestResults(t, as, matchFn, map[matcher.Result][]*walk.File{
+		expected:            {mockFile(t, "test/bar.txt"), mockFile(t, "test/foo/bar.txt")},
+		matcher.Indifferent: {mockFile(t, "/test/foo/bar.txt")},
 	})
 
 	// Exact matches
 	// File extension
-	m, err = create([]string{"LICENSE"})
+	matchFn, err = factory([]string{"LICENSE"})
 	as.NoError(err)
-	testutil.MatcherTestResults(t, as, m, map[matcher.Result][]*walk.File{
-		target:              {f("LICENSE")},
-		matcher.Indifferent: {f("test/LICENSE"), f("LICENSE.txt")},
+	testutil.MatcherTestResults(t, as, matchFn, map[matcher.Result][]*walk.File{
+		expected:            {mockFile(t, "LICENSE")},
+		matcher.Indifferent: {mockFile(t, "test/LICENSE"), mockFile(t, "LICENSE.txt")},
 	})
 }
 
-func TestIncludes(t *testing.T) {
-	r := require.New(t)
-
-	testGlobMatcher(t, r, matcher.NewGlobInclusionMatcher)
+func TestIncludeGlobs(t *testing.T) {
+	testGlobMatcher(t, matcher.IncludeGlobs, matcher.Wanted)
 }
 
-func TestExcludes(t *testing.T) {
-	r := require.New(t)
-
-	testGlobMatcher(t, r, matcher.NewGlobExclusionMatcher)
+func TestExcludeGlobs(t *testing.T) {
+	testGlobMatcher(t, matcher.ExcludeGlobs, matcher.Unwanted)
 }

@@ -38,7 +38,7 @@ type Formatter struct {
 	workingDir string
 
 	// internal, compiled versions of inclusion and exclusion matchers.
-	matcher *matcher.CompositeMatcher
+	matchFn matcher.MatchFn
 }
 
 func (f *Formatter) Name() string {
@@ -126,7 +126,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 // its configured Includes and Excludes patterns and Select and Reject
 // templates.
 func (f *Formatter) Wants(file *walk.File) (matcher.Result, error) {
-	result, err := f.matcher.Wants(file)
+	result, err := f.matchFn(file)
 	if err != nil {
 		return result, fmt.Errorf("error applying matcher to %s: %w", file.RelPath, err)
 	}
@@ -179,29 +179,30 @@ func newFormatter(
 		return nil, fmt.Errorf("formatter '%v' has no includes or select filters", f.name)
 	}
 
-	matchers := make([]matcher.Matcher, 4)
+	includes := make([]matcher.MatchFn, 2)
+	excludes := make([]matcher.MatchFn, 2)
 
-	matchers[0], err = matcher.NewGlobInclusionMatcher(cfg.Includes)
+	includes[0], err = matcher.IncludeGlobs(cfg.Includes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' includes: %w", f.name, err)
 	}
 
-	matchers[1], err = matcher.NewGlobExclusionMatcher(cfg.Excludes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
-	}
-
-	matchers[2], err = matcher.NewTemplateInclusionMatcher(cfg.Select)
+	includes[1], err = matcher.IncludeTemplates(cfg.Select)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' select: %w", f.name, err)
 	}
 
-	matchers[3], err = matcher.NewTemplateExclusionMatcher(cfg.Reject)
+	excludes[0], err = matcher.ExcludeGlobs(cfg.Excludes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile formatter '%v' excludes: %w", f.name, err)
+	}
+
+	excludes[1], err = matcher.ExcludeTemplates(cfg.Reject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile formatter '%v' reject: %w", f.name, err)
 	}
 
-	f.matcher = matcher.NewCompositeMatcher(matchers)
+	f.matchFn = matcher.Combine(includes, excludes)
 
 	return &f, nil
 }

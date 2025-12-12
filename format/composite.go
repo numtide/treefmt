@@ -27,7 +27,7 @@ var ErrFormattingFailures = errors.New("formatting failures detected")
 type CompositeFormatter struct {
 	cfg           *config.Config
 	stats         *stats.Stats
-	globalMatcher *matcher.CompositeMatcher
+	globalMatchFn matcher.MatchFn
 
 	unmatchedLevel log.Level
 
@@ -38,7 +38,7 @@ type CompositeFormatter struct {
 // match filters the file against global excludes and returns a list of formatters that want to process the file.
 func (c *CompositeFormatter) match(file *walk.File) (bool, []*Formatter, error) {
 	// first check if this file has been globally excluded
-	result, err := c.globalMatcher.Wants(file)
+	result, err := c.globalMatchFn(file)
 	if err != nil {
 		return false, nil, fmt.Errorf("error applying global excludes to %s: %w", file.RelPath, err)
 	}
@@ -160,22 +160,23 @@ func NewCompositeFormatter(
 	statz *stats.Stats,
 	batchSize int,
 ) (*CompositeFormatter, error) {
-	matchers := make([]matcher.Matcher, 2)
+	var (
+		err      error
+		matchers = make([]matcher.MatchFn, 2)
+	)
 
-	var err error
-
-	// compile global exclude globs
-	matchers[0], err = matcher.NewGlobExclusionMatcher(cfg.Excludes)
+	// create global exclusion matcher based on globs and templates
+	matchers[0], err = matcher.ExcludeGlobs(cfg.Excludes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile global excludes: %w", err)
 	}
 
-	matchers[1], err = matcher.NewTemplateExclusionMatcher(cfg.Reject)
+	matchers[1], err = matcher.ExcludeTemplates(cfg.Reject)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile global reject: %w", err)
 	}
 
-	globalMatcher := matcher.NewCompositeMatcher(matchers)
+	globalMatcher := matcher.Combine(nil, matchers)
 
 	// parse unmatched log level
 	unmatchedLevel, err := log.ParseLevel(cfg.OnUnmatched)
@@ -215,7 +216,7 @@ func NewCompositeFormatter(
 	return &CompositeFormatter{
 		cfg:            cfg,
 		stats:          statz,
-		globalMatcher:  globalMatcher,
+		globalMatchFn:  globalMatcher,
 		unmatchedLevel: unmatchedLevel,
 
 		scheduler:  scheduler,

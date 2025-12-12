@@ -9,53 +9,60 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccept(t *testing.T) {
-	r := require.New(t)
+func TestIncludeTemplates(t *testing.T) {
+	as := require.New(t)
 
-	f := testutil.MatcherTestSetup(t, r)
+	f := testutil.MatcherTestSetup(t, as)
 
 	var (
-		m   matcher.Matcher
-		err error
+		err     error
+		matchFn matcher.MatchFn
 	)
 
 	// Empty list; `Wants` should always return `true`.
-	m, err = matcher.NewTemplateInclusionMatcher([]string{})
-	r.NoError(err)
-	testutil.MatcherTestEmpty(t, r, m)
+	matchFn, err = matcher.IncludeTemplates([]string{})
+	as.NoError(err)
 
-	m, err = matcher.NewTemplateInclusionMatcher([]string{
+	result, err := matchFn(&walk.File{RelPath: "test/foo/bar.txt"})
+	as.NoError(err)
+	as.Equal(matcher.Indifferent, result)
+
+	matchFn, err = matcher.IncludeTemplates([]string{
 		"{{ rematch `[[:space:]]perl(?:[[:space:]]|$)` .Shebang }}",
 		"{{ eq `ruby` .InterpreterName }}",
 	})
-	r.NoError(err)
-	testutil.MatcherTestResults(t, r, m, map[matcher.Result][]*walk.File{
+	as.NoError(err)
+
+	testutil.MatcherTestResults(t, as, matchFn, map[matcher.Result][]*walk.File{
 		matcher.Wanted:      {f("perl-script"), f("ruby-script")},
 		matcher.Indifferent: {f("python-script"), f("shell-script")},
 	})
 }
 
 func TestReject(t *testing.T) {
-	r := require.New(t)
+	as := require.New(t)
 
-	f := testutil.MatcherTestSetup(t, r)
+	f := testutil.MatcherTestSetup(t, as)
 
 	var (
-		m   matcher.Matcher
-		err error
+		matchFn matcher.MatchFn
+		err     error
 	)
 
 	// Empty list; `Wants` should always return `true`.
-	m, err = matcher.NewTemplateExclusionMatcher([]string{})
-	r.NoError(err)
-	testutil.MatcherTestEmpty(t, r, m)
+	matchFn, err = matcher.ExcludeTemplates([]string{})
+	as.NoError(err)
 
-	m, err = matcher.NewTemplateExclusionMatcher([]string{
+	result, err := matchFn(&walk.File{RelPath: "test/foo/bar.txt"})
+	as.NoError(err)
+	as.Equal(matcher.Indifferent, result)
+
+	matchFn, err = matcher.ExcludeTemplates([]string{
 		"{{ fnmatch `python*` .Interpreter }}",
 		"{{ rematch `/bin/(?:(?:b|d)?a)?sh` .Interpreter }}",
 	})
-	r.NoError(err)
-	testutil.MatcherTestResults(t, r, m, map[matcher.Result][]*walk.File{
+	as.NoError(err)
+	testutil.MatcherTestResults(t, as, matchFn, map[matcher.Result][]*walk.File{
 		matcher.Indifferent: {f("perl-script"), f("ruby-script")},
 		matcher.Unwanted:    {f("python-script"), f("shell-script")},
 	})

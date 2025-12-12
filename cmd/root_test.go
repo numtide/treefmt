@@ -437,7 +437,7 @@ func TestIncludesAndExcludes(t *testing.T) {
 	echo.Excludes = []string{"*.py"}
 
 	treefmt(t,
-		withArgs("-c"),
+		withArgs("-c", "-vv"),
 		withConfig(configPath, cfg),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{

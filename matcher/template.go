@@ -12,22 +12,17 @@ import (
 	"github.com/numtide/treefmt/v2/walk"
 )
 
-type templateMatcher struct {
-	texts []string
-	tmpls []*template.Template
-}
+func IncludeTemplates(texts []string) (MatchFn, error) {
+	if len(texts) == 0 {
+		return noOp, nil
+	}
 
-func (tm *templateMatcher) Ignore() bool {
-	return len(tm.tmpls) < 1
-}
-
-func newTemplateMatcher(texts []string) (*templateMatcher, error) {
-	tmpls := make([]*template.Template, len(texts))
+	templates := make([]*template.Template, len(texts))
 
 	globCache := &sync.Map{}
 	regexpCache := &sync.Map{}
 
-	funcmap := template.FuncMap{
+	funcMap := template.FuncMap{
 		"fnmatch": func(pattern string, s string) bool {
 			cached, ok := globCache.Load(pattern)
 
@@ -61,68 +56,39 @@ func newTemplateMatcher(texts []string) (*templateMatcher, error) {
 	}
 
 	for i, text := range texts {
-		tmpl, err := template.New(text).Funcs(funcmap).Parse(text)
+		tmpl, err := template.New(text).Funcs(funcMap).Parse(text)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse template text '%v': %w", text, err)
 		}
 
-		tmpls[i] = tmpl
+		templates[i] = tmpl
 	}
 
-	return &templateMatcher{
-		texts: texts,
-		tmpls: tmpls,
+	return func(file *walk.File) (Result, error) {
+		for _, tmpl := range templates {
+			var buf bytes.Buffer
+
+			err := tmpl.Execute(&buf, file)
+			if err != nil {
+				return Error, fmt.Errorf("failed to execute template in the context of %s: %w", file, err)
+			}
+
+			match, err := strconv.ParseBool(buf.String())
+			if err != nil {
+				return Error, fmt.Errorf("error parsing template result as boolean: %w", err)
+			}
+
+			if match {
+				return Wanted, nil
+			}
+		}
+
+		return Indifferent, nil
 	}, nil
 }
 
-func (tm *templateMatcher) Matches(file *walk.File) (bool, error) {
-	for _, tmpl := range tm.tmpls {
-		var buf bytes.Buffer
+func ExcludeTemplates(texts []string) (MatchFn, error) {
+	includeFn, err := IncludeTemplates(texts)
 
-		err := tmpl.Execute(&buf, file)
-		if err != nil {
-			return false, fmt.Errorf("failed to execute template in the context of %s: %w", file, err)
-		}
-
-		match, err := strconv.ParseBool(buf.String())
-		if err != nil {
-			return false, fmt.Errorf("error parsing template result as boolean: %w", err)
-		}
-
-		if match {
-			return match, nil
-		}
-	}
-
-	return false, nil
-}
-
-type TemplateInclusionMatcher struct {
-	*inclusionMatcher
-	templateMatcher
-}
-
-//nolint:ireturn
-func NewTemplateInclusionMatcher(texts []string) (Matcher, error) {
-	tm, err := newTemplateMatcher(texts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TemplateInclusionMatcher{templateMatcher: *tm}, nil
-}
-
-type TemplateExclusionMatcher struct {
-	*exclusionMatcher
-	templateMatcher
-}
-
-//nolint:ireturn
-func NewTemplateExclusionMatcher(texts []string) (Matcher, error) {
-	tm, err := newTemplateMatcher(texts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TemplateExclusionMatcher{templateMatcher: *tm}, nil
+	return invert(includeFn), err
 }

@@ -1,8 +1,6 @@
 package matcher
 
 import (
-	"fmt"
-
 	"github.com/numtide/treefmt/v2/walk"
 )
 
@@ -19,41 +17,61 @@ const (
 	Error
 )
 
-func Wants(m Matcher, file *walk.File) (Result, error) {
-	if m.Ignore() {
-		return Indifferent, nil
-	}
+type MatchFn = func(file *walk.File) (Result, error)
 
-	match, err := m.Matches(file)
-	if err != nil {
-		return Error, fmt.Errorf("error applying matcher to %s: %w", file.RelPath, err)
-	}
-
-	if match {
-		if m.Invert() {
-			return Unwanted, nil
-		}
-
-		return Wanted, nil
-	}
-
+func noOp(_ *walk.File) (Result, error) {
 	return Indifferent, nil
 }
 
-type Matcher interface {
-	Matches(file *walk.File) (bool, error)
-	Ignore() bool
-	Invert() bool
+func invert(match MatchFn) MatchFn {
+	return func(file *walk.File) (Result, error) {
+		result, err := match(file)
+
+		switch result {
+		case Wanted:
+			result = Unwanted
+		case Unwanted:
+			result = Wanted
+		case Indifferent:
+		case Error:
+		}
+
+		return result, err
+	}
 }
 
-type inclusionMatcher struct{}
+// Combine combines multiple matchers into a single matcher.
+// The order of the matchers is important, which is why have explicit parameters for includes and excludes.
+func Combine(includes []MatchFn, excludes []MatchFn) MatchFn {
+	// Combine the matchers, ensuring exclusions are applied first.
+	// This ensures that a file is rejected if it matches any of the excludes, even if it matches an include.
+	matchers := make([]MatchFn, 0, len(excludes)+len(includes))
+	matchers = append(matchers, excludes...)
+	matchers = append(matchers, includes...)
 
-func (*inclusionMatcher) Invert() bool {
-	return false
-}
+	return func(file *walk.File) (Result, error) {
+		var (
+			err error
+			// Default to "don't care."
+			result = Indifferent
+		)
 
-type exclusionMatcher struct{}
+		for _, matchFn := range matchers {
+			result, err = matchFn(file)
+			if err != nil {
+				return Error, err
+			}
 
-func (*exclusionMatcher) Invert() bool {
-	return true
+			switch result {
+			case Wanted, Unwanted:
+				return result, nil
+
+			case Indifferent:
+			case Error:
+			default:
+			}
+		}
+
+		return result, nil
+	}
 }
