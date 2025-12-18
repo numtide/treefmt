@@ -3,7 +3,7 @@ module github.com/numtide/treefmt/v2
 go 1.24.1
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/log v0.4.2
 	github.com/gobwas/glob v0.2.3
