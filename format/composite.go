@@ -9,8 +9,8 @@ import (
 	"slices"
 
 	"github.com/charmbracelet/log"
-	"github.com/gobwas/glob"
 	"github.com/numtide/treefmt/v2/config"
+	"github.com/numtide/treefmt/v2/matcher"
 	"github.com/numtide/treefmt/v2/stats"
 	"github.com/numtide/treefmt/v2/walk"
 	"mvdan.cc/sh/v3/expand"
@@ -25,9 +25,9 @@ var ErrFormattingFailures = errors.New("formatting failures detected")
 // CompositeFormatter handles the application of multiple Formatter instances based on global excludes and individual
 // formatter configuration.
 type CompositeFormatter struct {
-	cfg            *config.Config
-	stats          *stats.Stats
-	globalExcludes []glob.Glob
+	cfg           *config.Config
+	stats         *stats.Stats
+	globalMatchFn matcher.MatchFn
 
 	unmatchedLevel log.Level
 
@@ -36,12 +36,17 @@ type CompositeFormatter struct {
 }
 
 // match filters the file against global excludes and returns a list of formatters that want to process the file.
-func (c *CompositeFormatter) match(file *walk.File) (bool, []*Formatter) {
+func (c *CompositeFormatter) match(file *walk.File) (bool, []*Formatter, error) {
 	// first check if this file has been globally excluded
-	if pathMatches(file.RelPath, c.globalExcludes) {
+	result, err := c.globalMatchFn(file)
+	if err != nil {
+		return false, nil, fmt.Errorf("error applying global excludes to %s: %w", file.RelPath, err)
+	}
+
+	if result == matcher.Unwanted {
 		log.Debugf("path matched global excludes: %s", file.RelPath)
 
-		return true, nil
+		return true, nil, nil
 	}
 
 	// a list of formatters that match this file
@@ -49,12 +54,17 @@ func (c *CompositeFormatter) match(file *walk.File) (bool, []*Formatter) {
 
 	// iterate the formatters, recording which are interested in this file
 	for _, formatter := range c.formatters {
-		if formatter.Wants(file) {
+		result, err := formatter.Wants(file)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if result == matcher.Wanted {
 			matches = append(matches, formatter)
 		}
 	}
 
-	return false, matches
+	return false, matches, nil
 }
 
 // Apply applies the configured formatters to the given files.
@@ -63,7 +73,10 @@ func (c *CompositeFormatter) Apply(ctx context.Context, files []*walk.File) erro
 
 	for _, file := range files {
 		// match the file against the formatters
-		globalExclude, matches := c.match(file)
+		globalExclude, matches, err := c.match(file)
+		if err != nil {
+			return err
+		}
 
 		// if the file is globally excluded, we do not emit a warning
 		if globalExclude {
@@ -147,11 +160,23 @@ func NewCompositeFormatter(
 	statz *stats.Stats,
 	batchSize int,
 ) (*CompositeFormatter, error) {
-	// compile global exclude globs
-	globalExcludes, err := compileGlobs(cfg.Excludes)
+	var (
+		err      error
+		matchers = make([]matcher.MatchFn, 2)
+	)
+
+	// create global exclusion matcher based on globs and templates
+	matchers[0], err = matcher.ExcludeGlobs(cfg.Excludes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile global excludes: %w", err)
 	}
+
+	matchers[1], err = matcher.ExcludeTemplates(cfg.Reject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile global reject: %w", err)
+	}
+
+	globalMatcher := matcher.Combine(nil, matchers)
 
 	// parse unmatched log level
 	unmatchedLevel, err := log.ParseLevel(cfg.OnUnmatched)
@@ -191,7 +216,7 @@ func NewCompositeFormatter(
 	return &CompositeFormatter{
 		cfg:            cfg,
 		stats:          statz,
-		globalExcludes: globalExcludes,
+		globalMatchFn:  globalMatcher,
 		unmatchedLevel: unmatchedLevel,
 
 		scheduler:  scheduler,

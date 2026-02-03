@@ -42,6 +42,7 @@ var examplesPaths = []string{
 	"ruby/bundler.rb",
 	"rust/Cargo.toml",
 	"rust/src/main.rs",
+	"shell/bar",
 	"shell/foo.sh",
 	"terraform/main.tf",
 	"terraform/two.tf",
@@ -79,8 +80,8 @@ func TestFilesystemReader(t *testing.T) {
 		}
 	}
 
-	as.Equal(33, count)
-	as.Equal(33, statz.Value(stats.Traversed))
+	as.Equal(34, count)
+	as.Equal(34, statz.Value(stats.Traversed))
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))

@@ -42,12 +42,12 @@ func TestGitReader(t *testing.T) {
 	reader, err := walk.NewGitReader(tempDir, "", &statz)
 	as.NoError(err)
 
-	files := make([]*walk.File, 34)
+	files := make([]*walk.File, 35)
 	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	n, err := reader.Read(ctx, files)
 
 	cancel()
-	as.Equal(33, n)
+	as.Equal(34, n)
 	as.ErrorIs(err, io.EOF)
 
 	// add a git submodule
