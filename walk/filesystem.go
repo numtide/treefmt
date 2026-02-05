@@ -96,12 +96,7 @@ LOOP:
 		select {
 		// exit early if the context was cancelled
 		case <-ctx.Done():
-			err = ctx.Err()
-			if err == nil {
-				return n, fmt.Errorf("context cancelled: %w", ctx.Err())
-			}
-
-			return n, nil
+			return n, ctx.Err() //nolint:wrapcheck
 
 		// read the next file from the channel
 		case file, ok := <-f.filesCh:
