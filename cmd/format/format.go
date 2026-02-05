@@ -175,15 +175,17 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	// process errors
-
-	//nolint:gocritic
-	if errors.Is(readErr, io.EOF) {
-		// nothing more to read, reset the error and break out of the read loop
+	switch {
+	case errors.Is(readErr, io.EOF):
+		// nothing more to read
 		log.Debugf("no more files to read")
-	} else if errors.Is(readErr, context.DeadlineExceeded) {
+	case errors.Is(readErr, context.Canceled):
+		// user requested shutdown (e.g. Ctrl+C)
+		log.Debugf("context cancelled")
+	case errors.Is(readErr, context.DeadlineExceeded):
 		// the read timed-out
 		return errors.New("timeout reading files")
-	} else if readErr != nil {
+	case readErr != nil:
 		// something unexpected happened
 		return fmt.Errorf("failed to read files: %w", readErr)
 	}

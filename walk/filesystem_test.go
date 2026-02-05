@@ -50,6 +50,22 @@ var examplesPaths = []string{
 	"yaml/test.yaml",
 }
 
+func TestFilesystemReaderCancellation(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	statz := stats.New()
+
+	r := walk.NewFilesystemReader(tempDir, "", &statz, 1024)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	files := make([]*walk.File, 8)
+	_, err := r.Read(ctx, files)
+	as.ErrorIs(err, context.Canceled)
+}
+
 func TestFilesystemReader(t *testing.T) {
 	as := require.New(t)
 
