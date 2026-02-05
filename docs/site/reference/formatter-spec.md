@@ -30,8 +30,8 @@ The formatter's CLI must be of the form:
 Where:
 
 - `<command>` is the name of the formatter executable.
-- `[options]` is any number of flags and options that the formatter accepts.
-- `[...<files>]` is one or more files given to the formatter for processing.
+- `[options]` are any number of flags and options that the formatter accepts.
+- `[...<files>]` are one or more files given to the formatter for processing.
 
 Example:
 
