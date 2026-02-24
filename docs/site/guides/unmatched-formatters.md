@@ -36,7 +36,7 @@ $ treefmt --on-unmatched warn
 ### Enforcing Strict Matching
 
 Another stricter policy approach is to fail the run if any unmatched files are found.
-This can be paired with an `excludes` list to ignore specific files:
+This can be paired with `excludes` and/or `reject` lists to ignore specific files:
 
 `treefmt.toml`:
 
@@ -48,5 +48,13 @@ on-unmatched = "fatal"
 excludes = [
   "LICENCE",
   "go.sum",
+]
+
+# List of templates for rejecting files.  If any template evaluates to `false`
+# for a given file, that file will be ignored.
+reject = [
+  "{{ .HasExt }}",                      # reject files with extensions
+  "{{ not .IsExecutable }}",            # reject files that are not executable
+  "{{ fnmatch `donotwant` .Shebang }}", # reject files with "donotwant" in the shebang
 ]
 ```

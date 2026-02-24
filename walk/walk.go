@@ -1,6 +1,7 @@
 package walk
 
 import (
+	"bufio"
 	"context"
 	"crypto/md5" //nolint:gosec
 	"errors"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"unicode"
 
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/v2/stats"
@@ -38,6 +41,11 @@ type File struct {
 	RelPath string
 	TmpPath string
 	Info    fs.FileInfo
+
+	// For reading the shebang (if one exists) only once per File.  Shebang()
+	// should be used to access to the shebang's value.
+	shebangOnce sync.Once
+	shebang     string
 
 	// FormattedInfo is the result of os.stat after formatting the file.
 	FormattedInfo fs.FileInfo
@@ -109,18 +117,47 @@ func (f *File) AddReleaseFunc(fn ReleaseFunc) {
 	f.releaseFuncs = append(f.releaseFuncs, fn)
 }
 
+func (f *File) currentPath() (string, error) {
+	if f.TmpPath != "" {
+		return f.TmpPath, nil
+	}
+
+	if f.Path != "" {
+		return f.Path, nil
+	}
+
+	return "", errors.New("unable to determine current path")
+}
+
+func (f *File) takeStat() (fs.FileInfo, error) {
+	path, err := f.currentPath()
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat %s: %w", path, err)
+	}
+
+	return info, nil
+}
+
+func (f *File) fallbackStat() (fs.FileInfo, error) {
+	if f.Info == nil {
+		return f.takeStat()
+	}
+
+	return f.Info, nil
+}
+
 // Stat checks if the file has changed by comparing its current state (size, mod time) to when it was first read.
 // It returns a boolean indicating if the file has changed, the current file info, and an error if any.
 func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
-	p := f.Path
-	if f.TmpPath != "" {
-		p = f.TmpPath
-	}
-
 	// Get the file's current state
-	current, err := os.Stat(p)
+	current, err := f.takeStat()
 	if err != nil {
-		return false, nil, fmt.Errorf("failed to stat %s: %w", f.Path, err)
+		return false, nil, err
 	}
 
 	// Check the size first
@@ -137,6 +174,107 @@ func (f *File) Stat() (changed bool, info fs.FileInfo, err error) {
 	}
 
 	return false, nil, nil
+}
+
+func (f *File) Shebang() string {
+	f.shebangOnce.Do(func() {
+		r, err := os.Open(f.Path)
+		if err != nil {
+			f.shebang = ""
+
+			return
+		}
+		defer r.Close()
+
+		b := bufio.NewReader(r)
+
+		line, err := b.ReadBytes('\n')
+		if err != nil {
+			f.shebang = ""
+
+			return
+		}
+
+		linelen := len(line)
+
+		if linelen < 4 || line[0] != '#' || line[1] != '!' {
+			f.shebang = ""
+
+			return
+		}
+
+		f.shebang = string(line[2 : linelen-1])
+	})
+
+	return f.shebang
+}
+
+func (f *File) HasShebang() bool {
+	return f.Shebang() != ""
+}
+
+func (f *File) Interpreter() string {
+	shebang := f.Shebang()
+	if shebang == "" {
+		return ""
+	}
+
+	args := strings.Fields(shebang)
+
+	argslen := len(args)
+	if argslen == 0 {
+		return ""
+	}
+
+	base := filepath.Base(args[0])
+	if base == "env" {
+		// `#!/usr/bin/env -S command --and --some=args`
+		if argslen > 2 && args[1] == "-S" {
+			return args[2]
+		}
+
+		// `#!/usr/bin/env command`
+		// NOTE retain the whitespace embedded in the argument to the shebang.
+		// For instance, the shebang `/usr/bin/env<SPACE>perl<TAB>-w<SPACE><SPACE><SPACE>-g`
+		// results in this function returning `perl<TAB>-w<SPACE><SPACE><SPACE>-g`.
+		return strings.TrimLeftFunc(strings.TrimPrefix(shebang, args[0]), unicode.IsSpace)
+	}
+
+	// `!#/bin/command`
+	return args[0]
+}
+
+func (f *File) InterpreterName() string {
+	interpreter := f.Interpreter()
+
+	// `filepath.Base("")` returns `"."`, so short-circuit here if
+	// `interpreter` is the empty string.
+	if interpreter == "" {
+		return ""
+	}
+
+	return filepath.Base(interpreter)
+}
+
+func (f *File) Ext() string {
+	return filepath.Ext(f.Path)
+}
+
+func (f *File) HasExt() bool {
+	return f.Ext() != ""
+}
+
+func (f *File) IsExecutable() bool {
+	info, err := f.fallbackStat()
+	if err != nil {
+		return false
+	}
+
+	return (info.Mode() & 0o111) != 0
+}
+
+func (f *File) LooksLikeScript() bool {
+	return (!f.HasExt()) && f.IsExecutable() && f.HasShebang()
 }
 
 // String returns the file's path as a string.

@@ -1,0 +1,8 @@
+#!/usr/bin/env -S perl	-w   -g
+# The weird spacing ^^ is meant to exercise the shebang-parsing routines in
+# `walk/walk.go`.
+
+use strict;
+use warnings;
+
+print("test\n");
