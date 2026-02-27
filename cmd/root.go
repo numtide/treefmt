@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/charmbracelet/log"
@@ -132,7 +133,7 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		configFile = os.Getenv("TREEFMT_CONFIG")
 	}
 
-	filenames := []string{"treefmt.toml", ".treefmt.toml"}
+	filenames := []string{"treefmt.toml", ".treefmt.toml", path.Join(".config", "treefmt.toml")}
 
 	// look in PRJ_ROOT if set
 	if prjRoot := os.Getenv("PRJ_ROOT"); configFile == "" && prjRoot != "" {

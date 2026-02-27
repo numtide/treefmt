@@ -353,6 +353,11 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 			)
 
 			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+
+			// if the config file resides within a `.config` folder, we use its parent folder as the tree root
+			if strings.HasSuffix(cfg.TreeRoot, ".config") {
+				cfg.TreeRoot = filepath.Dir(cfg.TreeRoot)
+			}
 		}
 	}
 

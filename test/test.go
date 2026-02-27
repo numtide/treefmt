@@ -38,6 +38,12 @@ func WriteConfig(t *testing.T, path string, cfg *config.Config) {
 		t.Fatalf("failed to stat old config file: %v", path)
 	}
 
+	// ensure any sub directories exist
+	err = os.MkdirAll(filepath.Dir(path), 0o755)
+	if err != nil {
+		t.Fatalf("failed to ensure sub directories for config file: %v", err)
+	}
+
 	f, err := os.Create(path)
 	if err != nil {
 		t.Fatalf("failed to create a new config file: %v", err)
