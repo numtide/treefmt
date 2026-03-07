@@ -94,3 +94,8 @@ command = "foo-fmt"
 command = "just"
 options = ["--fmt", "--unstable", "--justfile"]
 includes = ["**/justfile"]
+
+[formatter.embed-path]
+command = "test-fmt-embed-path"
+includes = ["*.embed-path"]
+stdin-options = ["--stdin-filepath", "$path"]

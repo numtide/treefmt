@@ -460,6 +460,38 @@ The command to invoke when applying the formatter.
 
 An optional list of args to be passed to `command`.
 
+### `stdin-options`
+
+An optional list of args used to invoke the formatter in [Stdin Mode] (where it
+reads the buffer to format from stdin rather than a file). Any occurrences of
+`$path` will be replaced with the "advisory path" of the "virtual file" being
+formatted.
+
+This is useful for formatters whose behavior depend on the path of the file being
+formatted.
+
+See the [Stdin Spec] for more details.
+
+Examples:
+
+```toml
+[formatter.nixfmt]
+command = "nixfmt"
+includes = ["*.nix"]
+stdin-options = ["--stdin-filepath", "$path"]
+
+[formatter.buildifier]
+command = "buildifier"
+includes = ["BUILD", "*.bzl"]
+stdin-options = ["-path", "$path"]
+
+[formatter.ruff]
+command = "ruff"
+includes = ["BUILD", "*.bzl"]
+options = ["format"]
+stdin-options = ["format", "-"]
+```
+
 ### `includes`
 
 A list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
@@ -477,7 +509,7 @@ Influences the order of execution. Greater precedence is given to lower numbers,
 If `true`, `treefmt` will invoke the formatter with no more than 1 file at a time.
 
 Enable this if the formatter can only format 1 file at a time (a violation of
-[rule 1 of the formatter spec](https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments)).
+[rule 1 of the Formatter Spec]).
 
 ## Same file, multiple formatters?
 
@@ -505,7 +537,7 @@ selectors such as `*` and `?`.
 
 ## Supported Formatters
 
-Any formatter that follows the [spec] is supported out of the box.
+Any formatter that follows the [Formatter Spec] is supported out of the box.
 
 Already 60+ formatters are supported.
 
@@ -513,5 +545,8 @@ To find examples, take a look at <https://github.com/numtide/treefmt-nix/tree/ma
 
 If you are a Nix user, you might also like <https://github.com/numtide/treefmt-nix>, which uses Nix to pull in the right formatter package and seamlessly integrates both together.
 
-[spec]: ../reference/formatter-spec.md
+[Formatter Spec]: ../reference/formatter-spec.md
+[rule 1 of the Formatter Spec]: ../reference/formatter-spec.md#1-files-passed-as-arguments
+[Stdin Spec]: ../reference/stdin-spec.md
+[Stdin mode]: ../reference/stdin-spec.md#2-stdin-mode
 [TOML]: https://toml.io
