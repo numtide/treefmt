@@ -104,12 +104,41 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 		return nil
 	}
 
-	// append paths to the args
-	for _, file := range files {
-		if file.TmpPath != "" {
-			args = append(args, file.TmpPath)
-		} else {
-			args = append(args, file.RelPath)
+	onlyFile := (*walk.File)(nil)
+	if len(files) == 1 {
+		onlyFile = files[0]
+	}
+
+	// If we have a TmpPath, that means we're formatting something other than the  file's RelPath
+	// mode". If the underlying formatter has its own stdin mode support, then
+	// we can invoke it in a way where we pass along the files's RelPath as an
+	// "advisory path", which may affect the behavior of the formatter.
+	useStdinMode := files[0].TmpPath != "" && f.config.StdinOptions != nil
+
+	stdin := (*os.File)(nil)
+
+	if useStdinMode {
+		// Feed the file to the formatter via stdin.
+		tmpFile, err := os.Open(onlyFile.TmpPath)
+		if err != nil {
+			panic(err)
+		}
+		defer tmpFile.Close()
+
+		stdin = tmpFile
+
+		replacer := strings.NewReplacer("$path", onlyFile.RelPath)
+		for _, arg := range f.config.StdinOptions {
+			args = append(args, replacer.Replace(arg))
+		}
+	} else {
+		// append paths to the args
+		for _, file := range files {
+			if file.TmpPath != "" {
+				args = append(args, file.TmpPath)
+			} else {
+				args = append(args, file.RelPath)
+			}
 		}
 	}
 
@@ -120,11 +149,13 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 		return cmd.Process.Signal(os.Interrupt)
 	}
 	cmd.Dir = f.workingDir
+	cmd.Stdin = stdin
 
 	// log out the command being executed
 	f.log.Debugf("executing: %s", cmd.String())
 
-	if out, err := cmd.CombinedOutput(); err != nil {
+	out, err := cmd.CombinedOutput()
+	if err != nil {
 		f.log.Errorf("failed to apply with options '%v': %s", f.config.Options, err)
 
 		if len(out) > 0 {
@@ -132,6 +163,16 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 		}
 
 		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
+	}
+
+	// In stdin mode, the formatter won't write to the filesystem, it instead
+	// prints the formatted file to stdout. Take that output and write it back
+	// to the input file (`TmpPath`).
+	if useStdinMode {
+		path := onlyFile.TmpPath
+		if err = os.WriteFile(path, out, 0o600); err != nil {
+			return fmt.Errorf("couldn't write to '%s'", path)
+		}
 	}
 
 	f.log.Infof("%v file(s) processed in %v", len(files), time.Since(start))
