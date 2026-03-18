@@ -58,4 +58,15 @@ with pkgs; [
       test-fmt-append "$@"
     '';
   })
+  (pkgs.writeShellApplication {
+    name = "test-fmt-only-one-file-at-a-time";
+    text = ''
+      if [ $# -ne 1 ]; then
+        echo "I only support formatting exactly 1 file at a time"
+        exit 1
+      fi
+
+      test-fmt-append "suffix" "$1"
+    '';
+  })
 ]

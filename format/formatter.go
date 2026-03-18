@@ -20,6 +20,10 @@ import (
 	"mvdan.cc/sh/v3/interp"
 )
 
+const (
+	BatchSize = 1024
+)
+
 var (
 	ErrInvalidName = errors.New("formatter name must only contain alphanumeric characters, `_` or `-`")
 	// ErrCommandNotFound is returned when the Command for a Formatter is not available.
@@ -44,6 +48,14 @@ type Formatter struct {
 
 func (f *Formatter) Name() string {
 	return f.name
+}
+
+func (f *Formatter) MaxBatchSize() int {
+	if f.config.MaxBatchSize == nil {
+		return BatchSize
+	}
+
+	return *f.config.MaxBatchSize
 }
 
 func (f *Formatter) Priority() int {
@@ -78,6 +90,10 @@ func (f *Formatter) Hash(h hash.Hash) error {
 }
 
 func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
+	if len(files) > f.MaxBatchSize() {
+		return fmt.Errorf("formatter cannot format %d files at once (max batch size: %d)", len(files), f.MaxBatchSize())
+	}
+
 	start := time.Now()
 
 	// construct args, starting with config
