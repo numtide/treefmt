@@ -2502,19 +2502,19 @@ func TestConcurrentInvocation(t *testing.T) {
 	as.NoError(eg.Wait())
 }
 
-func TestMaxBatchSize(t *testing.T) {
+func TestViolatesRule1(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
 	test.ChangeWorkDir(t, tempDir)
 
-	maxBatchSize := 1
+	violatesRule1 := true
 	cfg := &config.Config{
 		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
-				Command:      "test-fmt-only-one-file-at-a-time",
-				Includes:     []string{"*"},
-				MaxBatchSize: &maxBatchSize,
+				Command:       "test-fmt-only-one-file-at-a-time",
+				Includes:      []string{"*"},
+				ViolatesRule1: &violatesRule1,
 			},
 		},
 	}
