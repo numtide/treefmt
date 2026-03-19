@@ -8,7 +8,7 @@
 }: let
   inherit (pkgs) lib;
 in
-  pkgs.buildGo125Module rec {
+  pkgs.buildGo126Module rec {
     inherit pname;
     # there's no good way of tying in the version to a git tag or branch
     # so for simplicity's sake we set the version as the commit revision hash
