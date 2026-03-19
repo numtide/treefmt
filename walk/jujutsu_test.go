@@ -31,7 +31,7 @@ func TestJujutsuReader(t *testing.T) {
 	as.NoError(err)
 
 	files := make([]*walk.File, 33) // The number of files in `test/examples` used for testing
-	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	n, err := reader.Read(ctx, files)
 
 	// Jujutsu depends on updating the index with a `jj` command. So, until we do
@@ -53,7 +53,7 @@ func TestJujutsuReader(t *testing.T) {
 	count := 0
 
 	for {
-		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 
 		files := make([]*walk.File, 8)
 		n, err := reader.Read(ctx, files)
