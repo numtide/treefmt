@@ -8,7 +8,7 @@
 }: let
   inherit (pkgs) lib;
 in
-  pkgs.buildGo124Module rec {
+  pkgs.buildGo125Module rec {
     inherit pname;
     # there's no good way of tying in the version to a git tag or branch
     # so for simplicity's sake we set the version as the commit revision hash
@@ -32,7 +32,7 @@ in
         ];
       };
 
-    vendorHash = "";
+    vendorHash = "sha256-fu6MwXzegTcaQo/rZRfqDUJU/hYwI1o8WR/LWi/4Bkw=";
 
     env.CGO_ENABLED = 0;
 

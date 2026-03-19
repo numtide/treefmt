@@ -16,7 +16,7 @@ pkgs.stdenvNoCC.mkDerivation {
       mike
       mkdocs
       mkdocs-material
-      mkdocs-awesome-pages-plugin
+      mkdocs-awesome-nav
     ])
     ++ [
       (pkgs.writeShellApplication {

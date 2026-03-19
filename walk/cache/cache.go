@@ -75,7 +75,7 @@ func Remove(root string) error {
 	// If a treefmt process is currently running with a db open at the same location, it will continue to function
 	// as normal, however, when it exits the disk space its inode was referencing will be reclaimed.
 	// This will not work on Windows if we ever support it.
-	if err = os.Remove(path); !(err == nil || os.IsNotExist(err)) {
+	if err = os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove cache db at %s: %w", path, err)
 	}
 

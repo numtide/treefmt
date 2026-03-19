@@ -21,7 +21,7 @@ func TestJujutsuReader(t *testing.T) {
 	tempDir := test.TempExamples(t)
 
 	// init a jujutsu repo
-	cmd := exec.Command("jj", "git", "init")
+	cmd := exec.CommandContext(t.Context(), "jj", "git", "init")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to init jujutsu repository")
 
@@ -42,7 +42,7 @@ func TestJujutsuReader(t *testing.T) {
 	as.ErrorIs(err, io.EOF)
 
 	// update jujutsu's index
-	cmd = exec.Command("jj")
+	cmd = exec.CommandContext(t.Context(), "jj")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to update the index")
 

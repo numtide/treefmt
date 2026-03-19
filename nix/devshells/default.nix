@@ -7,7 +7,7 @@ pkgs.mkShellNoCC {
 
   packages =
     (with pkgs; [
-      go_1_24
+      go_1_25
       goreleaser
       golangci-lint
       delve

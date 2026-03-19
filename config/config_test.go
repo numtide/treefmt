@@ -28,7 +28,7 @@ func newViper(t *testing.T) (*viper.Viper, *pflag.FlagSet) {
 	v.SetConfigFile(filepath.Join(tempDir, "treefmt.toml"))
 
 	// initialise a git repo to help with tree-root-cmd testing
-	cmd := exec.Command("git", "init")
+	cmd := exec.CommandContext(t.Context(), "git", "init")
 	cmd.Dir = tempDir
 
 	if err = cmd.Run(); err != nil {
@@ -106,6 +106,7 @@ func TestAllowMissingFormatter(t *testing.T) {
 
 	// set config value
 	cfg.AllowMissingFormatter = true
+
 	checkValue(true)
 
 	// env override
@@ -266,6 +267,7 @@ func TestFailOnChange(t *testing.T) {
 
 	// set config value
 	cfg.FailOnChange = true
+
 	checkValue(true)
 
 	// env override

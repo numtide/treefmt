@@ -14,3 +14,6 @@ repl-result-*
 
 # goreleaser
 dist/
+
+# llm
+.claude

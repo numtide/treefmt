@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -11,7 +12,7 @@ const TreeRootCmd = "git rev-parse --show-toplevel"
 
 func IsInsideWorktree(path string) (bool, error) {
 	// check if the root is a git repository
-	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--is-inside-work-tree")
 	cmd.Dir = path
 
 	out, err := cmd.Output()

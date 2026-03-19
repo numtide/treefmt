@@ -429,7 +429,7 @@ func execTreeRootCmd(treeRootCmd string, workingDir string) (string, error) {
 		// by experimenting, I noticed that sometimes we received the deadline exceeded error first, other times
 		// the exit error indicating the process was killed, therefore, we look for both
 		tookTooLong := errors.Is(cmdErr, context.DeadlineExceeded)
-		tookTooLong = tookTooLong || (errors.As(cmdErr, &exitErr) && exitErr.ProcessState.String() == "signal: killed")
+		tookTooLong = tookTooLong || (errors.As(cmdErr, &exitErr) && exitErr.String() == "signal: killed")
 
 		if tookTooLong {
 			return "", fmt.Errorf(

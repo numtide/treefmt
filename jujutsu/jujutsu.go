@@ -1,6 +1,7 @@
 package jujutsu
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -11,7 +12,7 @@ const TreeRootCmd = "jj workspace root"
 
 func IsInsideWorktree(path string) (bool, error) {
 	// check if the root is a jujutsu repository
-	cmd := exec.Command("jj", "workspace", "root")
+	cmd := exec.CommandContext(context.Background(), "jj", "workspace", "root")
 	cmd.Dir = path
 
 	err := cmd.Run()

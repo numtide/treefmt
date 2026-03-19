@@ -116,6 +116,7 @@ func Lutimes(t *testing.T, path string, atime time.Time, mtime time.Time) error 
 	t.Helper()
 
 	var utimes [2]unix.Timeval
+
 	utimes[0] = unix.NsecToTimeval(atime.UnixNano())
 	utimes[1] = unix.NsecToTimeval(mtime.UnixNano())
 

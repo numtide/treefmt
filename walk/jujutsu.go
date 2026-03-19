@@ -47,7 +47,7 @@ func (j *JujutsuReader) Read(ctx context.Context, files []*File) (n int, err err
 			args = append(args, j.path)
 		}
 
-		cmd := exec.Command("jj", args...)
+		cmd := exec.CommandContext(ctx, "jj", args...)
 		cmd.Dir = j.root
 		cmd.Stdout = w
 
