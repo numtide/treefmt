@@ -140,7 +140,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 
 	for {
 		// read the next batch
-		readCtx, cancelRead := context.WithTimeout(ctx, 1*time.Second)
+		readCtx, cancelRead := context.WithTimeout(ctx, 10*time.Second)
 
 		n, readErr = walker.Read(readCtx, files)
 		log.Debugf("read %d files", n)

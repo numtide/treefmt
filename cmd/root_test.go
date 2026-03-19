@@ -1541,8 +1541,10 @@ func TestJujutsu(t *testing.T) {
 
 	test.ChangeWorkDir(t, tempDir)
 
-	// basic config
+	// basic config — explicitly set walk to "jujutsu" because jj git init creates
+	// a .git/ directory, and the Auto walker would pick Git first
 	cfg := &config.Config{
+		Walk: "jujutsu",
 		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo", // will not generate any underlying changes in the file
@@ -1633,16 +1635,15 @@ func TestJujutsu(t *testing.T) {
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
 
 	// walk with filesystem instead of with jujutsu
-	// the .jj folder contains 100 additional files
-	// when added to the 30 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
-	// traverse 130 files.
+	// the .jj and .git folders contain additional internal files (count varies
+	// by jj version); total = 29 example files + jj/git internal files
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 133,
-			stats.Matched:   133,
-			stats.Formatted: 104, // the echo formatter should only be applied to the new files
+			stats.Traversed: 137,
+			stats.Matched:   137,
+			stats.Formatted: 108,
 			stats.Changed:   0,
 		}),
 	)

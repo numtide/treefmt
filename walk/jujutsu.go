@@ -32,34 +32,6 @@ func (j *JujutsuReader) Read(ctx context.Context, files []*File) (n int, err err
 		j.stats.Add(stats.Traversed, n)
 	}()
 
-	if j.scanner == nil {
-		// create a pipe to capture the command output
-		r, w := io.Pipe()
-
-		// create a command which will execute from root
-		// --ignore-working-copy: Don't snapshot the working copy, and don't update it. This prevents that the user has to
-		// enter a password for singning the commit. New files also won't be added to the index and not displayed in the
-		// output.
-		// Add the subpath as a fileset displaying only files matching this prefix. If
-		// the subpath is empty ignore it since it interferese with command
-		args := []string{"file", "list", "--ignore-working-copy"}
-		if j.path != "" {
-			args = append(args, j.path)
-		}
-
-		cmd := exec.CommandContext(ctx, "jj", args...)
-		cmd.Dir = j.root
-		cmd.Stdout = w
-
-		// execute the command in the background
-		j.eg.Go(func() error {
-			return w.CloseWithError(cmd.Run())
-		})
-
-		// create a new scanner for reading the output
-		j.scanner = bufio.NewScanner(r)
-	}
-
 	nextLine := func() string {
 		line := j.scanner.Text()
 
@@ -144,11 +116,42 @@ func NewJujutsuReader(
 		return nil, fmt.Errorf("%s is not a jujutsu repository", root)
 	}
 
+	// create an errgroup for async list task
+	eg := &errgroup.Group{}
+
+	// create a pipe to capture the command output
+	r, w := io.Pipe()
+
+	// create a command which will execute from root
+	// --ignore-working-copy: Don't snapshot the working copy, and don't update it. This prevents that the user has to
+	// enter a password for signing the commit. New files also won't be added to the index and not displayed in the
+	// output.
+	// Add the subpath as a fileset displaying only files matching this prefix. If
+	// the subpath is empty ignore it since it interferes with the command
+	args := []string{"file", "list", "--ignore-working-copy"}
+	if path != "" {
+		args = append(args, path)
+	}
+
+	// create the jj command
+	cmd := exec.CommandContext(context.Background(), "jj", args...)
+	cmd.Dir = root
+	cmd.Stdout = w
+
+	// execute the command in the background
+	eg.Go(func() error {
+		return w.CloseWithError(cmd.Run())
+	})
+
+	// create a new scanner for reading the output
+	scanner := bufio.NewScanner(r)
+
 	return &JujutsuReader{
-		root:  root,
-		path:  path,
-		stats: statz,
-		eg:    &errgroup.Group{},
-		log:   log.WithPrefix("walk | jujutsu"),
+		eg:      eg,
+		root:    root,
+		path:    path,
+		stats:   statz,
+		scanner: scanner,
+		log:     log.WithPrefix("walk | jujutsu"),
 	}, nil
 }
