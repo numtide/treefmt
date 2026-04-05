@@ -1,13 +1,13 @@
 {pkgs, ...}:
 pkgs.mkShellNoCC {
   env = {
-    GOROOT = "${pkgs.go_1_24}/share/go";
+    GOROOT = "${pkgs.go_1_25}/share/go";
     CGO_ENABLED = "0";
   };
 
   packages =
     (with pkgs; [
-      go_1_24
+      go_1_25
       goreleaser
       golangci-lint
       delve

@@ -9,7 +9,7 @@ with pkgs; [
   haskellPackages.ormolu
   mdsh
   nixpkgs-fmt
-  nodePackages.prettier
+  prettier
   python3.pkgs.black
   rufo
   rustfmt
