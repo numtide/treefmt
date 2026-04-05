@@ -283,12 +283,26 @@ func NewCompositeReader(
 		}
 
 		path := paths[0]
-
-		if strings.HasPrefix(path, "..") {
-			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
+		resolvedPath, err := resolvePath(path)
+		if err != nil {
+			// If the path doesn't exist, we still want to make it relative to the root if possible.
+			// We use the absolute path without resolving symlinks.
+			resolvedPath, err = filepath.Abs(path)
+			if err != nil {
+				return nil, fmt.Errorf("error computing absolute path of %s: %w", path, err)
+			}
 		}
 
-		return NewStdinReader(root, path, statz), nil
+		relativePath, err := filepath.Rel(root, resolvedPath)
+		if err != nil {
+			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
+		}
+
+		if strings.HasPrefix(relativePath, "..") {
+			return nil, fmt.Errorf("path %s not inside the tree root %s (relative path: %s)", path, root, relativePath)
+		}
+
+		return NewStdinReader(root, relativePath, statz), nil
 	}
 
 	// create a reader for each provided path
