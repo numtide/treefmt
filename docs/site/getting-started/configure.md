@@ -472,7 +472,7 @@ An optional list of [glob patterns](#glob-patterns-format) used to exclude certa
 
 Influences the order of execution. Greater precedence is given to lower numbers, with the default being `0`.
 
-### `violates-rule-1`
+### `no-positional-arg-support`
 
 If `true`, `treefmt` will invoke the formatter with no more than 1 file at a time.
 

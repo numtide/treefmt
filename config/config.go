@@ -64,7 +64,7 @@ type Formatter struct {
 	Priority int `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
 	// Does this formatter violate [rule 1] of the formatter spec?
 	// [rule 1]: https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments
-	ViolatesRule1 *bool `mapstructure:"violates-rule-1" toml:"violates-rule-1"`
+	NoPositionalArgSupport *bool `mapstructure:"no-positional-arg-support" toml:"no-positional-arg-support"`
 }
 
 // SetFlags appends our flags to the provided flag set.

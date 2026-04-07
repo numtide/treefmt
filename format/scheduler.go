@@ -146,7 +146,7 @@ func (s *scheduler) schedule(ctx context.Context, key batchKey, batch []*walk.Fi
 			formatter := s.formatters[name]
 
 			maxBatchSize := len(batch)
-			if formatter.ViolatesRule1() {
+			if formatter.HasNoPositionalArgSupport() {
 				maxBatchSize = 1
 			}
 
