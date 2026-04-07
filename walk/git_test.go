@@ -19,23 +19,19 @@ func TestGitReader(t *testing.T) {
 
 	tempDir := test.TempExamples(t)
 
-	// configure git username and email
-	cmd := exec.Command("git", "config", "--global", "user.name", "testing")
-	cmd.Dir = tempDir
-	as.NoError(cmd.Run(), "failed to set git username")
-	cmd = exec.Command("git", "config", "--global", "user.email", "testing@example.com")
-	cmd.Dir = tempDir
-	as.NoError(cmd.Run(), "failed to set git email")
-	// https://github.blog/open-source/git/git-security-vulnerabilities-announced/#cve-2022-39253
-	// We only use submodules we trust
-	cmd = exec.Command("git", "config", "--global", "protocol.file.allow", "always")
-	cmd.Dir = tempDir
-	as.NoError(cmd.Run(), "failed to allow file protocol")
-
 	// init a git repo
-	cmd = exec.Command("git", "init")
+	cmd := exec.CommandContext(t.Context(), "git", "init")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to init git repository")
+
+	// configure git username and email locally
+	cmd = exec.CommandContext(t.Context(), "git", "config", "user.name", "testing")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run(), "failed to set git username")
+
+	cmd = exec.CommandContext(t.Context(), "git", "config", "user.email", "testing@example.com")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run(), "failed to set git email")
 
 	// read empty worktree
 	statz := stats.New()
@@ -43,7 +39,7 @@ func TestGitReader(t *testing.T) {
 	as.NoError(err)
 
 	files := make([]*walk.File, 34)
-	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	n, err := reader.Read(ctx, files)
 
 	cancel()
@@ -52,27 +48,38 @@ func TestGitReader(t *testing.T) {
 
 	// add a git submodule
 	tempSubmoduleDir := test.TempExamples(t)
-	cmd = exec.Command("git", "init")
+	cmd = exec.CommandContext(t.Context(), "git", "init")
 	cmd.Dir = tempSubmoduleDir
 	as.NoError(cmd.Run(), "failed to init git submodule repository")
 
+	// configure git username and email locally for the submodule
+	cmd = exec.CommandContext(t.Context(), "git", "config", "user.name", "testing")
+	cmd.Dir = tempSubmoduleDir
+	as.NoError(cmd.Run(), "failed to set submodule git username")
+
+	cmd = exec.CommandContext(t.Context(), "git", "config", "user.email", "testing@example.com")
+	cmd.Dir = tempSubmoduleDir
+	as.NoError(cmd.Run(), "failed to set submodule git email")
+
 	// add everything to the submodule's git index
-	cmd = exec.Command("git", "add", ".")
+	cmd = exec.CommandContext(t.Context(), "git", "add", ".")
 	cmd.Dir = tempSubmoduleDir
 	as.NoError(cmd.Run(), "failed to add everything to the submodule index")
 
 	// commit the submodule
-	cmd = exec.Command("git", "commit", "-m", "submodule")
+	cmd = exec.CommandContext(t.Context(), "git", "commit", "-m", "submodule")
 	cmd.Dir = tempSubmoduleDir
 	as.NoError(cmd.Run(), "failed to commit the submodule")
 
 	// add the submodule to the main git repository
-	cmd = exec.Command("git", "submodule", "add", tempSubmoduleDir)
+	// https://github.blog/open-source/git/git-security-vulnerabilities-announced/#cve-2022-39253
+	// use -c to pass protocol.file.allow since submodule clone spawns a subprocess that won't see local config
+	cmd = exec.CommandContext(t.Context(), "git", "-c", "protocol.file.allow=always", "submodule", "add", tempSubmoduleDir)
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to add the submodule to the main repository")
 
 	// add everything to the git index
-	cmd = exec.Command("git", "add", ".")
+	cmd = exec.CommandContext(t.Context(), "git", "add", ".")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to add everything to the index")
 

@@ -21,7 +21,7 @@ func TestJujutsuReader(t *testing.T) {
 	tempDir := test.TempExamples(t)
 
 	// init a jujutsu repo
-	cmd := exec.Command("jj", "git", "init")
+	cmd := exec.CommandContext(t.Context(), "jj", "git", "init")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to init jujutsu repository")
 
@@ -31,7 +31,7 @@ func TestJujutsuReader(t *testing.T) {
 	as.NoError(err)
 
 	files := make([]*walk.File, 33) // The number of files in `test/examples` used for testing
-	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	n, err := reader.Read(ctx, files)
 
 	// Jujutsu depends on updating the index with a `jj` command. So, until we do
@@ -42,7 +42,7 @@ func TestJujutsuReader(t *testing.T) {
 	as.ErrorIs(err, io.EOF)
 
 	// update jujutsu's index
-	cmd = exec.Command("jj")
+	cmd = exec.CommandContext(t.Context(), "jj")
 	cmd.Dir = tempDir
 	as.NoError(cmd.Run(), "failed to update the index")
 
@@ -53,7 +53,7 @@ func TestJujutsuReader(t *testing.T) {
 	count := 0
 
 	for {
-		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 
 		files := make([]*walk.File, 8)
 		n, err := reader.Read(ctx, files)

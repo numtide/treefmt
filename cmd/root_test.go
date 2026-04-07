@@ -1361,7 +1361,7 @@ func TestGit(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// init a git repo
-	gitCmd := exec.Command("git", "init")
+	gitCmd := exec.CommandContext(t.Context(), "git", "init")
 	as.NoError(gitCmd.Run(), "failed to init git repository")
 
 	// run before adding anything to the index
@@ -1378,7 +1378,7 @@ func TestGit(t *testing.T) {
 	)
 
 	// add everything to the index
-	gitCmd = exec.Command("git", "add", ".")
+	gitCmd = exec.CommandContext(t.Context(), "git", "add", ".")
 	as.NoError(gitCmd.Run(), "failed to add everything to the index")
 
 	treefmt(t,
@@ -1541,8 +1541,10 @@ func TestJujutsu(t *testing.T) {
 
 	test.ChangeWorkDir(t, tempDir)
 
-	// basic config
+	// basic config — explicitly set walk to "jujutsu" because jj git init creates
+	// a .git/ directory, and the Auto walker would pick Git first
 	cfg := &config.Config{
+		Walk: "jujutsu",
 		FormatterConfigs: map[string]*config.Formatter{
 			"echo": {
 				Command:  "echo", // will not generate any underlying changes in the file
@@ -1554,7 +1556,7 @@ func TestJujutsu(t *testing.T) {
 	test.WriteConfig(t, configPath, cfg)
 
 	// init a jujutsu repo
-	jjCmd := exec.Command("jj", "git", "init")
+	jjCmd := exec.CommandContext(t.Context(), "jj", "git", "init")
 	as.NoError(jjCmd.Run(), "failed to init jujutsu repository")
 
 	// run treefmt before adding anything to the jj index
@@ -1573,7 +1575,7 @@ func TestJujutsu(t *testing.T) {
 	)
 
 	// update jujutsu's index
-	jjCmd = exec.Command("jj")
+	jjCmd = exec.CommandContext(t.Context(), "jj")
 	as.NoError(jjCmd.Run(), "failed to update the index")
 
 	// This is our first pass, since previously the files were not in the index. This should format all files.
@@ -1593,7 +1595,7 @@ func TestJujutsu(t *testing.T) {
 	as.NoError(err, "failed to create temp file")
 
 	// update jujutsu's index
-	jjCmd = exec.Command("jj")
+	jjCmd = exec.CommandContext(t.Context(), "jj")
 	as.NoError(jjCmd.Run(), "failed to update the index")
 
 	t.Cleanup(func() {
@@ -1614,7 +1616,7 @@ func TestJujutsu(t *testing.T) {
 	as.NoError(os.RemoveAll(filepath.Join(tempDir, "python")), "failed to remove python directory")
 
 	// update jujutsu's index
-	jjCmd = exec.Command("jj")
+	jjCmd = exec.CommandContext(t.Context(), "jj")
 	as.NoError(jjCmd.Run(), "failed to update the index")
 
 	// we should traverse and match against fewer files, but no formatting should occur as no formatting signatures
@@ -1633,16 +1635,15 @@ func TestJujutsu(t *testing.T) {
 	as.NoError(os.Remove(filepath.Join(tempDir, "nixpkgs.toml")))
 
 	// walk with filesystem instead of with jujutsu
-	// the .jj folder contains 100 additional files
-	// when added to the 30 we started with (34 minus nixpkgs.toml which we removed from the filesystem), we should
-	// traverse 130 files.
+	// the .jj and .git folders contain additional internal files (count varies
+	// by jj version); total = 29 example files + jj/git internal files
 	treefmt(t,
 		withArgs("--walk", "filesystem"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
-			stats.Traversed: 133,
-			stats.Matched:   133,
-			stats.Formatted: 104, // the echo formatter should only be applied to the new files
+			stats.Traversed: 137,
+			stats.Matched:   137,
+			stats.Formatted: 108,
 			stats.Changed:   0,
 		}),
 	)
@@ -1701,7 +1702,7 @@ func TestJujutsu(t *testing.T) {
 	as.NoError(err)
 
 	// update jujutsu's index
-	jjCmd = exec.Command("jj")
+	jjCmd = exec.CommandContext(t.Context(), "jj")
 	as.NoError(jjCmd.Run(), "failed to update the index")
 
 	treefmt(t,
@@ -2289,12 +2290,12 @@ func TestRunInSubdir(t *testing.T) {
 			// if we are testing git walking, init a git repo before continuing
 			if walkType == walk.Git {
 				// init a git repo
-				gitCmd := exec.Command("git", "init")
+				gitCmd := exec.CommandContext(t.Context(), "git", "init")
 				gitCmd.Dir = tempDir
 				as.NoError(gitCmd.Run(), "failed to init git repository")
 
 				// add everything to the index
-				gitCmd = exec.Command("git", "add", ".")
+				gitCmd = exec.CommandContext(t.Context(), "git", "add", ".")
 				gitCmd.Dir = tempDir
 				as.NoError(gitCmd.Run(), "failed to add everything to the index")
 			}

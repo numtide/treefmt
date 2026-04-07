@@ -34,24 +34,6 @@ func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) 
 		g.stats.Add(stats.Traversed, n)
 	}()
 
-	if g.scanner == nil {
-		// create a pipe to capture the command output
-		r, w := io.Pipe()
-
-		// create a command which will execute from the specified sub path within root
-		cmd := exec.Command("git", "ls-files", "--cached", "--others", "--exclude-standard", "--stage")
-		cmd.Dir = filepath.Join(g.root, g.path)
-		cmd.Stdout = w
-
-		// execute the command in the background
-		g.eg.Go(func() error {
-			return w.CloseWithError(cmd.Run())
-		})
-
-		// create a new scanner for reading the output
-		g.scanner = bufio.NewScanner(r)
-	}
-
 	nextFile := func() (string, error) {
 		for line := g.scanner.Text(); len(line) > 0; line = g.scanner.Text() {
 			lineSplit := strings.Split(line, "\t")
@@ -168,11 +150,34 @@ func NewGitReader(
 		return nil, fmt.Errorf("%s is not a git repository", root)
 	}
 
+	// create an errgroup for executing in the background
+	eg := &errgroup.Group{}
+
+	// create a pipe to capture the command output
+	r, w := io.Pipe()
+
+	// create a command which will execute from the specified sub path within root
+	cmd := exec.CommandContext(
+		context.Background(),
+		"git", "ls-files", "--cached", "--others", "--exclude-standard", "--stage",
+	)
+	cmd.Dir = filepath.Join(root, path)
+	cmd.Stdout = w
+
+	// execute the command in the background
+	eg.Go(func() error {
+		return w.CloseWithError(cmd.Run())
+	})
+
+	// create a new scanner for reading the output
+	scanner := bufio.NewScanner(r)
+
 	return &GitReader{
-		root:  root,
-		path:  path,
-		stats: statz,
-		eg:    &errgroup.Group{},
-		log:   log.WithPrefix("walk | git"),
+		eg:      eg,
+		root:    root,
+		path:    path,
+		stats:   statz,
+		scanner: scanner,
+		log:     log.WithPrefix("walk | git"),
 	}, nil
 }

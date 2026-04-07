@@ -108,7 +108,7 @@ markdown_extensions:
     - pymdownx.keys
 
 plugins:
-    - awesome-pages
+    - awesome-nav
     - mike
     - search
 

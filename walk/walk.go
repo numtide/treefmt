@@ -26,9 +26,9 @@ const (
 	Filesystem
 	Git
 	Jujutsu
-
-	BatchSize = 1024
 )
+
+const BatchSize = 1024
 
 type ReleaseFunc func(ctx context.Context) error
 
@@ -55,7 +55,7 @@ func formatSignature(formattersSig []byte, info fs.FileInfo) []byte {
 	h := md5.New() //nolint:gosec
 	h.Write(formattersSig)
 	// add mod time and size
-	h.Write([]byte(fmt.Sprintf("%v %v", info.ModTime().Unix(), info.Size())))
+	h.Write(fmt.Appendf(nil, "%v %v", info.ModTime().Unix(), info.Size()))
 
 	return h.Sum(nil)
 }

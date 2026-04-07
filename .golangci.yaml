@@ -1,0 +1,32 @@
+version: "2"
+linters:
+    default: all
+    disable:
+        - cyclop
+        - depguard
+        - err113
+        - exhaustruct
+        - forbidigo
+        - funcorder
+        - funlen
+        - gocognit
+        - gocyclo
+        - godox
+        - maintidx
+        - mnd
+        - noinlineerr
+        - nonamedreturns
+        - paralleltest
+        - varnamelen
+        - wsl
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        paths:
+            - third_party$
+            - builtin$
+            - examples$
