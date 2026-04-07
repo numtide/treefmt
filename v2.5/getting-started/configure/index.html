@@ -826,10 +826,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#max-batch-size" class="md-nav__link">
+  <a href="#no-positional-arg-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        max-batch-size
+        no-positional-arg-support
       
     </span>
   </a>
@@ -1558,10 +1558,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#max-batch-size" class="md-nav__link">
+  <a href="#no-positional-arg-support" class="md-nav__link">
     <span class="md-ellipsis">
       
-        max-batch-size
+        no-positional-arg-support
       
     </span>
   </a>
@@ -2183,8 +2183,7 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <span class="normal"><a href="#__codelineno-47-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-47-9"> 9</a></span>
 <span class="normal"><a href="#__codelineno-47-10">10</a></span>
-<span class="normal"><a href="#__codelineno-47-11">11</a></span>
-<span class="normal"><a href="#__codelineno-47-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1"></a><span class="k">[formatter.alejandra]</span>
+<span class="normal"><a href="#__codelineno-47-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1"></a><span class="k">[formatter.alejandra]</span>
 <a id="__codelineno-47-2" name="__codelineno-47-2"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;alejandra&quot;</span>
 <a id="__codelineno-47-3" name="__codelineno-47-3"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
 <a id="__codelineno-47-4" name="__codelineno-47-4"></a><span class="n">excludes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;examples/nix/sources.nix&quot;</span><span class="p">]</span>
@@ -2195,7 +2194,6 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <a id="__codelineno-47-9" name="__codelineno-47-9"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-e&quot;</span><span class="p">]</span>
 <a id="__codelineno-47-10" name="__codelineno-47-10"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
 <a id="__codelineno-47-11" name="__codelineno-47-11"></a><span class="n">priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
-<a id="__codelineno-47-12" name="__codelineno-47-12"></a><span class="n">max-batch-size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span>
 </code></pre></div></td></tr></table></div>
 <h3 id="command"><code>command</code></h3>
 <p>The command to invoke when applying the formatter.</p>
@@ -2207,11 +2205,10 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <p>An optional list of <a href="#glob-patterns-format">glob patterns</a> used to exclude certain files from this formatter.</p>
 <h3 id="priority"><code>priority</code></h3>
 <p>Influences the order of execution. Greater precedence is given to lower numbers, with the default being <code>0</code>.</p>
-<h3 id="max-batch-size"><code>max-batch-size</code></h3>
-<p>Invoke the formatter with no more than this many files at once. If there are
-more files to format, treefmt will invoke the formatter multiple times in
-smaller batches. Defaults to 1024.</p>
-<p>This is useful for <a href="https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments">non-compliant</a> formatters which can only format 1 file at a time.</p>
+<h3 id="no-positional-arg-support"><code>no-positional-arg-support</code></h3>
+<p>If <code>true</code>, <code>treefmt</code> will invoke the formatter with no more than 1 file at a time.</p>
+<p>Enable this if the formatter can only format 1 file at a time (a violation of
+<a href="https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments">rule 1 of the formatter spec</a>).</p>
 <h2 id="same-file-multiple-formatters">Same file, multiple formatters?</h2>
 <p>For each file, <code>treefmt</code> determines a list of formatters based on the configured <code>includes</code> / <code>excludes</code> rules. This list is
 then sorted, first by priority (lower the value, higher the precedence) and secondly by formatter name (lexicographically).</p>
