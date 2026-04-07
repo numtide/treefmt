@@ -27,7 +27,10 @@ const (
 var (
 	ErrInvalidName = errors.New("formatter name must only contain alphanumeric characters, `_` or `-`")
 	// ErrCommandNotFound is returned when the Command for a Formatter is not available.
-	ErrCommandNotFound = errors.New("formatter command not found in PATH")
+	ErrCommandNotFound        = errors.New("formatter command not found in PATH")
+	ErrNoPositionalArgSupport = errors.New(
+		"formatter cannot format multiple files at once (it violates rule 1 of the formatter specification)",
+	)
 
 	nameRegex = regexp.MustCompile("^[a-zA-Z0-9_-]+$")
 )
@@ -50,12 +53,12 @@ func (f *Formatter) Name() string {
 	return f.name
 }
 
-func (f *Formatter) MaxBatchSize() int {
-	if f.config.MaxBatchSize == nil {
-		return BatchSize
+func (f *Formatter) HasNoPositionalArgSupport() bool {
+	if f.config.NoPositionalArgSupport == nil {
+		return false
 	}
 
-	return *f.config.MaxBatchSize
+	return *f.config.NoPositionalArgSupport
 }
 
 func (f *Formatter) Priority() int {
@@ -90,8 +93,8 @@ func (f *Formatter) Hash(h hash.Hash) error {
 }
 
 func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
-	if len(files) > f.MaxBatchSize() {
-		return fmt.Errorf("formatter cannot format %d files at once (max batch size: %d)", len(files), f.MaxBatchSize())
+	if len(files) > 1 && f.HasNoPositionalArgSupport() {
+		return ErrNoPositionalArgSupport
 	}
 
 	start := time.Now()

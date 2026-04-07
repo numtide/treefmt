@@ -62,8 +62,9 @@ type Formatter struct {
 	Excludes []string `mapstructure:"excludes,omitempty" toml:"excludes,omitempty"`
 	// Indicates the order of precedence when executing this Formatter in a sequence of Formatters.
 	Priority int `mapstructure:"priority,omitempty" toml:"priority,omitempty"`
-	// The maximum number of files we should pass to this Formatter at once.
-	MaxBatchSize *int `mapstructure:"max-batch-size" toml:"max-batch-size"`
+	// Does this formatter violate [rule 1] of the formatter spec?
+	// [rule 1]: https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments
+	NoPositionalArgSupport *bool `mapstructure:"no-positional-arg-support" toml:"no-positional-arg-support"`
 }
 
 // SetFlags appends our flags to the provided flag set.

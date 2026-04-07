@@ -450,7 +450,6 @@ command = "deadnix"
 options = ["-e"]
 includes = ["*.nix"]
 priority = 2
-max-batch-size = 1024
 ```
 
 ### `command`
@@ -473,13 +472,12 @@ An optional list of [glob patterns](#glob-patterns-format) used to exclude certa
 
 Influences the order of execution. Greater precedence is given to lower numbers, with the default being `0`.
 
-### `max-batch-size`
+### `no-positional-arg-support`
 
-Invoke the formatter with no more than this many files at once. If there are
-more files to format, treefmt will invoke the formatter multiple times in
-smaller batches. Defaults to 1024.
+If `true`, `treefmt` will invoke the formatter with no more than 1 file at a time.
 
-This is useful for [non-compliant](https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments) formatters which can only format 1 file at a time.
+Enable this if the formatter can only format 1 file at a time (a violation of
+[rule 1 of the formatter spec](https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments)).
 
 ## Same file, multiple formatters?
 

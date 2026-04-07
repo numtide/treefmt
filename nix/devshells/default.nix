@@ -1,7 +1,7 @@
 {pkgs, ...}:
 pkgs.mkShellNoCC {
   env = {
-    GOROOT = "${pkgs.go_1_24}/share/go";
+    GOROOT = "${pkgs.go_1_26}/share/go";
     CGO_ENABLED = "0";
   };
 
