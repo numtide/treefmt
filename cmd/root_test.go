@@ -2185,6 +2185,31 @@ help:
 `, string(out))
 		}),
 	)
+
+	// Format with embed-path. `embed-path` prefixes the file with its path. If
+	// this formatter didn't support the Stdin Specification, then we'd see a
+	// temp path get added instead of the true path to the file.
+	contents = `
+The formatter should add the path above this line.
+`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	treefmt(t,
+		withArgs("-vvv", "--stdin", "path/to/foo.embed-path"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`# path/to/foo.embed-path
+
+The formatter should add the path above this line.
+`, string(out))
+		}),
+	)
 }
 
 func TestDeterministicOrderingInPipeline(t *testing.T) {

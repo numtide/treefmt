@@ -30,8 +30,8 @@ The formatter's CLI must be of the form:
 Where:
 
 - `<command>` is the name of the formatter executable.
-- `[options]` is any number of flags and options that the formatter accepts.
-- `[...<files>]` is one or more files given to the formatter for processing.
+- `[options]` are any number of flags and options that the formatter accepts.
+- `[...<files>]` are one or more files given to the formatter for processing.
 
 Example:
 
@@ -68,3 +68,10 @@ outputs.
 ### 5. Reliable
 
 We expect the formatter to be reliable and not break the semantics of the formatted files.
+
+### 6. Path agnostic
+
+The formatter _SHOULD_ be path agnostic (formatting _SHOULD NOT_ depend on the
+path of the file being formatted). If the formatter behaves differently based
+on the path of the file being formatted, then the formatter _MUST_ implement
+the [Stdin Specification](./stdin-spec.md).
