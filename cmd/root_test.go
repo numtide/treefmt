@@ -2118,6 +2118,42 @@ func TestStdin(t *testing.T) {
 		}),
 	)
 
+	// verify that absolute paths work
+	absPath, err := filepath.Abs("test.nix")
+	as.NoError(err)
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	treefmt(t,
+		withArgs("--stdin", absPath),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`{ ...}: "hello"
+`, string(out))
+		}),
+	)
+
+	// verify that absolute paths in subdirectories work with glob patterns
+	absPathInSubdir, err := filepath.Abs(filepath.Join("go", "main.go"))
+	as.NoError(err)
+	goContents := "package main\n"
+	os.Stdin = test.TempFile(t, "", "stdin", &goContents)
+
+	treefmt(t,
+		withArgs("--stdin", absPathInSubdir),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+		}),
+	)
+
 	// the nix formatters should have reduced the example to the following
 
 	// try a file that's outside of the project root
