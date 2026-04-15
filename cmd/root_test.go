@@ -589,6 +589,78 @@ func TestConfigFile(t *testing.T) {
 	}
 }
 
+func TestDotConfigDir(t *testing.T) {
+	t.Run("basic", func(t *testing.T) {
+		as := require.New(t)
+
+		tempDir := test.TempExamples(t)
+
+		// remove the sample treefmt.toml
+		as.NoError(os.Remove(filepath.Join(tempDir, "treefmt.toml")), "failed to remove sample treefmt.toml")
+
+		// ensure the test config is created in the .config subdirectory
+		configPath := filepath.Join(tempDir, ".config/treefmt.toml")
+
+		// ensure we are executing from the root of the temp dir
+		test.ChangeWorkDir(t, tempDir)
+
+		treefmt(t,
+			withConfig(configPath, &config.Config{
+				FormatterConfigs: map[string]*config.Formatter{
+					"echo": {
+						Command:  "echo",
+						Includes: []string{"*"},
+					},
+				},
+			}),
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   33,
+				stats.Formatted: 33,
+				stats.Changed:   0,
+			}),
+		)
+	})
+
+	t.Run("project root ending in .config", func(t *testing.T) {
+		as := require.New(t)
+
+		// create a project root whose name ends with .config
+		tempDir := filepath.Join(t.TempDir(), "foo.config")
+		as.NoError(os.Mkdir(tempDir, 0o755))
+
+		test.TempExamplesInDir(t, tempDir)
+
+		// remove the sample treefmt.toml
+		as.NoError(os.Remove(filepath.Join(tempDir, "treefmt.toml")), "failed to remove sample treefmt.toml")
+
+		// place config in the .config subdirectory
+		configPath := filepath.Join(tempDir, ".config/treefmt.toml")
+
+		// ensure we are executing from the root of the temp dir
+		test.ChangeWorkDir(t, tempDir)
+
+		treefmt(t,
+			withConfig(configPath, &config.Config{
+				FormatterConfigs: map[string]*config.Formatter{
+					"echo": {
+						Command:  "echo",
+						Includes: []string{"*"},
+					},
+				},
+			}),
+			withNoError(t),
+			withStats(t, map[stats.Type]int{
+				stats.Traversed: 33,
+				stats.Matched:   33,
+				stats.Formatted: 33,
+				stats.Changed:   0,
+			}),
+		)
+	})
+}
+
 func TestCache(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "treefmt.toml")
