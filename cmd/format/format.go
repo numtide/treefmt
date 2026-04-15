@@ -107,13 +107,13 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 		cancel()
 	}()
 
-	// parse the walk type
-	walkType, err := walk.TypeString(cfg.Walk)
+	// parse the walk selector
+	walkSelector, err := newWalkSelector(cfg)
 	if err != nil {
 		return fmt.Errorf("invalid walk type: %w", err)
 	}
 
-	if walkType == walk.Stdin && len(paths) != 1 {
+	if walkSelector.Custom == nil && walkSelector.Type == walk.Stdin && len(paths) != 1 {
 		// check we have only received one path arg which we use for the file extension / matching to formatters
 		return errors.New("exactly one path should be specified when using the --stdin flag")
 	}
@@ -125,7 +125,7 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	// create a new walker for traversing the paths
-	walker, err := walk.NewCompositeReader(walkType, cfg.TreeRoot, paths, db, statz)
+	walker, err := walk.NewCompositeReader(walkSelector, cfg.TreeRoot, paths, db, statz)
 	if err != nil {
 		return fmt.Errorf("failed to create walker: %w", err)
 	}
@@ -204,4 +204,22 @@ func Run(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, paths []string)
 	}
 
 	return nil
+}
+
+func newWalkSelector(cfg *config.Config) (walk.Selector, error) {
+	walkType, err := walk.TypeString(cfg.Walk)
+	if err == nil {
+		return walk.BuiltinSelector(walkType), nil
+	}
+
+	walkerCfg, ok := cfg.WalkerConfigs[cfg.Walk]
+	if !ok {
+		return walk.Selector{}, fmt.Errorf("walker %v not found in config", cfg.Walk)
+	}
+
+	return walk.CustomSelector(walk.CustomConfig{
+		Name:    cfg.Walk,
+		Command: walkerCfg.Command,
+		Options: walkerCfg.Options,
+	}), nil
 }

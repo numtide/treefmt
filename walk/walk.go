@@ -30,6 +30,29 @@ const (
 
 const BatchSize = 1024
 
+type CustomConfig struct {
+	Name    string
+	Command string
+	Options []string
+}
+
+type Selector struct {
+	Type   Type
+	Custom *CustomConfig
+}
+
+func BuiltinSelector(walkType Type) Selector {
+	return Selector{
+		Type: walkType,
+	}
+}
+
+func CustomSelector(cfg CustomConfig) Selector {
+	return Selector{
+		Custom: &cfg,
+	}
+}
+
 type ReleaseFunc func(ctx context.Context) error
 
 // File represents a file object with its path, relative path, file info, and potential cache entry.
@@ -199,7 +222,7 @@ func (c *CompositeReader) Close() error {
 
 //nolint:ireturn
 func NewReader(
-	walkType Type,
+	selector Selector,
 	root string,
 	path string,
 	db *bolt.DB,
@@ -210,29 +233,33 @@ func NewReader(
 		reader Reader
 	)
 
-	switch walkType {
-	case Auto:
-		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
-		reader, err = NewReader(Git, root, path, db, statz)
-		if err != nil {
-			reader, err = NewReader(Jujutsu, root, path, db, statz)
+	if selector.Custom != nil {
+		reader, err = NewCustomReader(root, path, statz, *selector.Custom)
+	} else {
+		switch selector.Type {
+		case Auto:
+			// for now, we keep it simple and try git first, jujutsu second, and filesystem last
+			reader, err = NewReader(BuiltinSelector(Git), root, path, db, statz)
 			if err != nil {
-				reader, err = NewReader(Filesystem, root, path, db, statz)
+				reader, err = NewReader(BuiltinSelector(Jujutsu), root, path, db, statz)
+				if err != nil {
+					reader, err = NewReader(BuiltinSelector(Filesystem), root, path, db, statz)
+				}
 			}
+
+			return reader, err
+		case Stdin:
+			return nil, errors.New("stdin walk type is not supported")
+		case Filesystem:
+			reader = NewFilesystemReader(root, path, statz, BatchSize)
+		case Git:
+			reader, err = NewGitReader(root, path, statz)
+		case Jujutsu:
+			reader, err = NewJujutsuReader(root, path, statz)
+
+		default:
+			return nil, fmt.Errorf("unknown walk type: %v", selector.Type)
 		}
-
-		return reader, err
-	case Stdin:
-		return nil, errors.New("stdin walk type is not supported")
-	case Filesystem:
-		reader = NewFilesystemReader(root, path, statz, BatchSize)
-	case Git:
-		reader, err = NewGitReader(root, path, statz)
-	case Jujutsu:
-		reader, err = NewJujutsuReader(root, path, statz)
-
-	default:
-		return nil, fmt.Errorf("unknown walk type: %v", walkType)
 	}
 
 	if err != nil {
@@ -253,7 +280,7 @@ func NewReader(
 //
 //nolint:ireturn
 func NewCompositeReader(
-	walkType Type,
+	selector Selector,
 	root string,
 	paths []string,
 	db *bolt.DB,
@@ -271,13 +298,13 @@ func NewCompositeReader(
 
 	// if no paths are provided we default to processing the tree root
 	if len(paths) == 0 {
-		return NewReader(walkType, root, "", db, statz)
+		return NewReader(selector, root, "", db, statz)
 	}
 
 	readers := make([]Reader, len(paths))
 
 	// check we have received 1 path for the stdin walk type
-	if walkType == Stdin {
+	if selector.Custom == nil && selector.Type == Stdin {
 		if len(paths) != 1 {
 			return nil, errors.New("stdin walk requires exactly one path")
 		}
@@ -320,10 +347,10 @@ func NewCompositeReader(
 
 		if info.IsDir() {
 			// for directories, we honour the walk type as we traverse them
-			readers[idx], err = NewReader(walkType, root, relativePath, db, statz)
+			readers[idx], err = NewReader(selector, root, relativePath, db, statz)
 		} else {
 			// for files, we enforce a simple filesystem read
-			readers[idx], err = NewReader(Filesystem, root, relativePath, db, statz)
+			readers[idx], err = NewReader(BuiltinSelector(Filesystem), root, relativePath, db, statz)
 		}
 
 		if err != nil {
