@@ -132,7 +132,7 @@ func runE(v *viper.Viper, statz *stats.Stats, cmd *cobra.Command, args []string)
 		configFile = os.Getenv("TREEFMT_CONFIG")
 	}
 
-	filenames := []string{"treefmt.toml", ".treefmt.toml"}
+	filenames := []string{"treefmt.toml", ".treefmt.toml", ".config/treefmt.toml"}
 
 	// look in PRJ_ROOT if set
 	if prjRoot := os.Getenv("PRJ_ROOT"); configFile == "" && prjRoot != "" {

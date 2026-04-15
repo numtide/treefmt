@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -356,6 +357,11 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 			)
 
 			cfg.TreeRoot = filepath.Dir(v.ConfigFileUsed())
+
+			// if the config file was located inside a `.config` directory, we need to go up one level
+			if path.Base(cfg.TreeRoot) == ".config" {
+				cfg.TreeRoot = filepath.Dir(cfg.TreeRoot)
+			}
 		}
 	}
 
