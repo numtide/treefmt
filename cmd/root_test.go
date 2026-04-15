@@ -1814,6 +1814,67 @@ func TestJujutsu(t *testing.T) {
 	)
 }
 
+func TestCustomWalker(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+
+	test.ChangeWorkDir(t, tempDir)
+
+	walkerPath := filepath.Join(tempDir, "custom-walker")
+	as.NoError(os.WriteFile(walkerPath, []byte(`#!/usr/bin/env sh
+for path in "$@"; do
+  printf '%s\n' "$path"
+done
+`), 0o700))
+
+	cfg := &config.Config{
+		Walk: "myWalker",
+		WalkerConfigs: map[string]*config.Walker{
+			"myWalker": {
+				Command: "./custom-walker",
+				Options: []string{
+					"go/main.go",
+					"go/go.mod",
+					"haskell/Foo.hs",
+				},
+			},
+		},
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo", // will not generate any underlying changes in the file
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	test.WriteConfig(t, configPath, cfg)
+
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 3,
+			stats.Matched:   3,
+			stats.Formatted: 3,
+			stats.Changed:   0,
+		}),
+	)
+
+	treefmt(t,
+		withArgs("-c", "go"),
+		withConfig(configPath, cfg),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 2,
+			stats.Changed:   0,
+		}),
+	)
+}
+
 func TestTreeRootCmd(t *testing.T) {
 	as := require.New(t)
 
