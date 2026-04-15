@@ -1815,26 +1815,20 @@ func TestJujutsu(t *testing.T) {
 }
 
 func TestCustomWalker(t *testing.T) {
-	as := require.New(t)
-
 	tempDir := test.TempExamples(t)
 	configPath := filepath.Join(tempDir, "/treefmt.toml")
 
 	test.ChangeWorkDir(t, tempDir)
 
-	walkerPath := filepath.Join(tempDir, "custom-walker")
-	as.NoError(os.WriteFile(walkerPath, []byte(`#!/usr/bin/env sh
-for path in "$@"; do
-  printf '%s\n' "$path"
-done
-`), 0o700))
-
 	cfg := &config.Config{
 		Walk: "myWalker",
 		WalkerConfigs: map[string]*config.Walker{
 			"myWalker": {
-				Command: "./custom-walker",
+				Command: "bash",
 				Options: []string{
+					"-c",
+					`for path in "$@"; do printf '%s\n' "$path"; done`,
+					"custom-walker",
 					"go/main.go",
 					"go/go.mod",
 					"haskell/Foo.hs",

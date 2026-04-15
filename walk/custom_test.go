@@ -19,20 +19,16 @@ func TestCustomReader(t *testing.T) {
 
 	tempDir := test.TempExamples(t)
 
-	walkerPath := filepath.Join(tempDir, "walker")
-	as.NoError(os.WriteFile(walkerPath, []byte(`#!/usr/bin/env sh
-for path in "$@"; do
-  printf '%s\n' "$path"
-done
-`), 0o700))
-
 	as.NoError(os.Symlink(filepath.Join(tempDir, "go", "main.go"), filepath.Join(tempDir, "link-to-main")))
 
 	statz := stats.New()
 	reader, err := walk.NewCustomReader(tempDir, "", &statz, walk.CustomConfig{
 		Name:    "myWalker",
-		Command: "./walker",
+		Command: "bash",
 		Options: []string{
+			"-c",
+			`for path in "$@"; do printf '%s\n' "$path"; done`,
+			"walker",
 			"go/main.go",
 			"go/go.mod",
 			"go",
@@ -60,15 +56,14 @@ func TestCustomReaderSubpath(t *testing.T) {
 
 	tempDir := test.TempExamples(t)
 
-	walkerPath := filepath.Join(tempDir, "walker")
-	as.NoError(os.WriteFile(walkerPath, []byte(`#!/usr/bin/env sh
-printf '%s\n' go/main.go haskell/Foo.hs go/go.mod
-`), 0o700))
-
 	statz := stats.New()
 	reader, err := walk.NewCustomReader(tempDir, "go", &statz, walk.CustomConfig{
 		Name:    "myWalker",
-		Command: "./walker",
+		Command: "bash",
+		Options: []string{
+			"-c",
+			"printf '%s\n' go/main.go haskell/Foo.hs go/go.mod",
+		},
 	})
 	as.NoError(err)
 
@@ -90,16 +85,14 @@ func TestCustomReaderCommandFailure(t *testing.T) {
 
 	tempDir := test.TempExamples(t)
 
-	walkerPath := filepath.Join(tempDir, "walker")
-	as.NoError(os.WriteFile(walkerPath, []byte(`#!/usr/bin/env sh
-printf '%s\n' go/main.go
-exit 7
-`), 0o700))
-
 	statz := stats.New()
 	reader, err := walk.NewCustomReader(tempDir, "", &statz, walk.CustomConfig{
 		Name:    "myWalker",
-		Command: "./walker",
+		Command: "bash",
+		Options: []string{
+			"-c",
+			"printf '%s\n' go/main.go; exit 7",
+		},
 	})
 	as.NoError(err)
 
