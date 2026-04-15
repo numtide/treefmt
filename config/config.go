@@ -45,6 +45,7 @@ type Config struct {
 	Stdin                 bool     `mapstructure:"stdin"                   toml:"-"` // not allowed in config
 
 	FormatterConfigs map[string]*Formatter `mapstructure:"formatter" toml:"formatter,omitempty"`
+	WalkerConfigs    map[string]*Walker    `mapstructure:"walker"    toml:"walker,omitempty"`
 
 	Global struct {
 		// Deprecated: Use Excludes
@@ -66,6 +67,13 @@ type Formatter struct {
 	// Does this formatter violate [rule 1] of the formatter spec?
 	// [rule 1]: https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments
 	NoPositionalArgSupport *bool `mapstructure:"no-positional-arg-support" toml:"no-positional-arg-support"`
+}
+
+type Walker struct {
+	// Command is the command to invoke when walking the tree.
+	Command string `mapstructure:"command" toml:"command"`
+	// Options are an optional list of args to be passed to Command.
+	Options []string `mapstructure:"options,omitempty" toml:"options,omitempty"`
 }
 
 // SetFlags appends our flags to the provided flag set.
@@ -200,6 +208,10 @@ func FromViper(v *viper.Viper) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	if cfg.Walk == "" {
+		cfg.Walk = walk.Auto.String()
+	}
+
 	// resolve the working directory to an absolute path
 	cfg.WorkingDirectory, err = filepath.Abs(cfg.WorkingDirectory)
 	if err != nil {
@@ -230,6 +242,47 @@ func FromViper(v *viper.Viper) (*Config, error) {
 				"formatter name %q is invalid, must be of the form %s",
 				name, nameRegex.String(),
 			)
+		}
+	}
+
+	for name, walkerCfg := range cfg.WalkerConfigs {
+		if !nameRegex.MatchString(name) {
+			return nil, fmt.Errorf(
+				"walker name %q is invalid, must be of the form %s",
+				name, nameRegex.String(),
+			)
+		}
+
+		if _, err := walk.TypeString(name); err == nil {
+			return nil, fmt.Errorf("walker name %q is reserved for a built-in walk type", name)
+		}
+
+		if walkerCfg.Command == "" {
+			return nil, fmt.Errorf("walker %v has no command", name)
+		}
+	}
+
+	if _, err := walk.TypeString(cfg.Walk); err != nil {
+		if !nameRegex.MatchString(cfg.Walk) {
+			return nil, fmt.Errorf(
+				"walk value %q is invalid, must be a built-in walk type or a walker name of the form %s",
+				cfg.Walk, nameRegex.String(),
+			)
+		}
+
+		if _, ok := cfg.WalkerConfigs[cfg.Walk]; !ok {
+			for name, walkerCfg := range cfg.WalkerConfigs {
+				if strings.EqualFold(name, cfg.Walk) {
+					cfg.WalkerConfigs[cfg.Walk] = walkerCfg
+					ok = true
+
+					break
+				}
+			}
+
+			if !ok {
+				return nil, fmt.Errorf("walker %v not found in config", cfg.Walk)
+			}
 		}
 	}
 
