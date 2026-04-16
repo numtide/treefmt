@@ -68,3 +68,8 @@ outputs.
 ### 5. Reliable
 
 We expect the formatter to be reliable and not break the semantics of the formatted files.
+
+### 6. Path agnostic
+
+The formatter **MUST** be path agnostic (formatting **MUST NOT** depend on the
+path of the file being formatted).
