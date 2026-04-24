@@ -460,6 +460,15 @@ The command to invoke when applying the formatter.
 
 An optional list of args to be passed to `command`.
 
+### `stdin-options`
+
+An optional list of args used to invoke the formatter in "stdin mode" (where it
+reads the buffer to format from stdin rather than a file). Any occurrences of
+`$path` will be replaced with the "advisory path" of the "file" being formatted.
+
+This is useful for formatters whose behavior depend on the path of the file being
+formatted.
+
 ### `includes`
 
 A list of [glob patterns](#glob-patterns-format) used to determine whether the formatter should be applied against a given path.
