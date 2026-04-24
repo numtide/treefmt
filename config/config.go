@@ -57,7 +57,7 @@ type Formatter struct {
 	Command string `mapstructure:"command" toml:"command"`
 	// Options are an optional list of args to be passed to Command.
 	Options []string `mapstructure:"options,omitempty" toml:"options,omitempty"`
-	// StringOptions are an optional list of args used to invoke the formatter
+	// StdinOptions are an optional list of args used to invoke the formatter
 	// in stdin mode (where it reads the buffer to format from stdin rather
 	// than a file). Any occurrences of `$path` will be replaced with the "advisory path"
 	// of the "file" being formatted (useful for formatters whose behavior
