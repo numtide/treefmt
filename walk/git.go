@@ -33,6 +33,7 @@ type GitReader struct {
 
 	eg      *errgroup.Group
 	filesCh chan *File
+	cancel  context.CancelFunc
 }
 
 func (g *GitReader) Read(ctx context.Context, files []*File) (n int, err error) {
@@ -62,6 +63,10 @@ LOOP:
 }
 
 func (g *GitReader) Close() error {
+	// Unblock any producer goroutines (and kill the git children) in case the
+	// caller stopped draining Read() before EOF.
+	g.cancel()
+
 	err := g.eg.Wait()
 	if err != nil {
 		return fmt.Errorf("failed to wait for git command to complete: %w", err)
@@ -70,7 +75,7 @@ func (g *GitReader) Close() error {
 	return nil
 }
 
-func (g *GitReader) stat(entry gitEntry) {
+func (g *GitReader) stat(ctx context.Context, entry gitEntry) {
 	if entry.gitlink {
 		// submodules are separate projects with their own formatting rules
 		return
@@ -98,16 +103,15 @@ func (g *GitReader) stat(entry gitEntry) {
 		return
 	}
 
-	g.filesCh <- &File{
-		Path:    path,
-		RelPath: entry.relative,
-		Info:    info,
+	select {
+	case g.filesCh <- &File{Path: path, RelPath: entry.relative, Info: info}:
+	case <-ctx.Done():
 	}
 }
 
-func lsFiles(dir string, staged bool, prefix string, out chan<- gitEntry, args ...string) error {
+func lsFiles(ctx context.Context, dir string, staged bool, prefix string, out chan<- gitEntry, args ...string) error {
 	//nolint:gosec // args are fixed flag sets assembled in NewGitReader, not user input.
-	cmd := exec.CommandContext(context.Background(), "git", append([]string{"ls-files"}, args...)...)
+	cmd := exec.CommandContext(ctx, "git", append([]string{"ls-files"}, args...)...)
 	cmd.Dir = dir
 
 	stdout, err := cmd.StdoutPipe()
@@ -116,10 +120,14 @@ func lsFiles(dir string, staged bool, prefix string, out chan<- gitEntry, args .
 	}
 
 	if err := cmd.Start(); err != nil {
+		if ctx.Err() != nil {
+			return nil //nolint:nilerr // reader was closed; cancellation is not a failure
+		}
+
 		return fmt.Errorf("failed to start git ls-files: %w", err)
 	}
 
-	scanErr := scanLsFiles(stdout, staged, prefix, out)
+	scanErr := scanLsFiles(ctx, stdout, staged, prefix, out)
 
 	// Always reap the child. If scanning aborted early git may be blocked on a
 	// full pipe, so kill it first to guarantee Wait returns.
@@ -127,14 +135,24 @@ func lsFiles(dir string, staged bool, prefix string, out chan<- gitEntry, args .
 		_ = cmd.Process.Kill()
 	}
 
-	if err := cmd.Wait(); err != nil && scanErr == nil {
-		return fmt.Errorf("git ls-files failed: %w", err)
+	waitErr := cmd.Wait()
+
+	if ctx.Err() != nil {
+		return nil //nolint:nilerr // reader was closed; the kill signal is not a failure
 	}
 
-	return scanErr
+	if scanErr != nil {
+		return scanErr
+	}
+
+	if waitErr != nil {
+		return fmt.Errorf("git ls-files failed: %w", waitErr)
+	}
+
+	return nil
 }
 
-func scanLsFiles(r io.Reader, staged bool, prefix string, out chan<- gitEntry) error {
+func scanLsFiles(ctx context.Context, r io.Reader, staged bool, prefix string, out chan<- gitEntry) error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -163,7 +181,11 @@ func scanLsFiles(r io.Reader, staged bool, prefix string, out chan<- gitEntry) e
 			path = unquoted
 		}
 
-		out <- gitEntry{relative: filepath.Join(prefix, path), gitlink: gitlink}
+		select {
+		case out <- gitEntry{relative: filepath.Join(prefix, path), gitlink: gitlink}:
+		case <-ctx.Done():
+			return nil
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -189,6 +211,8 @@ func NewGitReader(
 
 	dir := filepath.Join(root, path)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	g := &GitReader{
 		root:    root,
 		path:    path,
@@ -196,6 +220,7 @@ func NewGitReader(
 		log:     log.WithPrefix("walk | git"),
 		eg:      &errgroup.Group{},
 		filesCh: make(chan *File, BatchSize*runtime.NumCPU()),
+		cancel:  cancel,
 	}
 
 	entries := make(chan gitEntry, BatchSize)
@@ -210,13 +235,13 @@ func NewGitReader(
 	g.eg.Go(func() error {
 		defer producers.Done()
 
-		return lsFiles(dir, true, path, entries, "--cached", "--stage")
+		return lsFiles(ctx, dir, true, path, entries, "--cached", "--stage")
 	})
 
 	g.eg.Go(func() error {
 		defer producers.Done()
 
-		return lsFiles(dir, false, path, entries, "--others", "--exclude-standard")
+		return lsFiles(ctx, dir, false, path, entries, "--others", "--exclude-standard")
 	})
 
 	g.eg.Go(func() error {
@@ -237,7 +262,7 @@ func NewGitReader(
 			defer workers.Done()
 
 			for e := range entries {
-				g.stat(e)
+				g.stat(ctx, e)
 			}
 
 			return nil
