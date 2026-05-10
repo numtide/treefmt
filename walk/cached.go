@@ -1,6 +1,7 @@
 package walk
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -102,7 +103,9 @@ func (c *CachedReader) Read(ctx context.Context, files []*File) (n int, err erro
 		for i := range n {
 			file := files[i]
 
-			file.CachedFormatSignature = bucket.Get([]byte(file.RelPath))
+			// Avoid use-after-free as bucket.Get returns a slice that is only valid for
+			// the lifetime of this transaction.
+			file.CachedFormatSignature = bytes.Clone(bucket.Get([]byte(file.RelPath)))
 
 			// set a release function which inserts this file into the update channel
 			file.AddReleaseFunc(func(ctx context.Context) error {
