@@ -3,7 +3,11 @@ package walk_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -100,4 +104,33 @@ func TestFilesystemReader(t *testing.T) {
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))
+}
+
+// TestFilesystemReaderCloseUnblocks verifies that Close() returns even when
+// the caller stops draining Read() before EOF.
+func TestFilesystemReaderCloseUnblocks(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := t.TempDir()
+
+	// Enough files to overflow the reader's internal channel so process()
+	// would block on send if Close() did not unblock it.
+	n := walk.BatchSize*runtime.GOMAXPROCS(0) + 100
+	for i := range n {
+		as.NoError(os.WriteFile(filepath.Join(tempDir, fmt.Sprintf("f%05d", i)), nil, 0o600))
+	}
+
+	statz := stats.New()
+	reader := walk.NewFilesystemReader(tempDir, "", &statz, walk.BatchSize)
+
+	done := make(chan error, 1)
+
+	go func() { done <- reader.Close() }()
+
+	select {
+	case err := <-done:
+		as.NoError(err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close() did not return; process() is deadlocked")
+	}
 }

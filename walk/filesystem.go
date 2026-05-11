@@ -2,6 +2,7 @@ package walk
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,6 +16,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// errWalkClosed is used internally to abort filepath.Walk when Close() is
+// called while process() is still producing.
+var errWalkClosed = errors.New("filesystem reader closed")
+
 // FilesystemReader traverses and reads files from a specified root directory and its subdirectories.
 type FilesystemReader struct {
 	log       *log.Logger
@@ -22,7 +27,8 @@ type FilesystemReader struct {
 	path      string
 	batchSize int
 
-	eg *errgroup.Group
+	eg   *errgroup.Group
+	done chan struct{}
 
 	stats   *stats.Stats
 	filesCh chan *File
@@ -69,13 +75,19 @@ func (f *FilesystemReader) process() error {
 			Info:    info,
 		}
 
-		f.filesCh <- &file
+		select {
+		case f.filesCh <- &file:
+		case <-f.done:
+			return errWalkClosed
+		}
 
 		f.log.Debugf("file queued %s", file.RelPath)
 
 		return nil
 	})
-	if err != nil {
+	if errors.Is(err, errWalkClosed) {
+		return nil
+	} else if err != nil {
 		return fmt.Errorf("failed to walk path %s: %w", path, err)
 	}
 
@@ -118,6 +130,9 @@ LOOP:
 
 // Close waits for all filesystem processing to complete.
 func (f *FilesystemReader) Close() error {
+	// Unblock process() in case the caller stopped draining Read() before EOF.
+	close(f.done)
+
 	err := f.eg.Wait()
 	if err != nil {
 		return fmt.Errorf("failed to wait for processing to complete: %w", err)
@@ -143,7 +158,8 @@ func NewFilesystemReader(
 		path:      path,
 		batchSize: batchSize,
 
-		eg: &eg,
+		eg:   &eg,
+		done: make(chan struct{}),
 
 		stats:   statz,
 		filesCh: make(chan *File, batchSize*runtime.NumCPU()),

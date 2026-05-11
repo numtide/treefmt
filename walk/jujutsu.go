@@ -23,6 +23,7 @@ type JujutsuReader struct {
 	stats *stats.Stats
 
 	eg      *errgroup.Group
+	cancel  context.CancelFunc
 	scanner *bufio.Scanner
 }
 
@@ -93,6 +94,9 @@ LOOP:
 }
 
 func (j *JujutsuReader) Close() error {
+	// Unblock the jj process in case the caller stopped draining Read() before EOF.
+	j.cancel()
+
 	err := j.eg.Wait()
 	if err != nil {
 		return fmt.Errorf("failed to wait for jujutsu command to complete: %w", err)
@@ -119,6 +123,8 @@ func NewJujutsuReader(
 	// create an errgroup for async list task
 	eg := &errgroup.Group{}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// create a pipe to capture the command output
 	r, w := io.Pipe()
 
@@ -134,13 +140,19 @@ func NewJujutsuReader(
 	}
 
 	// create the jj command
-	cmd := exec.CommandContext(context.Background(), "jj", args...)
+	cmd := exec.CommandContext(ctx, "jj", args...)
 	cmd.Dir = root
 	cmd.Stdout = w
 
 	// execute the command in the background
 	eg.Go(func() error {
-		return w.CloseWithError(cmd.Run())
+		err := cmd.Run()
+		if ctx.Err() != nil {
+			// reader was closed; the kill signal is not a failure
+			err = nil
+		}
+
+		return w.CloseWithError(err)
 	})
 
 	// create a new scanner for reading the output
@@ -148,6 +160,7 @@ func NewJujutsuReader(
 
 	return &JujutsuReader{
 		eg:      eg,
+		cancel:  cancel,
 		root:    root,
 		path:    path,
 		stats:   statz,
