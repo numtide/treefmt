@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/log"
 	"github.com/numtide/treefmt/v2/stats"
@@ -27,6 +28,9 @@ type CustomReader struct {
 
 	eg      *errgroup.Group
 	scanner *bufio.Scanner
+
+	waitMu  sync.Mutex
+	waitErr error
 }
 
 func (c *CustomReader) Read(ctx context.Context, files []*File) (n int, err error) {
@@ -133,6 +137,13 @@ func (c *CustomReader) Close() error {
 		return fmt.Errorf("failed to wait for custom walker %s command to complete: %w", c.cfg.Name, err)
 	}
 
+	c.waitMu.Lock()
+	defer c.waitMu.Unlock()
+
+	if c.waitErr != nil {
+		return fmt.Errorf("failed to wait for custom walker %s command to complete: %w", c.cfg.Name, c.waitErr)
+	}
+
 	return nil
 }
 
@@ -169,22 +180,35 @@ func NewCustomReader(
 	cmd := exec.CommandContext(context.Background(), executable, cfg.Options...) //nolint:gosec
 	cmd.Dir = root
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stdout pipe for custom walker %s: %w", cfg.Name, err)
-	}
+	stdout, stdoutW := io.Pipe()
+	stderr, stderrW := io.Pipe()
 
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create stderr pipe for custom walker %s: %w", cfg.Name, err)
-	}
+	cmd.Stdout = stdoutW
+	cmd.Stderr = stderrW
 
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start custom walker %s: %w", cfg.Name, err)
+	reader := &CustomReader{
+		root:    root,
+		path:    path,
+		cfg:     cfg,
+		log:     log.WithPrefix("walk | custom | " + cfg.Name),
+		stats:   statz,
+		eg:      eg,
+		scanner: bufio.NewScanner(stdout),
 	}
 
 	eg.Go(func() error {
-		return cmd.Wait() //nolint:wrapcheck
+		err := cmd.Run()
+
+		reader.waitMu.Lock()
+		reader.waitErr = err
+		reader.waitMu.Unlock()
+
+		closeErr := stdoutW.Close()
+		if stderrCloseErr := stderrW.Close(); stderrCloseErr != nil && closeErr == nil {
+			closeErr = stderrCloseErr
+		}
+
+		return closeErr
 	})
 
 	eg.Go(func() error {
@@ -202,13 +226,5 @@ func NewCustomReader(
 		return nil
 	})
 
-	return &CustomReader{
-		root:    root,
-		path:    path,
-		cfg:     cfg,
-		log:     log.WithPrefix("walk | custom | " + cfg.Name),
-		stats:   statz,
-		eg:      eg,
-		scanner: bufio.NewScanner(stdout),
-	}, nil
+	return reader, nil
 }
