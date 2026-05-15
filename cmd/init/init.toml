@@ -48,9 +48,16 @@
 # verbose = 2
 
 # The method used to traverse the files within the tree root
-# Currently, we support 'auto', 'git', 'jujutsu', or 'filesystem'
+# Built-in values are 'auto', 'git', 'jujutsu', and 'filesystem'
+# You can also set this to the name of a configured custom walker
 # Env $TREEFMT_WALK
 # walk = "filesystem"
+# walk = "myWalker"
+
+# Custom walkers are configured with [walker.<name>]
+# [walker.myWalker]
+# command = "command-to-run"
+# options = []
 
 [formatter.mylanguage]
 # Command to execute

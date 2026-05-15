@@ -396,7 +396,8 @@ Set the verbosity level of logs:
 ### `walk`
 
 The method used to traverse the files within the tree root.
-Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'
+Built-in values are `auto`, `git`, `jujutsu`, and `filesystem`.
+You can also set this to the name of a configured [custom walker](#walker-options).
 
 === "Flag"
 
@@ -416,6 +417,14 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'
     walk = "filesystem"
     ```
 
+    ```toml
+    walk = "myWalker"
+
+    [walker.myWalker]
+    command = "command-to-run"
+    options = []
+    ```
+
 ### `working-dir`
 
 Run as if `treefmt` was started in the specified working directory instead of the current working directory.
@@ -432,6 +441,35 @@ Run as if `treefmt` was started in the specified working directory instead of th
     ```console
     TREEFMT_WORKING_DIR=/tmp/foo treefmt
     ```
+
+## Walker Options
+
+Custom walkers are configured using a [table](https://toml.io/en/v1.0.0#table) entry in `treefmt.toml` of the form
+`[walker.<name>]`.
+To use a custom walker, set the global [`walk`](#walk) option to the same name:
+
+```toml
+walk = "myWalker"
+
+[walker.myWalker]
+command = "command-to-run"
+options = []
+```
+
+### `command`
+
+The command to invoke when walking the tree.
+`treefmt` runs the command from the tree root.
+The command must write one path per line to `stdout`.
+Each path must be relative to the tree root.
+
+When you pass directory paths to `treefmt`, the walker command still runs for the tree root.
+`treefmt` filters the command output to the requested directories.
+The walker command doesn't need to implement path argument handling.
+
+### `options`
+
+An optional list of args to be passed to `command`.
 
 ## Formatter Options
 
