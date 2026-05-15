@@ -41,6 +41,7 @@ func TestCustomReader(t *testing.T) {
 	files := make([]*walk.File, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	n, err := reader.Read(ctx, files)
+
 	cancel()
 
 	as.Equal(2, n)
@@ -70,6 +71,7 @@ func TestCustomReaderSubpath(t *testing.T) {
 	files := make([]*walk.File, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	n, err := reader.Read(ctx, files)
+
 	cancel()
 
 	as.Equal(2, n)
@@ -99,6 +101,7 @@ func TestCustomReaderCommandFailure(t *testing.T) {
 	files := make([]*walk.File, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	n, err := reader.Read(ctx, files)
+
 	cancel()
 
 	as.Equal(1, n)

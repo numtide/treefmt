@@ -177,7 +177,7 @@ func NewCustomReader(
 
 	eg := &errgroup.Group{}
 
-	cmd := exec.CommandContext(context.Background(), executable, cfg.Options...) //nolint:gosec
+	cmd := exec.CommandContext(context.Background(), executable, cfg.Options...)
 	cmd.Dir = root
 
 	stdout, stdoutW := io.Pipe()

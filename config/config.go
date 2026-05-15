@@ -270,20 +270,16 @@ func FromViper(v *viper.Viper) (*Config, error) {
 			)
 		}
 
-		if _, ok := cfg.WalkerConfigs[cfg.Walk]; !ok {
-			for name, walkerCfg := range cfg.WalkerConfigs {
-				if strings.EqualFold(name, cfg.Walk) {
-					cfg.WalkerConfigs[cfg.Walk] = walkerCfg
-					ok = true
-
-					break
-				}
-			}
-
-			if !ok {
-				return nil, fmt.Errorf("walker %v not found in config", cfg.Walk)
-			}
+		walkerCfg, ok := cfg.WalkerConfigs[cfg.Walk]
+		if !ok {
+			walkerCfg, ok = findWalkerConfig(cfg.WalkerConfigs, cfg.Walk)
 		}
+
+		if !ok {
+			return nil, fmt.Errorf("walker %v not found in config", cfg.Walk)
+		}
+
+		cfg.WalkerConfigs[cfg.Walk] = walkerCfg
 	}
 
 	// filter formatters based on provided names
@@ -591,4 +587,14 @@ func fileExists(path string) bool {
 	}
 
 	return fi.Mode().IsRegular()
+}
+
+func findWalkerConfig(walkers map[string]*Walker, name string) (*Walker, bool) {
+	for walkerName, walkerCfg := range walkers {
+		if strings.EqualFold(walkerName, name) {
+			return walkerCfg, true
+		}
+	}
+
+	return nil, false
 }
