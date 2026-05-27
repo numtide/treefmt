@@ -2205,6 +2205,36 @@ func TestStdin(t *testing.T) {
 		}),
 	)
 
+	// Try a file that's more subtly outside of the project root.
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	treefmt(t,
+		withArgs("--stdin", "foo/../../test.nix"),
+		withError(func(as *require.Assertions, err error) {
+			as.ErrorContains(err, "path foo/../../test.nix not inside the tree root "+tempDir)
+		}),
+		withStderr(func(out []byte) {
+			as.Contains(string(out), "Error: failed to create walker: path foo/../../test.nix not inside the tree root")
+		}),
+	)
+
+	// Try a file with a funky name, but is *not* outside of the project root.
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+	treefmt(t,
+		withArgs("--stdin", "..lotsadots.nix"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`{ ...}: "hello"
+`, string(out))
+		}),
+	)
+
 	// try some markdown instead
 	contents = `
 | col1 | col2 |
@@ -2243,6 +2273,30 @@ help:
 
 	treefmt(t,
 		withArgs("--stdin", "foo/justfile"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`# print this message
+help:
+    just --list --list-submodules --unsorted
+`, string(out))
+		}),
+	)
+
+	// Try from a subdirectory, using .. to get to a parent directory that is
+	// still inside the project root.
+	//
+	// Note: we called `test.ChangeWorkDir` at the start of the test, which
+	// will restore the working directory during test cleanup.
+	t.Chdir("go")
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+	treefmt(t,
+		withArgs("--stdin", "../foo/justfile"),
 		withNoError(t),
 		withStats(t, map[stats.Type]int{
 			stats.Traversed: 1,
