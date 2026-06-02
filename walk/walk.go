@@ -276,21 +276,6 @@ func NewCompositeReader(
 
 	readers := make([]Reader, len(paths))
 
-	// check we have received 1 path for the stdin walk type
-	if walkType == Stdin {
-		if len(paths) != 1 {
-			return nil, errors.New("stdin walk requires exactly one path")
-		}
-
-		path := paths[0]
-
-		if strings.HasPrefix(path, "..") {
-			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
-		}
-
-		return NewStdinReader(root, path, statz), nil
-	}
-
 	// create a reader for each provided path
 	for idx, path := range paths {
 		var (
@@ -308,13 +293,30 @@ func NewCompositeReader(
 			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
 		}
 
-		if strings.HasPrefix(relativePath, "..") {
+		isInsideTreeRoot, err := isDescendant(path, root)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if %s is inside the tree root %s", path, root)
+		}
+
+		if !isInsideTreeRoot {
 			return nil, fmt.Errorf("path %s not inside the tree root %s (relative path: %s)", path, root, relativePath)
+		}
+
+		if walkType == Stdin {
+			if len(paths) != 1 {
+				return nil, errors.New("stdin walk requires exactly one path")
+			}
+
+			return NewStdinReader(root, relativePath, statz), nil
 		}
 
 		// check the path exists
 		info, err = os.Lstat(resolvedPath)
 		if err != nil {
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("path %s not found: %w", resolvedPath, err)
+			}
+
 			return nil, fmt.Errorf("failed to stat %s: %w", resolvedPath, err)
 		}
 
@@ -336,7 +338,8 @@ func NewCompositeReader(
 	}, nil
 }
 
-// Resolve a path to an absolute path, resolving any symlinks along the way.
+// Resolve a path to an absolute path.
+// Furthermore, if the path exists, any symlinks in its components are resolved.
 func resolvePath(path string) (string, error) {
 	log.Debugf("Resolving path '%s'", path)
 
@@ -347,8 +350,28 @@ func resolvePath(path string) (string, error) {
 
 	resolvedPath, err := filepath.EvalSymlinks(absolutePath)
 	if err != nil {
-		return "", fmt.Errorf("path %s not found: %w", absolutePath, err)
+		if os.IsNotExist(err) {
+			log.Debugf("Path '%s' does not exist, treating it as resolved", absolutePath)
+
+			return absolutePath, nil
+		}
+
+		return "", fmt.Errorf("error evaluating symlinks of %s: %w", absolutePath, err)
 	}
 
 	return resolvedPath, nil
+}
+
+func isDescendant(potentialChild string, potentialAncestor string) (bool, error) {
+	resolvedChild, err := resolvePath(potentialChild)
+	if err != nil {
+		return false, fmt.Errorf("error resolving %s: %w", potentialChild, err)
+	}
+
+	relPath, err := filepath.Rel(potentialAncestor, resolvedChild)
+	if err != nil {
+		return false, fmt.Errorf("failed to compute relative path from %s to %s: %w", potentialAncestor, resolvedChild, err)
+	}
+
+	return relPath != ".." && !strings.HasPrefix(relPath, ".."+string(os.PathSeparator)), nil
 }
