@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/build"
 	"github.com/numtide/treefmt/v2/cmd/format"
 	_init "github.com/numtide/treefmt/v2/cmd/init"

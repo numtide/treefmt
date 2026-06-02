@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/jujutsu"
 	"github.com/numtide/treefmt/v2/stats"
 	"golang.org/x/sync/errgroup"
