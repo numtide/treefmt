@@ -8,7 +8,7 @@ import (
 	"os"
 	"slices"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/gobwas/glob"
 	"github.com/numtide/treefmt/v2/config"
 	"github.com/numtide/treefmt/v2/stats"

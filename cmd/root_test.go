@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/cmd"
 	formatCmd "github.com/numtide/treefmt/v2/cmd/format"
 	"github.com/numtide/treefmt/v2/config"

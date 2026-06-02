@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/stats"
 	bolt "go.etcd.io/bbolt"
 )

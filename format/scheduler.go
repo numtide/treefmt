@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/stats"
 	"github.com/numtide/treefmt/v2/walk"
 	"golang.org/x/sync/errgroup"

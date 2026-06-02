@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/google/shlex"
 	"github.com/numtide/treefmt/v2/git"
 	"github.com/numtide/treefmt/v2/jujutsu"
