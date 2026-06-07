@@ -264,7 +264,12 @@ func newUncachedReader(
 
 		reader = NewFilesystemReader(root, paths, statz, BatchSize)
 	case Git:
-		reader, err = NewGitReader(root, path, statz)
+		paths := []string(nil)
+		if path != "" {
+			paths = []string{path}
+		}
+
+		reader, err = NewGitReader(root, paths, statz)
 	case Jujutsu:
 		reader, err = NewJujutsuReader(root, path, statz)
 
@@ -327,6 +332,20 @@ func NewCompositeReader(
 		}
 
 		return withCache(db, NewFilesystemReader(root, pathFilters, statz, BatchSize))
+	}
+
+	if walkType == Git {
+		pathFilters, err := resolvePathFilters(root, paths)
+		if err != nil {
+			return nil, err
+		}
+
+		reader, err := NewGitReader(root, pathFilters, statz)
+		if err != nil {
+			return nil, err
+		}
+
+		return withCache(db, reader)
 	}
 
 	readers := make([]Reader, len(paths))
