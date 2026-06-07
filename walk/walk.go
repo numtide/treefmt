@@ -144,7 +144,13 @@ func (f *File) String() string {
 	return f.Path
 }
 
-// Reader is an interface for reading files.
+// Reader produces batches of files for the formatter pipeline.
+//
+// Read fills the provided files slice with up to len(files) files and returns
+// the number of entries written. Callers must consume only files[:n]. A reader
+// may return n > 0 together with a non-nil error; callers should process the
+// returned files before handling the error. Readers return io.EOF when no more
+// files are available.
 type Reader interface {
 	Read(ctx context.Context, files []*File) (n int, err error)
 	Close() error
