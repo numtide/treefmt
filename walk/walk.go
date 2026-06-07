@@ -211,6 +211,27 @@ func NewReader(
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
+	reader, err := newUncachedReader(walkType, root, path, statz)
+	if err != nil {
+		return nil, err
+	}
+
+	if db != nil {
+		// wrap with cached reader
+		// db will be null if --no-cache is enabled
+		reader, err = NewCachedReader(db, BatchSize, reader)
+	}
+
+	return reader, err
+}
+
+//nolint:ireturn
+func newUncachedReader(
+	walkType Type,
+	root string,
+	path string,
+	statz *stats.Stats,
+) (Reader, error) {
 	var (
 		err    error
 		reader Reader
@@ -219,11 +240,11 @@ func NewReader(
 	switch walkType {
 	case Auto:
 		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
-		reader, err = NewReader(Git, root, path, db, statz)
+		reader, err = newUncachedReader(Git, root, path, statz)
 		if err != nil {
-			reader, err = NewReader(Jujutsu, root, path, db, statz)
+			reader, err = newUncachedReader(Jujutsu, root, path, statz)
 			if err != nil {
-				reader, err = NewReader(Filesystem, root, path, db, statz)
+				reader, err = newUncachedReader(Filesystem, root, path, statz)
 			}
 		}
 
@@ -243,12 +264,6 @@ func NewReader(
 
 	if err != nil {
 		return nil, err
-	}
-
-	if db != nil {
-		// wrap with cached reader
-		// db will be null if --no-cache is enabled
-		reader, err = NewCachedReader(db, BatchSize, reader)
 	}
 
 	return reader, err
