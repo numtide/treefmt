@@ -29,6 +29,43 @@ const (
 
 const BatchSize = 1024
 
+type CustomConfig struct {
+	Name    string
+	Command string
+	Options []string
+}
+
+type selectorKind int
+
+const (
+	builtinSelector selectorKind = iota
+	customSelector
+)
+
+type Selector struct {
+	kind    selectorKind
+	builtin Type
+	custom  CustomConfig
+}
+
+func BuiltinSelector(walkType Type) Selector {
+	return Selector{
+		kind:    builtinSelector,
+		builtin: walkType,
+	}
+}
+
+func CustomSelector(cfg CustomConfig) Selector {
+	return Selector{
+		kind:   customSelector,
+		custom: cfg,
+	}
+}
+
+func (s Selector) IsBuiltin(walkType Type) bool {
+	return s.kind == builtinSelector && s.builtin == walkType
+}
+
 type ReleaseFunc func(ctx context.Context) error
 
 // File represents a file object with its path, relative path, file info, and potential cache entry.
@@ -157,7 +194,7 @@ type Reader interface {
 
 //nolint:ireturn
 func NewReader(
-	walkType Type,
+	selector Selector,
 	root string,
 	paths []string,
 	db *bolt.DB,
@@ -175,11 +212,11 @@ func NewReader(
 
 	// if no paths are provided we default to processing the tree root
 	if len(paths) == 0 {
-		return newReaderFromPathFilters(walkType, root, nil, db, statz)
+		return newReaderFromPathFilters(selector, root, nil, db, statz)
 	}
 
 	// check we have received 1 path for the stdin walk type
-	if walkType == Stdin {
+	if selector.IsBuiltin(Stdin) {
 		path, err := stdinPath(root, paths)
 		if err != nil {
 			return nil, err
@@ -193,7 +230,7 @@ func NewReader(
 		return nil, err
 	}
 
-	return newReaderFromPathFilters(walkType, root, pathFilters, db, statz)
+	return newReaderFromPathFilters(selector, root, pathFilters, db, statz)
 }
 
 func stdinPath(root string, paths []string) (string, error) {
@@ -225,13 +262,13 @@ func stdinPath(root string, paths []string) (string, error) {
 
 //nolint:ireturn
 func newReaderFromPathFilters(
-	walkType Type,
+	selector Selector,
 	root string,
 	pathFilters []string,
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
-	reader, err := newUncachedReader(walkType, root, pathFilters, statz)
+	reader, err := newUncachedReader(selector, root, pathFilters, statz)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +289,7 @@ func withCache(db *bolt.DB, reader Reader) (Reader, error) {
 
 //nolint:ireturn
 func newUncachedReader(
-	walkType Type,
+	selector Selector,
 	root string,
 	pathFilters []string,
 	statz *stats.Stats,
@@ -262,29 +299,36 @@ func newUncachedReader(
 		reader Reader
 	)
 
-	switch walkType {
-	case Auto:
-		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
-		reader, err = newUncachedReader(Git, root, pathFilters, statz)
-		if err != nil {
-			reader, err = newUncachedReader(Jujutsu, root, pathFilters, statz)
+	switch selector.kind {
+	case customSelector:
+		return nil, errors.New("custom walk type is not supported")
+	case builtinSelector:
+		switch selector.builtin {
+		case Auto:
+			// for now, we keep it simple and try git first, jujutsu second, and filesystem last
+			reader, err = newUncachedReader(BuiltinSelector(Git), root, pathFilters, statz)
 			if err != nil {
-				reader, err = newUncachedReader(Filesystem, root, pathFilters, statz)
+				reader, err = newUncachedReader(BuiltinSelector(Jujutsu), root, pathFilters, statz)
+				if err != nil {
+					reader, err = newUncachedReader(BuiltinSelector(Filesystem), root, pathFilters, statz)
+				}
 			}
+
+			return reader, err
+		case Stdin:
+			return nil, errors.New("stdin walk type is not supported")
+		case Filesystem:
+			reader = NewFilesystemReader(root, pathFilters, statz, BatchSize)
+		case Git:
+			reader, err = NewGitReader(root, pathFilters, statz)
+		case Jujutsu:
+			reader, err = NewJujutsuReader(root, pathFilters, statz)
+
+		default:
+			return nil, fmt.Errorf("unknown walk type: %v", selector.builtin)
 		}
-
-		return reader, err
-	case Stdin:
-		return nil, errors.New("stdin walk type is not supported")
-	case Filesystem:
-		reader = NewFilesystemReader(root, pathFilters, statz, BatchSize)
-	case Git:
-		reader, err = NewGitReader(root, pathFilters, statz)
-	case Jujutsu:
-		reader, err = NewJujutsuReader(root, pathFilters, statz)
-
 	default:
-		return nil, fmt.Errorf("unknown walk type: %v", walkType)
+		return nil, fmt.Errorf("unknown selector type: %v", selector.kind)
 	}
 
 	if err != nil {
