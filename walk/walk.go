@@ -301,7 +301,7 @@ func newUncachedReader(
 
 	switch selector.kind {
 	case customSelector:
-		return nil, errors.New("custom walk type is not supported")
+		reader, err = NewCustomReader(root, pathFilters, statz, selector.custom)
 	case builtinSelector:
 		switch selector.builtin {
 		case Auto:
