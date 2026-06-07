@@ -216,13 +216,18 @@ func NewReader(
 		return nil, err
 	}
 
+	return withCache(db, reader)
+}
+
+//nolint:ireturn
+func withCache(db *bolt.DB, reader Reader) (Reader, error) {
 	if db != nil {
 		// wrap with cached reader
 		// db will be null if --no-cache is enabled
-		reader, err = NewCachedReader(db, BatchSize, reader)
+		return NewCachedReader(db, BatchSize, reader)
 	}
 
-	return reader, err
+	return reader, nil
 }
 
 //nolint:ireturn
@@ -252,7 +257,12 @@ func newUncachedReader(
 	case Stdin:
 		return nil, errors.New("stdin walk type is not supported")
 	case Filesystem:
-		reader = NewFilesystemReader(root, path, statz, BatchSize)
+		paths := []string(nil)
+		if path != "" {
+			paths = []string{path}
+		}
+
+		reader = NewFilesystemReader(root, paths, statz, BatchSize)
 	case Git:
 		reader, err = NewGitReader(root, path, statz)
 	case Jujutsu:
@@ -293,6 +303,30 @@ func NewCompositeReader(
 	// if no paths are provided we default to processing the tree root
 	if len(paths) == 0 {
 		return NewReader(walkType, root, "", db, statz)
+	}
+
+	// check we have received 1 path for the stdin walk type
+	if walkType == Stdin {
+		if len(paths) != 1 {
+			return nil, errors.New("stdin walk requires exactly one path")
+		}
+
+		path := paths[0]
+
+		if strings.HasPrefix(path, "..") {
+			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
+		}
+
+		return NewStdinReader(root, path, statz), nil
+	}
+
+	if walkType == Filesystem {
+		pathFilters, err := resolvePathFilters(root, paths)
+		if err != nil {
+			return nil, err
+		}
+
+		return withCache(db, NewFilesystemReader(root, pathFilters, statz, BatchSize))
 	}
 
 	readers := make([]Reader, len(paths))
@@ -357,6 +391,43 @@ func NewCompositeReader(
 	return &CompositeReader{
 		readers: readers,
 	}, nil
+}
+
+func resolvePathFilters(root string, paths []string) ([]string, error) {
+	pathFilters := make([]string, 0, len(paths))
+
+	for _, path := range paths {
+		resolvedPath, err := resolvePath(path)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving path %s: %w", path, err)
+		}
+
+		relativePath, err := filepath.Rel(root, resolvedPath)
+		if err != nil {
+			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
+		}
+
+		isInsideTreeRoot, err := isDescendant(path, root)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if %s is inside the tree root %s", path, root)
+		}
+
+		if !isInsideTreeRoot {
+			return nil, fmt.Errorf("path %s not inside the tree root %s (relative path: %s)", path, root, relativePath)
+		}
+
+		if _, err = os.Lstat(resolvedPath); err != nil {
+			if os.IsNotExist(err) {
+				return nil, fmt.Errorf("path %s not found: %w", resolvedPath, err)
+			}
+
+			return nil, fmt.Errorf("failed to stat %s: %w", resolvedPath, err)
+		}
+
+		pathFilters = append(pathFilters, relativePath)
+	}
+
+	return pathFilters, nil
 }
 
 // Resolve a path to an absolute path.
