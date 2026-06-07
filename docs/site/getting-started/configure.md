@@ -396,7 +396,8 @@ Set the verbosity level of logs:
 ### `walk`
 
 The method used to traverse the files within the tree root.
-Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'
+Built-in values are `auto`, `git`, `jujutsu`, and `filesystem`.
+You can also set this to the name of a configured [custom walker](#walker-options).
 
 Paths containing newlines are unsupported.
 
@@ -418,6 +419,14 @@ Paths containing newlines are unsupported.
     walk = "filesystem"
     ```
 
+    ```toml
+    walk = "mywalker"
+
+    [walker.mywalker]
+    command = "command-to-run"
+    options = []
+    ```
+
 ### `working-dir`
 
 Run as if `treefmt` was started in the specified working directory instead of the current working directory.
@@ -434,6 +443,42 @@ Run as if `treefmt` was started in the specified working directory instead of th
     ```console
     TREEFMT_WORKING_DIR=/tmp/foo treefmt
     ```
+
+## Walker Options
+
+Custom walkers are configured using a [table](https://toml.io/en/v1.0.0#table) entry in `treefmt.toml` of the form
+`[walker.<name>]`.
+To use a custom walker, set the global [`walk`](#walk) option to the same name:
+
+```toml
+walk = "mywalker"
+
+[walker.mywalker]
+command = "command-to-run"
+options = []
+```
+
+### `command`
+
+The command to invoke when walking the tree.
+`treefmt` runs the command from the tree root.
+
+When you pass file or directory paths to `treefmt`, `treefmt` passes those paths to the walker command as positional
+arguments relative to the tree root.
+A custom walker should use those arguments to reduce the paths it emits.
+This improves performance when you format a subtree in a large repository.
+
+`treefmt` still filters the command output to the requested paths.
+
+The command must write path records to `stdout`.
+Records may be separated by newlines or NUL bytes.
+Each path must be relative to the tree root or an absolute path inside the tree root.
+Paths containing newlines are unsupported.
+
+### `options`
+
+An optional list of args to be passed to `command`.
+`treefmt` passes these args before any positional path filters.
 
 ## Formatter Options
 
