@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -72,4 +74,45 @@ func TestJujutsuReader(t *testing.T) {
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))
+}
+
+func TestJujutsuReaderUsesTreeRoot(t *testing.T) {
+	as := require.New(t)
+
+	test.SetenvXdgConfigDir(t)
+	tempDir := t.TempDir()
+	projectDir := filepath.Join(tempDir, "my-project")
+	otherDir := filepath.Join(tempDir, "other-project")
+
+	as.NoError(os.MkdirAll(projectDir, 0o755))
+	as.NoError(os.MkdirAll(otherDir, 0o755))
+	as.NoError(os.WriteFile(filepath.Join(projectDir, "default.nix"), []byte("{}\n"), 0o600))
+	as.NoError(os.WriteFile(filepath.Join(otherDir, "shell.nix"), []byte("{}\n"), 0o600))
+
+	cmd := exec.CommandContext(t.Context(), "jj", "git", "init", "--no-colocate")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run(), "failed to init jujutsu repository")
+
+	cmd = exec.CommandContext(t.Context(), "jj", "file", "track", "my-project/default.nix", "other-project/shell.nix")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run(), "failed to track files")
+
+	statz := stats.New()
+	reader, err := walk.NewJujutsuReader(projectDir, nil, &statz)
+	as.NoError(err)
+
+	defer func() {
+		as.NoError(reader.Close())
+	}()
+
+	files := make([]*walk.File, 8)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	n, err := reader.Read(ctx, files)
+
+	cancel()
+
+	as.Equal(1, n)
+	as.ErrorIs(err, io.EOF)
+	as.Equal("default.nix", files[0].RelPath)
+	as.Equal(1, statz.Value(stats.Traversed))
 }

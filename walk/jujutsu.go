@@ -24,6 +24,10 @@ func NewJujutsuReader(
 		return nil, fmt.Errorf("%s is not a jujutsu repository", root)
 	}
 
+	if len(pathFilters) == 0 {
+		pathFilters = []string{"."}
+	}
+
 	// --ignore-working-copy: Don't snapshot the working copy, and don't update it. This prevents that the user has to
 	// enter a password for signing the commit. New files also won't be added to the index and not displayed in the
 	// output.
