@@ -1,109 +1,17 @@
 package walk
 
 import (
-	"bufio"
-	"context"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
 
-	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/jujutsu"
 	"github.com/numtide/treefmt/v2/stats"
-	"golang.org/x/sync/errgroup"
 )
 
-type JujutsuReader struct {
-	root string
-	path string
-
-	log   *log.Logger
-	stats *stats.Stats
-
-	eg      *errgroup.Group
-	scanner *bufio.Scanner
-}
-
-func (j *JujutsuReader) Read(ctx context.Context, files []*File) (n int, err error) {
-	// ensure we record how many files we traversed
-	defer func() {
-		j.stats.Add(stats.Traversed, n)
-	}()
-
-	nextLine := func() string {
-		line := j.scanner.Text()
-
-		return line
-	}
-
-LOOP:
-
-	for n < len(files) {
-		select {
-		// exit early if the context was cancelled
-		case <-ctx.Done():
-			return n, ctx.Err() //nolint:wrapcheck
-
-		default:
-			// read the next file
-			if j.scanner.Scan() {
-				entry := nextLine()
-
-				path := filepath.Join(j.root, entry)
-
-				j.log.Debugf("processing file: %s", path)
-
-				info, err := os.Lstat(path)
-
-				switch {
-				case os.IsNotExist(err):
-					// the underlying file might have been removed
-					j.log.Warnf(
-						"Path %s is in the worktree but appears to have been removed from the filesystem", path,
-					)
-
-					continue
-				case err != nil:
-					return n, fmt.Errorf("failed to stat %s: %w", path, err)
-				case info.Mode()&os.ModeSymlink == os.ModeSymlink:
-					// we skip reporting symlinks stored in Jujutsu, they should
-					// point to local files which we would list anyway.
-					continue
-				}
-
-				files[n] = &File{
-					Path:    path,
-					RelPath: entry,
-					Info:    info,
-				}
-
-				n++
-			} else {
-				// nothing more to read
-				err = io.EOF
-
-				break LOOP
-			}
-		}
-	}
-
-	return n, err
-}
-
-func (j *JujutsuReader) Close() error {
-	err := j.eg.Wait()
-	if err != nil {
-		return fmt.Errorf("failed to wait for jujutsu command to complete: %w", err)
-	}
-
-	return nil
-}
+type JujutsuReader = PathStreamReader
 
 func NewJujutsuReader(
 	root string,
-	path string,
+	pathFilters []string,
 	statz *stats.Stats,
 ) (*JujutsuReader, error) {
 	// check if the root is a jujutsu repository
@@ -116,42 +24,13 @@ func NewJujutsuReader(
 		return nil, fmt.Errorf("%s is not a jujutsu repository", root)
 	}
 
-	// create an errgroup for async list task
-	eg := &errgroup.Group{}
-
-	// create a pipe to capture the command output
-	r, w := io.Pipe()
-
-	// create a command which will execute from root
 	// --ignore-working-copy: Don't snapshot the working copy, and don't update it. This prevents that the user has to
 	// enter a password for signing the commit. New files also won't be added to the index and not displayed in the
 	// output.
-	// Add the subpath as a fileset displaying only files matching this prefix. If
-	// the subpath is empty ignore it since it interferes with the command
-	args := []string{"file", "list", "--ignore-working-copy"}
-	if path != "" {
-		args = append(args, path)
-	}
-
-	// create the jj command
-	cmd := exec.CommandContext(context.Background(), "jj", args...)
-	cmd.Dir = root
-	cmd.Stdout = w
-
-	// execute the command in the background
-	eg.Go(func() error {
-		return w.CloseWithError(cmd.Run())
+	return NewPathStreamReader(root, statz, PathStreamConfig{
+		Name:        "jujutsu",
+		Command:     "jj",
+		Options:     []string{"file", "list", "--ignore-working-copy", "--"},
+		PathFilters: pathFilters,
 	})
-
-	// create a new scanner for reading the output
-	scanner := bufio.NewScanner(r)
-
-	return &JujutsuReader{
-		eg:      eg,
-		root:    root,
-		path:    path,
-		stats:   statz,
-		scanner: scanner,
-		log:     log.WithPrefix("walk | jujutsu"),
-	}, nil
 }

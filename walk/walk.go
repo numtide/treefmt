@@ -5,7 +5,6 @@ import (
 	"crypto/md5" //nolint:gosec
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -156,62 +155,83 @@ type Reader interface {
 	Close() error
 }
 
-// CompositeReader combines multiple Readers into one.
-// It iterates over the given readers, reading each until completion.
-type CompositeReader struct {
-	idx     int
-	current Reader
-	readers []Reader
-}
-
-func (c *CompositeReader) Read(ctx context.Context, files []*File) (n int, err error) {
-	if c.current == nil {
-		// check if we have exhausted all the readers
-		if c.idx >= len(c.readers) {
-			return 0, io.EOF
-		}
-
-		// if not, select the next reader
-		c.current = c.readers[c.idx]
-		c.idx++
-	}
-
-	// attempt a read
-	n, err = c.current.Read(ctx, files)
-
-	// check if the current reader has been exhausted
-	if errors.Is(err, io.EOF) {
-		// reset the error if it's EOF
-		err = nil
-		// set the current reader to nil so we try to read from the next reader on the next call
-		c.current = nil
-	} else if err != nil {
-		err = fmt.Errorf("failed to read from current reader: %w", err)
-	}
-
-	// return the number of files read in this call and any error
-	return n, err
-}
-
-func (c *CompositeReader) Close() error {
-	for _, reader := range c.readers {
-		if err := reader.Close(); err != nil {
-			return fmt.Errorf("failed to close reader: %w", err)
-		}
-	}
-
-	return nil
-}
-
 //nolint:ireturn
 func NewReader(
 	walkType Type,
 	root string,
-	path string,
+	paths []string,
 	db *bolt.DB,
 	statz *stats.Stats,
 ) (Reader, error) {
-	reader, err := newUncachedReader(walkType, root, path, statz)
+	// Note: `root` may itself be or contain a symlink (e.g. it is in
+	// `$TMPDIR` on macOS or a user has set a symlink to shorten the repository
+	// path for path length restrictions), so we resolve it here first.
+	//
+	// See: https://github.com/numtide/treefmt/issues/578
+	root, err := resolvePath(root)
+	if err != nil {
+		return nil, fmt.Errorf("error resolving path %s: %w", root, err)
+	}
+
+	// if no paths are provided we default to processing the tree root
+	if len(paths) == 0 {
+		return newReaderFromPathFilters(walkType, root, nil, db, statz)
+	}
+
+	// check we have received 1 path for the stdin walk type
+	if walkType == Stdin {
+		path, err := stdinPath(root, paths)
+		if err != nil {
+			return nil, err
+		}
+
+		return NewStdinReader(root, path, statz), nil
+	}
+
+	pathFilters, err := resolvePathFilters(root, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	return newReaderFromPathFilters(walkType, root, pathFilters, db, statz)
+}
+
+func stdinPath(root string, paths []string) (string, error) {
+	if len(paths) != 1 {
+		return "", errors.New("stdin walk requires exactly one path")
+	}
+
+	resolvedPath, err := resolvePath(paths[0])
+	if err != nil {
+		return "", fmt.Errorf("error resolving path %s: %w", paths[0], err)
+	}
+
+	path, err := filepath.Rel(root, resolvedPath)
+	if err != nil {
+		return "", fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
+	}
+
+	isInsideTreeRoot, err := isDescendant(paths[0], root)
+	if err != nil {
+		return "", fmt.Errorf("error checking if %s is inside the tree root %s", paths[0], root)
+	}
+
+	if !isInsideTreeRoot {
+		return "", fmt.Errorf("path %s not inside the tree root %s", paths[0], root)
+	}
+
+	return path, nil
+}
+
+//nolint:ireturn
+func newReaderFromPathFilters(
+	walkType Type,
+	root string,
+	pathFilters []string,
+	db *bolt.DB,
+	statz *stats.Stats,
+) (Reader, error) {
+	reader, err := newUncachedReader(walkType, root, pathFilters, statz)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +254,7 @@ func withCache(db *bolt.DB, reader Reader) (Reader, error) {
 func newUncachedReader(
 	walkType Type,
 	root string,
-	path string,
+	pathFilters []string,
 	statz *stats.Stats,
 ) (Reader, error) {
 	var (
@@ -245,11 +265,11 @@ func newUncachedReader(
 	switch walkType {
 	case Auto:
 		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
-		reader, err = newUncachedReader(Git, root, path, statz)
+		reader, err = newUncachedReader(Git, root, pathFilters, statz)
 		if err != nil {
-			reader, err = newUncachedReader(Jujutsu, root, path, statz)
+			reader, err = newUncachedReader(Jujutsu, root, pathFilters, statz)
 			if err != nil {
-				reader, err = newUncachedReader(Filesystem, root, path, statz)
+				reader, err = newUncachedReader(Filesystem, root, pathFilters, statz)
 			}
 		}
 
@@ -257,21 +277,11 @@ func newUncachedReader(
 	case Stdin:
 		return nil, errors.New("stdin walk type is not supported")
 	case Filesystem:
-		paths := []string(nil)
-		if path != "" {
-			paths = []string{path}
-		}
-
-		reader = NewFilesystemReader(root, paths, statz, BatchSize)
+		reader = NewFilesystemReader(root, pathFilters, statz, BatchSize)
 	case Git:
-		paths := []string(nil)
-		if path != "" {
-			paths = []string{path}
-		}
-
-		reader, err = NewGitReader(root, paths, statz)
+		reader, err = NewGitReader(root, pathFilters, statz)
 	case Jujutsu:
-		reader, err = NewJujutsuReader(root, path, statz)
+		reader, err = NewJujutsuReader(root, pathFilters, statz)
 
 	default:
 		return nil, fmt.Errorf("unknown walk type: %v", walkType)
@@ -282,134 +292,6 @@ func newUncachedReader(
 	}
 
 	return reader, err
-}
-
-// NewCompositeReader returns a composite reader for the `root` and all `paths`. It
-// never follows symlinks.
-//
-//nolint:ireturn
-func NewCompositeReader(
-	walkType Type,
-	root string,
-	paths []string,
-	db *bolt.DB,
-	statz *stats.Stats,
-) (Reader, error) {
-	// Note: `root` may itself be or contain a symlink (e.g. it is in
-	// `$TMPDIR` on macOS or a user has set a symlink to shorten the repository
-	// path for path length restrictions), so we resolve it here first.
-	//
-	// See: https://github.com/numtide/treefmt/issues/578
-	root, err := resolvePath(root)
-	if err != nil {
-		return nil, fmt.Errorf("error resolving path %s: %w", root, err)
-	}
-
-	// if no paths are provided we default to processing the tree root
-	if len(paths) == 0 {
-		return NewReader(walkType, root, "", db, statz)
-	}
-
-	// check we have received 1 path for the stdin walk type
-	if walkType == Stdin {
-		if len(paths) != 1 {
-			return nil, errors.New("stdin walk requires exactly one path")
-		}
-
-		path := paths[0]
-
-		if strings.HasPrefix(path, "..") {
-			return nil, fmt.Errorf("path %s not inside the tree root %s", path, root)
-		}
-
-		return NewStdinReader(root, path, statz), nil
-	}
-
-	if walkType == Filesystem {
-		pathFilters, err := resolvePathFilters(root, paths)
-		if err != nil {
-			return nil, err
-		}
-
-		return withCache(db, NewFilesystemReader(root, pathFilters, statz, BatchSize))
-	}
-
-	if walkType == Git {
-		pathFilters, err := resolvePathFilters(root, paths)
-		if err != nil {
-			return nil, err
-		}
-
-		reader, err := NewGitReader(root, pathFilters, statz)
-		if err != nil {
-			return nil, err
-		}
-
-		return withCache(db, reader)
-	}
-
-	readers := make([]Reader, len(paths))
-
-	// create a reader for each provided path
-	for idx, path := range paths {
-		var (
-			err  error
-			info os.FileInfo
-		)
-
-		resolvedPath, err := resolvePath(path)
-		if err != nil {
-			return nil, fmt.Errorf("error resolving path %s: %w", path, err)
-		}
-
-		relativePath, err := filepath.Rel(root, resolvedPath)
-		if err != nil {
-			return nil, fmt.Errorf("error computing relative path from %s to %s: %w", root, resolvedPath, err)
-		}
-
-		isInsideTreeRoot, err := isDescendant(path, root)
-		if err != nil {
-			return nil, fmt.Errorf("error checking if %s is inside the tree root %s", path, root)
-		}
-
-		if !isInsideTreeRoot {
-			return nil, fmt.Errorf("path %s not inside the tree root %s (relative path: %s)", path, root, relativePath)
-		}
-
-		if walkType == Stdin {
-			if len(paths) != 1 {
-				return nil, errors.New("stdin walk requires exactly one path")
-			}
-
-			return NewStdinReader(root, relativePath, statz), nil
-		}
-
-		// check the path exists
-		info, err = os.Lstat(resolvedPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil, fmt.Errorf("path %s not found: %w", resolvedPath, err)
-			}
-
-			return nil, fmt.Errorf("failed to stat %s: %w", resolvedPath, err)
-		}
-
-		if info.IsDir() {
-			// for directories, we honour the walk type as we traverse them
-			readers[idx], err = NewReader(walkType, root, relativePath, db, statz)
-		} else {
-			// for files, we enforce a simple filesystem read
-			readers[idx], err = NewReader(Filesystem, root, relativePath, db, statz)
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("failed to create reader for %s: %w", relativePath, err)
-		}
-	}
-
-	return &CompositeReader{
-		readers: readers,
-	}, nil
 }
 
 func resolvePathFilters(root string, paths []string) ([]string, error) {

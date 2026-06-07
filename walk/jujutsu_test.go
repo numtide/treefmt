@@ -27,7 +27,7 @@ func TestJujutsuReader(t *testing.T) {
 
 	// read empty worktree
 	statz := stats.New()
-	reader, err := walk.NewJujutsuReader(tempDir, "", &statz)
+	reader, err := walk.NewJujutsuReader(tempDir, nil, &statz)
 	as.NoError(err)
 
 	files := make([]*walk.File, 33) // The number of files in `test/examples` used for testing
@@ -47,7 +47,7 @@ func TestJujutsuReader(t *testing.T) {
 	as.NoError(cmd.Run(), "failed to update the index")
 
 	statz = stats.New()
-	reader, err = walk.NewJujutsuReader(tempDir, "", &statz)
+	reader, err = walk.NewJujutsuReader(tempDir, nil, &statz)
 	as.NoError(err)
 
 	count := 0

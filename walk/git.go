@@ -3,7 +3,6 @@ package walk
 import (
 	"fmt"
 
-	"charm.land/log/v2"
 	"github.com/numtide/treefmt/v2/git"
 	"github.com/numtide/treefmt/v2/stats"
 )
