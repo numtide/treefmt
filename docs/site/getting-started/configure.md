@@ -398,6 +398,8 @@ Set the verbosity level of logs:
 The method used to traverse the files within the tree root.
 Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'
 
+Paths containing newlines are unsupported.
+
 === "Flag"
 
     ```console
