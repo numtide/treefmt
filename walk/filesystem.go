@@ -19,7 +19,7 @@ import (
 type FilesystemReader struct {
 	log       *log.Logger
 	root      string
-	path      string
+	paths     []string
 	batchSize int
 
 	eg *errgroup.Group
@@ -35,9 +35,24 @@ func (f *FilesystemReader) process() error {
 		close(f.filesCh)
 	}()
 
-	// f.path is relative to the root, so we create a fully qualified version
+	paths := f.paths
+	if len(paths) == 0 {
+		paths = []string{""}
+	}
+
+	for _, path := range paths {
+		if err := f.processPath(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *FilesystemReader) processPath(pathFilter string) error {
+	// pathFilter is relative to the root, so we create a fully qualified version
 	// we also clean the path up in case there are any ../../ components etc.
-	path := filepath.Clean(filepath.Join(f.root, f.path))
+	path := filepath.Clean(filepath.Join(f.root, pathFilter))
 
 	// ensure the path is within the root
 	if !strings.HasPrefix(path, f.root) {
@@ -130,7 +145,7 @@ func (f *FilesystemReader) Close() error {
 // and root.
 func NewFilesystemReader(
 	root string,
-	path string,
+	paths []string,
 	statz *stats.Stats,
 	batchSize int,
 ) *FilesystemReader {
@@ -140,7 +155,7 @@ func NewFilesystemReader(
 	r := FilesystemReader{
 		log:       log.WithPrefix("walk | filesystem"),
 		root:      root,
-		path:      path,
+		paths:     paths,
 		batchSize: batchSize,
 
 		eg: &eg,

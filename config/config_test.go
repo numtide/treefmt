@@ -591,6 +591,117 @@ func TestWalk(t *testing.T) {
 	checkValue("auto")
 }
 
+func TestWalkers(t *testing.T) {
+	t.Run("configured walker", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			Walk: "mywalker",
+			WalkerConfigs: map[string]*config.Walker{
+				"mywalker": {
+					Command: "command-to-run",
+					Options: []string{
+						"--foo",
+						"bar",
+					},
+				},
+			},
+		}
+
+		v, _ := newViper(t)
+
+		readValue(t, v, cfg, func(cfg *config.Config) {
+			walker, ok := cfg.WalkerConfigs["mywalker"]
+			as.True(ok, "walker not found")
+			as.Equal("mywalker", cfg.Walk)
+			as.Equal("command-to-run", walker.Command)
+			as.Equal([]string{"--foo", "bar"}, walker.Options)
+		})
+	})
+
+	t.Run("missing walker", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			Walk: "mywalker",
+		}
+
+		v, _ := newViper(t)
+
+		readError(t, v, cfg, func(err error) {
+			as.ErrorContains(err, "walker mywalker not found in config")
+		})
+	})
+
+	t.Run("empty command", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			Walk: "mywalker",
+			WalkerConfigs: map[string]*config.Walker{
+				"mywalker": {},
+			},
+		}
+
+		v, _ := newViper(t)
+
+		readError(t, v, cfg, func(err error) {
+			as.ErrorContains(err, "walker mywalker has no command")
+		})
+	})
+
+	t.Run("invalid walker name", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			Walk: "mywalker",
+			WalkerConfigs: map[string]*config.Walker{
+				"my/walker": {
+					Command: "command-to-run",
+				},
+			},
+		}
+
+		v, _ := newViper(t)
+
+		readError(t, v, cfg, func(err error) {
+			as.ErrorContains(err, "walker name \"my/walker\" is invalid")
+		})
+	})
+
+	t.Run("reserved walker name", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			WalkerConfigs: map[string]*config.Walker{
+				"git": {
+					Command: "command-to-run",
+				},
+			},
+		}
+
+		v, _ := newViper(t)
+
+		readError(t, v, cfg, func(err error) {
+			as.ErrorContains(err, "walker name \"git\" is reserved for a built-in walk type")
+		})
+	})
+
+	t.Run("invalid walk value", func(t *testing.T) {
+		as := require.New(t)
+
+		cfg := &config.Config{
+			Walk: "my.walker",
+		}
+
+		v, _ := newViper(t)
+
+		readError(t, v, cfg, func(err error) {
+			as.ErrorContains(err, "walk value \"my.walker\" is invalid")
+		})
+	})
+}
+
 func TestWorkingDirectory(t *testing.T) {
 	as := require.New(t)
 
@@ -662,7 +773,9 @@ func TestStdin(t *testing.T) {
 func TestSampleConfigFile(t *testing.T) {
 	as := require.New(t)
 
-	v := viper.New()
+	v, err := config.NewViper()
+	as.NoError(err, "failed to create viper")
+
 	v.SetConfigFile("../test/examples/treefmt.toml")
 	as.NoError(v.ReadInConfig(), "failed to read config file")
 
