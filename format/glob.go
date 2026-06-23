@@ -2,6 +2,7 @@ package format
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gobwas/glob"
 )
@@ -23,6 +24,8 @@ func compileGlobs(patterns []string) ([]glob.Glob, error) {
 }
 
 func pathMatches(path string, globs []glob.Glob) bool {
+	path = strings.ReplaceAll(path, "\\", "/")
+
 	for idx := range globs {
 		if globs[idx].Match(path) {
 			return true
