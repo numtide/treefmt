@@ -3,8 +3,12 @@ package walk_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -109,4 +113,43 @@ func TestGitReader(t *testing.T) {
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))
+}
+
+// TestGitReaderCloseUnblocks verifies that Close() returns even when the
+// caller stops draining Read() before EOF.
+func TestGitReaderCloseUnblocks(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := t.TempDir()
+
+	cmd := exec.CommandContext(t.Context(), "git", "init")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run())
+
+	// Enough files to overflow the reader's internal channel so producers
+	// would block if Close() did not unblock them.
+	n := walk.BatchSize*runtime.GOMAXPROCS(0) + 100
+	for i := range n {
+		as.NoError(os.WriteFile(filepath.Join(tempDir, fmt.Sprintf("f%05d", i)), nil, 0o600))
+	}
+
+	cmd = exec.CommandContext(t.Context(), "git", "add", ".")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run())
+
+	statz := stats.New()
+
+	reader, err := walk.NewGitReader(tempDir, "", &statz)
+	as.NoError(err)
+
+	done := make(chan error, 1)
+
+	go func() { done <- reader.Close() }()
+
+	select {
+	case err := <-done:
+		as.NoError(err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close() did not return; producers are deadlocked")
+	}
 }
