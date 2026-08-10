@@ -793,6 +793,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#stdin-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stdin-options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#includes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1158,6 +1169,8 @@
       
         
       
+        
+      
     
     
     
@@ -1218,6 +1231,34 @@
     
   
     Formatter Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/stdin-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stdin Specification
   
 
     
@@ -1518,6 +1559,17 @@
     <span class="md-ellipsis">
       
         options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stdin-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stdin-options
       
     </span>
   </a>
@@ -2199,6 +2251,45 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <p>The command to invoke when applying the formatter.</p>
 <h3 id="options"><code>options</code></h3>
 <p>An optional list of args to be passed to <code>command</code>.</p>
+<h3 id="stdin-options"><code>stdin-options</code></h3>
+<p>An optional list of args used to invoke the formatter in <a href="../../reference/stdin-spec/#2-stdin-mode">Stdin Mode</a> (where it
+reads the buffer to format from stdin rather than a file). Any occurrences of
+<code>$path</code> will be replaced with the "advisory path" of the "virtual file" being
+formatted.</p>
+<p>This is useful for formatters whose behavior depend on the path of the file being
+formatted.</p>
+<p>See the <a href="../../reference/stdin-spec/">Stdin Spec</a> for more details.</p>
+<p>Examples:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-48-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-48-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-48-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-48-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-48-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-48-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-48-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-48-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-48-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-48-10">10</a></span>
+<span class="normal"><a href="#__codelineno-48-11">11</a></span>
+<span class="normal"><a href="#__codelineno-48-12">12</a></span>
+<span class="normal"><a href="#__codelineno-48-13">13</a></span>
+<span class="normal"><a href="#__codelineno-48-14">14</a></span>
+<span class="normal"><a href="#__codelineno-48-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1"></a><span class="k">[formatter.nixfmt]</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;nixfmt&quot;</span>
+<a id="__codelineno-48-3" name="__codelineno-48-3"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*.nix&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-4" name="__codelineno-48-4"></a><span class="n">stdin-options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;--stdin-filepath&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;$path&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-5" name="__codelineno-48-5"></a>
+<a id="__codelineno-48-6" name="__codelineno-48-6"></a><span class="k">[formatter.buildifier]</span>
+<a id="__codelineno-48-7" name="__codelineno-48-7"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;buildifier&quot;</span>
+<a id="__codelineno-48-8" name="__codelineno-48-8"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;BUILD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;*.bzl&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-9" name="__codelineno-48-9"></a><span class="n">stdin-options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-path&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;$path&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-10" name="__codelineno-48-10"></a>
+<a id="__codelineno-48-11" name="__codelineno-48-11"></a><span class="k">[formatter.ruff]</span>
+<a id="__codelineno-48-12" name="__codelineno-48-12"></a><span class="n">command</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ruff&quot;</span>
+<a id="__codelineno-48-13" name="__codelineno-48-13"></a><span class="n">includes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;BUILD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;*.bzl&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-14" name="__codelineno-48-14"></a><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;format&quot;</span><span class="p">]</span>
+<a id="__codelineno-48-15" name="__codelineno-48-15"></a><span class="n">stdin-options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;format&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-&quot;</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
 <h3 id="includes"><code>includes</code></h3>
 <p>A list of <a href="#glob-patterns-format">glob patterns</a> used to determine whether the formatter should be applied against a given path.</p>
 <h3 id="excludes_1"><code>excludes</code></h3>
@@ -2208,7 +2299,7 @@ Currently, we support 'auto', 'git', 'jujutsu' or 'filesystem'</p>
 <h3 id="no-positional-arg-support"><code>no-positional-arg-support</code></h3>
 <p>If <code>true</code>, <code>treefmt</code> will invoke the formatter with no more than 1 file at a time.</p>
 <p>Enable this if the formatter can only format 1 file at a time (a violation of
-<a href="https://treefmt.com/latest/reference/formatter-spec/#1-files-passed-as-arguments">rule 1 of the formatter spec</a>).</p>
+<a href="../../reference/formatter-spec/#1-files-passed-as-arguments">rule 1 of the Formatter Spec</a>).</p>
 <h2 id="same-file-multiple-formatters">Same file, multiple formatters?</h2>
 <p>For each file, <code>treefmt</code> determines a list of formatters based on the configured <code>includes</code> / <code>excludes</code> rules. This list is
 then sorted, first by priority (lower the value, higher the precedence) and secondly by formatter name (lexicographically).</p>
@@ -2227,7 +2318,7 @@ selectors such as <code>*</code> and <code>?</code>.</p>
 <li><code>vendor/*</code> - match all files under the vendor folder, recursively.</li>
 </ul>
 <h2 id="supported-formatters">Supported Formatters</h2>
-<p>Any formatter that follows the <a href="../../reference/formatter-spec/">spec</a> is supported out of the box.</p>
+<p>Any formatter that follows the <a href="../../reference/formatter-spec/">Formatter Spec</a> is supported out of the box.</p>
 <p>Already 60+ formatters are supported.</p>
 <p>To find examples, take a look at <a href="https://github.com/numtide/treefmt-nix/tree/main/examples">https://github.com/numtide/treefmt-nix/tree/main/examples</a>.</p>
 <p>If you are a Nix user, you might also like <a href="https://github.com/numtide/treefmt-nix">https://github.com/numtide/treefmt-nix</a>, which uses Nix to pull in the right formatter package and seamlessly integrates both together.</p>

@@ -10,13 +10,11 @@
       
       
       
-        <link rel="canonical" href="https://treefmt.com/main/contributing/code/">
+        <link rel="canonical" href="https://treefmt.com/main/reference/stdin-spec/">
       
       
-        <link rel="prev" href="../../guides/unmatched-formatters/">
+        <link rel="prev" href="../formatter-spec/">
       
-      
-        <link rel="next" href="../docs/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>Code - Treefmt</title>
+        <title>Stdin Specification - Treefmt</title>
       
     
     
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#code" class="md-skip">
+        <a href="#stdin-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Code
+              Stdin Specification
             
           </span>
         </div>
@@ -287,13 +285,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../contributing/code/" class="md-tabs__link">
           
   
   
@@ -311,11 +307,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../reference/formatter-spec/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../formatter-spec/" class="md-tabs__link">
           
   
   
@@ -619,10 +617,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -634,22 +630,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -667,7 +660,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -682,37 +675,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Code
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../contributing/code/" class="md-nav__link">
         
   
   
@@ -728,81 +694,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#pre-requisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-requisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#go-development" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Go development
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#formatting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Formatting
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Checks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -815,7 +706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../docs/" class="md-nav__link">
+      <a href="../../contributing/docs/" class="md-nav__link">
         
   
   
@@ -847,8 +738,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -860,19 +753,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -890,7 +786,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -908,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/formatter-spec/" class="md-nav__link">
+      <a href="../formatter-spec/" class="md-nav__link">
         
   
   
@@ -933,10 +829,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/stdin-spec/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stdin Specification
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -952,6 +875,76 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-command-line-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Command line option
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-stdin-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Stdin mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -991,10 +984,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pre-requisites" class="md-nav__link">
+  <a href="#terms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pre-requisites
+        Terms
       
     </span>
   </a>
@@ -1002,46 +995,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#go-development" class="md-nav__link">
+  <a href="#rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Go development
+        Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-command-line-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Command line option
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#formatting" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#2-stdin-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Formatting
+        2. Stdin mode
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#checks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Checks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1071,185 +1059,62 @@
   
 
 
-<h1 id="code">Code</h1>
-<h2 id="pre-requisites">Pre-requisites</h2>
-<p>You will need to have the following installed:</p>
+<h1 id="stdin-specification">Stdin Specification</h1>
+<p>Formatters <em>MAY</em> also implement the Stdin Specification, which allows
+formatting <em>virtual files</em> passed via stdin.</p>
+<p>A formatter <strong>MUST</strong> implement the Stdin Specification if its formatting behavior
+can depend on the path of the file being formatted.</p>
+<h2 id="terms">Terms</h2>
 <ul>
-<li><a href="https://nixos.org">Nix</a></li>
-<li><a href="https://direnv.net">Direnv</a></li>
+<li><em>virtual file</em>: Conceptually, represents some file the formatter is supposed to
+  treat "as if" it existed on disk. Concretely, a <em>virtual file</em> is a buffer (passed via stdin)
+  and an <em>advisory path</em> (passed as a CLI option).</li>
+<li><em>advisory path</em>: Represents the path of some <em>virtual file</em>. Called
+  "advisory" because it <em>MAY</em> be passed to a formatter, and the formatter <em>MAY</em>
+  alter its behavior based on the given advisory path.</li>
 </ul>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>We use a <a href="https://wiki.nixos.org/wiki/Flakes">Flake</a>-based workflow. You can certainly develop for <code>treefmt</code> without Flakes and leverage
-much of what is listed below, but it is left up to the reader to determine how to make that work.</p>
-</div>
-<h2 id="go-development">Go development</h2>
-<p>The default <a href="https://nix.dev/tutorials/first-steps/declarative-shell.html">devshell</a> provides all the necessary tooling and utilities for working on <code>treefmt</code>.</p>
-<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">nix/devshells/default.nix</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-0-10">10</a></span>
-<span class="normal"><a href="#__codelineno-0-11">11</a></span>
-<span class="normal"><a href="#__codelineno-0-12">12</a></span>
-<span class="normal"><a href="#__codelineno-0-13">13</a></span>
-<span class="normal"><a href="#__codelineno-0-14">14</a></span>
-<span class="normal"><a href="#__codelineno-0-15">15</a></span>
-<span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span>pkgs<span class="p">,</span> <span class="o">...</span><span class="p">}:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2"></a>pkgs<span class="o">.</span>mkShellNoCC <span class="p">{</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3"></a>  <span class="ss">env</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4"></a>    <span class="ss">GOROOT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">${</span>pkgs<span class="o">.</span>go_1_26<span class="si">}</span><span class="s2">/share/go&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5"></a>    <span class="ss">CGO_ENABLED</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span><span class="p">;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6"></a>  <span class="p">};</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7"></a>
-<a id="__codelineno-0-8" name="__codelineno-0-8"></a>  <span class="ss">packages</span> <span class="o">=</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="p">(</span><span class="k">with</span> pkgs<span class="p">;</span> <span class="p">[</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10"></a>      go_1_26
-<a id="__codelineno-0-11" name="__codelineno-0-11"></a>      goreleaser
-<a id="__codelineno-0-12" name="__codelineno-0-12"></a>      golangci-lint
-<a id="__codelineno-0-13" name="__codelineno-0-13"></a>      delve
-<a id="__codelineno-0-14" name="__codelineno-0-14"></a>      pprof
-<a id="__codelineno-0-15" name="__codelineno-0-15"></a>      graphviz
-<a id="__codelineno-0-16" name="__codelineno-0-16"></a>      cobra-cli
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a>      enumer
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a>      jujutsu
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>    <span class="p">])</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a>    <span class="o">++</span> <span class="c1"># include formatters for development and testing</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a>    <span class="p">(</span><span class="nb">import</span> <span class="l">../packages/treefmt/formatters.nix</span> pkgs<span class="p">);</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="p">}</span>
+<h2 id="rules">Rules</h2>
+<p>In order for the formatter to comply with this spec, it <strong>MUST</strong> implement the
+vanilla <a href="/reference/formatter-spec">Formatter Specification</a>, and additionally
+satisfy the following:</p>
+<h3 id="1-command-line-option">1. Command line option</h3>
+<p>The formatter's CLI <strong>MUST</strong> have some option to activate <a href="#2-stdin-mode">Stdin mode</a>.</p>
+<p>The CLI <em>SHOULD</em> accept an <em>advisory path</em> to make the formatter pretend stdin comes
+from this file.</p>
+<p>The formatter <em>MAY</em> alter its behavior based on the given
+<em>advisory path</em> <code>&lt;path&gt;</code>. For example, if there are different formatting
+rules in different directories, or for use in error messages. If the
+formatter's behavior doesn't depend on the given <code>&lt;path&gt;</code>, it's ok to ignore
+it.</p>
+<p>The CLI option <em>SHOULD</em> be called <code>--stdin-filepath</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;{}&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>nixfmt<span class="w"> </span>--stdin-filepath<span class="w"> </span>path/to/file.nix
 </code></pre></div></td></tr></table></div>
-<p><a href="https://direnv.net">Direnv</a> should load this by default when entering the root of the repository.</p>
-<p>For the most part, you <em>should</em> be able to develop normally as you would any other Go program.</p>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>When you have completed making any changes and have tested it as you would any other Go program, it is important
-to ensure it works when run as a Nix package.</p>
-<p>This can be done with <code>nix run .# -- &lt;args&gt;</code>, which will build the Nix derivation and execute the resultant
-<code>treefmt</code> binary.</p>
-</div>
-<h2 id="formatting">Formatting</h2>
-<p>We use the latest released version of <a href="https://treefmt.com">treefmt</a> and <a href="https://github.com/numtide/treefmt-nix">treefmt-nix</a> to format the repository by running <code>nix fmt</code> from
-the root directory.</p>
-<div class="highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">nix/formatter.nix</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-1-10">10</a></span>
-<span class="normal"><a href="#__codelineno-1-11">11</a></span>
-<span class="normal"><a href="#__codelineno-1-12">12</a></span>
-<span class="normal"><a href="#__codelineno-1-13">13</a></span>
-<span class="normal"><a href="#__codelineno-1-14">14</a></span>
-<span class="normal"><a href="#__codelineno-1-15">15</a></span>
-<span class="normal"><a href="#__codelineno-1-16">16</a></span>
-<span class="normal"><a href="#__codelineno-1-17">17</a></span>
-<span class="normal"><a href="#__codelineno-1-18">18</a></span>
-<span class="normal"><a href="#__codelineno-1-19">19</a></span>
-<span class="normal"><a href="#__codelineno-1-20">20</a></span>
-<span class="normal"><a href="#__codelineno-1-21">21</a></span>
-<span class="normal"><a href="#__codelineno-1-22">22</a></span>
-<span class="normal"><a href="#__codelineno-1-23">23</a></span>
-<span class="normal"><a href="#__codelineno-1-24">24</a></span>
-<span class="normal"><a href="#__codelineno-1-25">25</a></span>
-<span class="normal"><a href="#__codelineno-1-26">26</a></span>
-<span class="normal"><a href="#__codelineno-1-27">27</a></span>
-<span class="normal"><a href="#__codelineno-1-28">28</a></span>
-<span class="normal"><a href="#__codelineno-1-29">29</a></span>
-<span class="normal"><a href="#__codelineno-1-30">30</a></span>
-<span class="normal"><a href="#__codelineno-1-31">31</a></span>
-<span class="normal"><a href="#__codelineno-1-32">32</a></span>
-<span class="normal"><a href="#__codelineno-1-33">33</a></span>
-<span class="normal"><a href="#__codelineno-1-34">34</a></span>
-<span class="normal"><a href="#__codelineno-1-35">35</a></span>
-<span class="normal"><a href="#__codelineno-1-36">36</a></span>
-<span class="normal"><a href="#__codelineno-1-37">37</a></span>
-<span class="normal"><a href="#__codelineno-1-38">38</a></span>
-<span class="normal"><a href="#__codelineno-1-39">39</a></span>
-<span class="normal"><a href="#__codelineno-1-40">40</a></span>
-<span class="normal"><a href="#__codelineno-1-41">41</a></span>
-<span class="normal"><a href="#__codelineno-1-42">42</a></span>
-<span class="normal"><a href="#__codelineno-1-43">43</a></span>
-<span class="normal"><a href="#__codelineno-1-44">44</a></span>
-<span class="normal"><a href="#__codelineno-1-45">45</a></span>
-<span class="normal"><a href="#__codelineno-1-46">46</a></span>
-<span class="normal"><a href="#__codelineno-1-47">47</a></span>
-<span class="normal"><a href="#__codelineno-1-48">48</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2"></a>  pkgs<span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3"></a>  inputs<span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4"></a>  <span class="o">...</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="p">}:</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6"></a>inputs<span class="o">.</span>treefmt-nix<span class="o">.</span>lib<span class="o">.</span>mkWrapper pkgs <span class="p">{</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7"></a>  <span class="ss">projectRootFile</span> <span class="o">=</span> <span class="s2">&quot;flake.nix&quot;</span><span class="p">;</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8"></a>
-<a id="__codelineno-1-9" name="__codelineno-1-9"></a>  <span class="ss">programs</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10"></a>    alejandra<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11"></a>    deadnix<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    gofumpt<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13"></a>    prettier<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14"></a>    statix<span class="o">.</span><span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15"></a>  <span class="p">};</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16"></a>
-<a id="__codelineno-1-17" name="__codelineno-1-17"></a>  <span class="ss">settings</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18"></a>    global<span class="o">.</span><span class="ss">excludes</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19"></a>      <span class="s2">&quot;LICENSE&quot;</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20"></a>      <span class="c1"># let&#39;s not mess with the test folder</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21"></a>      <span class="s2">&quot;test/*&quot;</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22"></a>      <span class="c1"># unsupported extensions</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23"></a>      <span class="s2">&quot;*.{gif,png,svg,tape,mts,lock,mod,sum,toml,env,envrc,gitignore,pages}&quot;</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24"></a>    <span class="p">];</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25"></a>
-<a id="__codelineno-1-26" name="__codelineno-1-26"></a>    <span class="ss">formatter</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27"></a>      <span class="ss">deadnix</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28"></a>        <span class="ss">priority</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29"></a>      <span class="p">};</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31"></a>      <span class="ss">statix</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32"></a>        <span class="ss">priority</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
-<a id="__codelineno-1-33" name="__codelineno-1-33"></a>      <span class="p">};</span>
-<a id="__codelineno-1-34" name="__codelineno-1-34"></a>
-<a id="__codelineno-1-35" name="__codelineno-1-35"></a>      <span class="ss">alejandra</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-36" name="__codelineno-1-36"></a>        <span class="ss">priority</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
-<a id="__codelineno-1-37" name="__codelineno-1-37"></a>      <span class="p">};</span>
-<a id="__codelineno-1-38" name="__codelineno-1-38"></a>
-<a id="__codelineno-1-39" name="__codelineno-1-39"></a>      <span class="ss">prettier</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-1-40" name="__codelineno-1-40"></a>        <span class="ss">options</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-1-41" name="__codelineno-1-41"></a>          <span class="s2">&quot;--tab-width&quot;</span>
-<a id="__codelineno-1-42" name="__codelineno-1-42"></a>          <span class="s2">&quot;4&quot;</span>
-<a id="__codelineno-1-43" name="__codelineno-1-43"></a>        <span class="p">];</span>
-<a id="__codelineno-1-44" name="__codelineno-1-44"></a>        <span class="ss">includes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;*.{css,html,js,json,jsx,md,mdx,scss,ts,yaml}&quot;</span><span class="p">];</span>
-<a id="__codelineno-1-45" name="__codelineno-1-45"></a>      <span class="p">};</span>
-<a id="__codelineno-1-46" name="__codelineno-1-46"></a>    <span class="p">};</span>
-<a id="__codelineno-1-47" name="__codelineno-1-47"></a>  <span class="p">};</span>
-<a id="__codelineno-1-48" name="__codelineno-1-48"></a><span class="p">}</span>
+<p>However, other options are OK, such as <code>-path</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;print( &quot;hello&quot;)&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>buildifier<span class="w"> </span>-path<span class="w"> </span>foo.bzl
 </code></pre></div></td></tr></table></div>
-<h2 id="checks">Checks</h2>
-<p>Running <code>nix flake check</code> will build all the devshells and Nix packages, as well as check the formatting with <a href="https://treefmt.com">treefmt</a>
-and any other <a href="https://github.com/NixOS/nix/blob/master/src/nix/flake-check.md">Flake checks</a> that have been configured.</p>
-<h2 id="documentation">Documentation</h2>
-<p>When making changes, it is <strong>important</strong> to add or update any relevant sections in the documentation within the same
-pull request.</p>
-<p>For more information see the <a href="../docs/">next section</a>.</p>
+<p>It's OK if the formatter does not accept an <em>advisory path</em> (which implies
+the formatter's behavior does not depend on file paths, which means the Stdin
+Specification is optional).</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;print( &quot;hello&quot;)&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>-
+</code></pre></div></td></tr></table></div>
+<h3 id="2-stdin-mode">2. Stdin mode</h3>
+<p>When in stdin mode, the formatter:</p>
+<ol>
+<li><strong>MUST</strong> print the formatted file to stdout.</li>
+<li><strong>MUST NOT</strong> attempt to read the file on the filesystem. Instead, it
+   <strong>MUST</strong> read from stdin.</li>
+<li><strong>MUST NOT</strong> write to the given path on the filesytem. It <em>MAY</em> write to
+   temporary files elsewhere on disk, but <em>SHOULD</em> clean them up when done.</li>
+</ol>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -1273,7 +1138,7 @@ pull request.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../guides/unmatched-formatters/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Handling Unmatched Files">
+          <a href="../formatter-spec/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Formatter Specification">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1283,27 +1148,11 @@ pull request.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Handling Unmatched Files
+                Formatter Specification
               </div>
             </div>
           </a>
         
-        
-          
-          <a href="../docs/" class="md-footer__link md-footer__link--next" aria-label="Next: Documentation">
-            <div class="md-footer__title">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              <div class="md-ellipsis">
-                Documentation
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
-            </div>
-          </a>
         
       </nav>
     

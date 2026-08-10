@@ -16,6 +16,8 @@
         <link rel="prev" href="../../contributing/docs/">
       
       
+        <link rel="next" href="../stdin-spec/">
+      
       
         
       
@@ -747,6 +749,8 @@
       
         
       
+        
+      
     
     
     
@@ -928,6 +932,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#6-path-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Path agnostic
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -937,6 +952,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stdin-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stdin Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1042,6 +1085,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#6-path-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Path agnostic
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1092,8 +1146,8 @@ that transforms the usage to match the specification.</p>
 <p>Where:</p>
 <ul>
 <li><code>&lt;command&gt;</code> is the name of the formatter executable.</li>
-<li><code>[options]</code> is any number of flags and options that the formatter accepts.</li>
-<li><code>[...&lt;files&gt;]</code> is one or more files given to the formatter for processing.</li>
+<li><code>[options]</code> are any number of flags and options that the formatter accepts.</li>
+<li><code>[...&lt;files&gt;]</code> are one or more files given to the formatter for processing.</li>
 </ul>
 <p>Example:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a>$ rustfmt --edition 2018 src/main.rs src/lib.rs
@@ -1117,6 +1171,11 @@ stderr.</p>
 outputs.</p>
 <h3 id="5-reliable">5. Reliable</h3>
 <p>We expect the formatter to be reliable and not break the semantics of the formatted files.</p>
+<h3 id="6-path-agnostic">6. Path agnostic</h3>
+<p>The formatter <em>SHOULD</em> be path agnostic (formatting <em>SHOULD NOT</em> depend on the
+path of the file being formatted). If the formatter behaves differently based
+on the path of the file being formatted, then the formatter <em>MUST</em> implement
+the <a href="../stdin-spec/">Stdin Specification</a>.</p>
 
 
 
@@ -1164,6 +1223,22 @@ outputs.</p>
             </div>
           </a>
         
+        
+          
+          <a href="../stdin-spec/" class="md-footer__link md-footer__link--next" aria-label="Next: Stdin Specification">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Stdin Specification
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
         
       </nav>
     

@@ -32,4 +32,8 @@
          <loc>https://treefmt.com/main/reference/formatter-spec/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
+    <url>
+         <loc>https://treefmt.com/main/reference/stdin-spec/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
 </urlset>
