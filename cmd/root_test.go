@@ -2288,12 +2288,44 @@ help:
 		}),
 	)
 
+	// Format with embed-path. `embed-path` prefixes the file with its path. If
+	// this formatter didn't support the Stdin Specification, then we'd see a
+	// temp path get added instead of the true path to the file.
+	contents = `
+The formatter should add the path above this line.
+`
+	os.Stdin = test.TempFile(t, "", "stdin", &contents)
+
+	treefmt(t,
+		withArgs("-vvv", "--stdin", "path/to/foo.embed-path"),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 1,
+			stats.Matched:   1,
+			stats.Formatted: 1,
+			stats.Changed:   1,
+		}),
+		withStdout(func(out []byte) {
+			as.Equal(`# path/to/foo.embed-path
+
+The formatter should add the path above this line.
+`, string(out))
+		}),
+	)
+
 	// Try from a subdirectory, using .. to get to a parent directory that is
 	// still inside the project root.
 	//
 	// Note: we called `test.ChangeWorkDir` at the start of the test, which
 	// will restore the working directory during test cleanup.
 	t.Chdir("go")
+
+	contents = `
+# print this message
+help:
+        just --list --list-submodules --unsorted
+
+`
 	os.Stdin = test.TempFile(t, "", "stdin", &contents)
 	treefmt(t,
 		withArgs("--stdin", "../foo/justfile"),
@@ -2821,6 +2853,14 @@ func treefmt(
 		os.Stdout = stdout
 		os.Stderr = stderr
 		log.SetOutput(stderr)
+	}()
+
+	// treefmt may change the configured log level when we invoke it. Be sure
+	// to restore the previous level.
+	ogLogLevel := log.GetLevel()
+
+	defer func() {
+		log.SetLevel(ogLogLevel)
 	}()
 
 	// run the command
