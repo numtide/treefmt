@@ -33,9 +33,9 @@ The CLI _SHOULD_ accept an _advisory path_ to make the formatter pretend stdin c
 from this file.
 
 The formatter _MAY_ alter its behavior based on the given
-_advisory path_ `<path>`. For example, if there are different formatting
+_advisory path_. For example, if there are different formatting
 rules in different directories, or for use in error messages. If the
-formatter's behavior doesn't depend on the given `<path>`, it's ok to ignore
+formatter's behavior doesn't depend on the given _advisory path_, it's ok to ignore
 it.
 
 The CLI option _SHOULD_ be called `--stdin-filepath`:
