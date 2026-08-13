@@ -72,8 +72,20 @@ with pkgs; [
   (pkgs.writeShellApplication {
     name = "test-fmt-embed-path";
     text = ''
+      if [ $# -eq 0 ]; then
+        echo "Must provide a subcommand" >&2
+        exit 1
+      fi
+
+      subcommand=$1
+      shift
+      if [ "$subcommand" != "fmt" ]; then
+        echo "Unknown subcommand $subcommand" >&2
+        exit 1
+      fi
+
       stdin_filepath=""
-      while [[ $# -gt 0 ]]; do
+      while [ $# -gt 0 ]; do
         case $1 in
             --stdin-filepath)
                 shift

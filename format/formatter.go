@@ -99,9 +99,6 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 	start := time.Now()
 
-	// construct args, starting with config
-	args := f.config.Options
-
 	// exit early if nothing to process
 	if len(files) == 0 {
 		return nil
@@ -120,6 +117,9 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 	stdin := (*os.File)(nil)
 
+	// construct args, starting with config
+	args := []string{}
+
 	if useStdinMode {
 		// Feed the file to the formatter via stdin.
 		tmpFile, err := os.Open(onlyFile.TmpPath)
@@ -135,6 +135,8 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 			args = append(args, replacer.Replace(arg))
 		}
 	} else {
+		args = append(args, f.config.Options...)
+
 		// append paths to the args
 		for _, file := range files {
 			if file.TmpPath != "" {
@@ -159,13 +161,13 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		f.log.Errorf("failed to apply with options '%v': %s", f.config.Options, err)
+		f.log.Errorf("failed to apply with options '%v': %s", args, err)
 
 		if len(out) > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "\n%s\n", out)
 		}
 
-		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, f.config.Options, err)
+		return fmt.Errorf("formatter '%s' with options '%v' failed to apply: %w", f.config.Command, args, err)
 	}
 
 	// In stdin mode, the formatter won't write to the filesystem, it instead
