@@ -1082,9 +1082,9 @@ satisfy the following:</p>
 <p>The CLI <em>SHOULD</em> accept an <em>advisory path</em> to make the formatter pretend stdin comes
 from this file.</p>
 <p>The formatter <em>MAY</em> alter its behavior based on the given
-<em>advisory path</em> <code>&lt;path&gt;</code>. For example, if there are different formatting
+<em>advisory path</em>. For example, if there are different formatting
 rules in different directories, or for use in error messages. If the
-formatter's behavior doesn't depend on the given <code>&lt;path&gt;</code>, it's ok to ignore
+formatter's behavior doesn't depend on the given <em>advisory path</em>, it's ok to ignore
 it.</p>
 <p>The CLI option <em>SHOULD</em> be called <code>--stdin-filepath</code>:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;{}&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>nixfmt<span class="w"> </span>--stdin-filepath<span class="w"> </span>path/to/file.nix
