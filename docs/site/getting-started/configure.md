@@ -245,7 +245,7 @@ Possible values are `<debug|info|warn|error|fatal>`.
 === "Env"
 
     ```console
-    TREEFMT_ON_UNMACTHED=info treefmt
+    TREEFMT_ON_UNMATCHED=info treefmt
     ```
 
 === "Config"
