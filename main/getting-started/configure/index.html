@@ -1718,10 +1718,14 @@ and others still may support <strong>all three mechanisms</strong>.</p>
 </div>
 <h2 id="config-file">Config File</h2>
 <p>The <code>treefmt</code> configuration file is a mixture of global options and formatter sections.</p>
-<p>It should be named <code>treefmt.toml</code> or <code>.treefmt.toml</code>, and typically resides at the root of a repository.</p>
-<p>When executing <code>treefmt</code> within a subdirectory, <code>treefmt</code> will search upwards in the directory structure, looking for
-<code>treefmt.toml</code> or <code>.treefmt.toml</code>.
-You can change this behaviour using the <a href="#config-file_1">config-file</a> options</p>
+<p>Treefmt will look for its config in following places (files higher in the list override those lower down):</p>
+<ol>
+<li><code>treefmt.toml</code></li>
+<li><code>.treefmt.toml</code></li>
+<li><code>.config/treefmt.toml</code></li>
+</ol>
+<p>When executing <code>treefmt</code> within a subdirectory, <code>treefmt</code> will search upwards in the directory structure, looking for its config.</p>
+<p>You can change this behaviour using the <a href="#config-file_1">config-file</a> options</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>When starting a new project you can generate an initial config file using <code>treefmt --init</code></p>
