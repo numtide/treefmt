@@ -19,10 +19,14 @@ precedence and values in the configuration file having the lowest.
 
 The `treefmt` configuration file is a mixture of global options and formatter sections.
 
-It should be named `treefmt.toml` or `.treefmt.toml`, and typically resides at the root of a repository.
+Treefmt will look for its config in following places (files higher in the list override those lower down):
 
-When executing `treefmt` within a subdirectory, `treefmt` will search upwards in the directory structure, looking for
-`treefmt.toml` or `.treefmt.toml`.
+1. `treefmt.toml`
+2. `.treefmt.toml`
+3. `.config/treefmt.toml`
+
+When executing `treefmt` within a subdirectory, `treefmt` will search upwards in the directory structure, looking for its config.
+
 You can change this behaviour using the [config-file](#config-file_1) options
 
 !!! tip
