@@ -35,7 +35,7 @@ func TestGitReader(t *testing.T) {
 
 	// read empty worktree
 	statz := stats.New()
-	reader, err := walk.NewGitReader(tempDir, "", &statz)
+	reader, err := walk.NewGitReader(tempDir, nil, &statz)
 	as.NoError(err)
 
 	files := make([]*walk.File, 34)
@@ -84,7 +84,7 @@ func TestGitReader(t *testing.T) {
 	as.NoError(cmd.Run(), "failed to add everything to the index")
 
 	statz = stats.New()
-	reader, err = walk.NewGitReader(tempDir, "", &statz)
+	reader, err = walk.NewGitReader(tempDir, nil, &statz)
 	as.NoError(err)
 
 	count := 0
