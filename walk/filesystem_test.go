@@ -56,7 +56,7 @@ func TestFilesystemReaderCancellation(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	statz := stats.New()
 
-	r := walk.NewFilesystemReader(tempDir, "", &statz, 1024)
+	r := walk.NewFilesystemReader(tempDir, nil, &statz, 1024)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
@@ -72,7 +72,7 @@ func TestFilesystemReader(t *testing.T) {
 	tempDir := test.TempExamples(t)
 	statz := stats.New()
 
-	r := walk.NewFilesystemReader(tempDir, "", &statz, 1024)
+	r := walk.NewFilesystemReader(tempDir, nil, &statz, 1024)
 
 	count := 0
 
@@ -100,4 +100,26 @@ func TestFilesystemReader(t *testing.T) {
 	as.Equal(0, statz.Value(stats.Matched))
 	as.Equal(0, statz.Value(stats.Formatted))
 	as.Equal(0, statz.Value(stats.Changed))
+}
+
+func TestFilesystemReaderSubpaths(t *testing.T) {
+	as := require.New(t)
+
+	tempDir := test.TempExamples(t)
+	statz := stats.New()
+
+	r := walk.NewFilesystemReader(tempDir, []string{"go", "haskell/Foo.hs"}, &statz, 1024)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+
+	files := make([]*walk.File, 8)
+	n, err := r.Read(ctx, files)
+
+	as.ErrorIs(err, io.EOF)
+	as.Equal(3, n)
+	as.Equal("go/go.mod", files[0].RelPath)
+	as.Equal("go/main.go", files[1].RelPath)
+	as.Equal("haskell/Foo.hs", files[2].RelPath)
+	as.Equal(3, statz.Value(stats.Traversed))
 }
