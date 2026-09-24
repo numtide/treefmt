@@ -27,7 +27,7 @@ var ErrFormattingFailures = errors.New("formatting failures detected")
 type CompositeFormatter struct {
 	cfg            *config.Config
 	stats          *stats.Stats
-	globalExcludes []glob.Glob
+	globalExcludes []glob.Pattern
 
 	unmatchedLevel log.Level
 
