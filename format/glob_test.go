@@ -12,7 +12,7 @@ func TestGlobs(t *testing.T) {
 	r := require.New(t)
 
 	var (
-		globs []glob.Glob
+		globs []glob.Pattern
 		err   error
 	)
 

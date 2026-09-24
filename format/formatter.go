@@ -45,8 +45,8 @@ type Formatter struct {
 	workingDir string
 
 	// internal, compiled versions of Includes and Excludes.
-	includes []glob.Glob
-	excludes []glob.Glob
+	includes []glob.Pattern
+	excludes []glob.Pattern
 }
 
 func (f *Formatter) Name() string {
