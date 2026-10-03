@@ -10,8 +10,28 @@ import (
 	"github.com/numtide/treefmt/v2/config"
 	"github.com/numtide/treefmt/v2/stats"
 	"github.com/numtide/treefmt/v2/test"
+	"github.com/numtide/treefmt/v2/walk"
 	"github.com/stretchr/testify/require"
+	"mvdan.cc/sh/v3/expand"
 )
+
+func TestApplyWithDefaultStdin(t *testing.T) {
+	as := require.New(t)
+	tempDir := t.TempDir()
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "test.txt"), []byte("contents\n"), 0o600))
+
+	// POSIX compliant applications expect stdin to be open for reading, even when given file arguments.
+	// cat acts as a test formatter reading stdin ("-") and test.txt without actually modifying the file.
+	// It fails with a bad descriptor error if stdin is closed.
+	f, err := newFormatter("cat", tempDir, expand.ListEnviron(os.Environ()...), &config.Formatter{
+		Command:  "cat",
+		Options:  []string{"-"},
+		Includes: []string{"*.txt"},
+	})
+	as.NoError(err)
+
+	as.NoError(f.Apply(t.Context(), []*walk.File{{RelPath: "test.txt"}}))
+}
 
 func TestInvalidFormatterName(t *testing.T) {
 	as := require.New(t)
