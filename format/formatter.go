@@ -115,7 +115,7 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 	// "advisory path", which may affect the behavior of the formatter.
 	useStdinMode := files[0].TmpPath != "" && f.config.StdinOptions != nil
 
-	stdin := (*os.File)(nil)
+	var stdin *os.File
 
 	// construct args, starting with config
 	args := []string{}
@@ -153,8 +153,11 @@ func (f *Formatter) Apply(ctx context.Context, files []*walk.File) error {
 	cmd.Cancel = func() error {
 		return cmd.Process.Signal(os.Interrupt)
 	}
+
 	cmd.Dir = f.workingDir
-	cmd.Stdin = stdin
+	if useStdinMode {
+		cmd.Stdin = stdin
+	}
 
 	// log out the command being executed
 	f.log.Debugf("executing: %s", cmd.String())
