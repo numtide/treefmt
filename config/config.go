@@ -325,8 +325,13 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 		// no tree root was specified
 		logger.Infof("no tree root specified")
 
+		if prjRoot := os.Getenv("PRJ_ROOT"); prjRoot != "" {
+			logger.Infof("PRJ_ROOT is set to %s. Using that as tree root.", prjRoot)
+			cfg.TreeRoot = prjRoot
+		}
+
 		// attempt to resolve with git
-		if cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Git.String() {
+		if cfg.TreeRoot == "" && (cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Git.String()) {
 			logger.Infof("attempting to resolve tree root using git: %s", git.TreeRootCmd)
 
 			// attempt to resolve the tree root with git
