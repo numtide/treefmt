@@ -21,9 +21,9 @@ jobs:
             - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
-            - uses: cachix/install-nix-action@v31
+            - uses: NixOS/nix-installer-action@main
               with:
-                  extra_nix_config: |
+                  extra-conf: |
                       accept-flake-config = true
                       experimental-features = nix-command flakes
             - name: Configure Git user

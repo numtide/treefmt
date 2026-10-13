@@ -11,9 +11,9 @@ jobs:
               with:
                   fetch-depth: 0
             - name: Install Nix
-              uses: cachix/install-nix-action@v31
+              uses: NixOS/nix-installer-action@main
               with:
-                  extra_nix_config: |
+                  extra-conf: |
                       accept-flake-config = true
                       experimental-features = nix-command flakes
             - name: Run coverage
