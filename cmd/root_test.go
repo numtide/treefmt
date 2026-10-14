@@ -544,20 +544,22 @@ func TestConfigFile(t *testing.T) {
 			// use env variable
 			treefmt(t,
 				withEnv(map[string]string{
-					// TREEFMT_CONFIG takes precedence
+					// TREEFMT_CONFIG takes precedence for discovering treefmt config file
 					"TREEFMT_CONFIG": configPath,
-					"PRJ_ROOT":       tempDir,
+					// But PRJ_ROOT takes precedence for the tree root, which has a lot more
+					// files in it than the directory where the TREEFMT_CONFIG is located.
+					"PRJ_ROOT": tempDir,
 				}),
 				withNoError(t),
 				withStats(t, map[stats.Type]int{
-					stats.Traversed: 1,
-					stats.Matched:   1,
+					stats.Traversed: 33,
+					stats.Matched:   33,
 					stats.Formatted: 0,
 					stats.Changed:   0,
 				}),
 			)
 
-			// should fallback to PRJ_ROOT
+			// should fallback to PRJ_ROOT to discover treefmt config file
 			treefmt(t,
 				withArgs("--tree-root", tempDir),
 				withEnv(map[string]string{
@@ -2685,6 +2687,41 @@ func TestNoPositionalArgSupport(t *testing.T) {
 			stats.Matched:   33,
 			stats.Formatted: 33,
 			stats.Changed:   33,
+		}),
+	)
+}
+
+func TestPrjRootBeatsConfigFileLocation(t *testing.T) {
+	tempDir := test.TempExamples(t)
+
+	test.ChangeWorkDir(t, tempDir)
+
+	configPath := filepath.Join(tempDir, "/treefmt.toml")
+	cfg := &config.Config{
+		FormatterConfigs: map[string]*config.Formatter{
+			"echo": {
+				Command:  "echo",
+				Includes: []string{"*"},
+			},
+		},
+	}
+
+	// Invoke treefmt with PRJ_ROOT set to the `go`
+	// subdirectory, which only has 2 files in it.
+	// As we've specified no other way of discovering
+	// the tree root, PRJ_ROOT should take precedence over
+	// the location of the configuration file.
+	treefmt(t,
+		withConfig(configPath, cfg),
+		withEnv(map[string]string{
+			"PRJ_ROOT": filepath.Join(tempDir, "go"),
+		}),
+		withNoError(t),
+		withStats(t, map[stats.Type]int{
+			stats.Traversed: 2,
+			stats.Matched:   2,
+			stats.Formatted: 2,
+			stats.Changed:   0,
 		}),
 	)
 }
