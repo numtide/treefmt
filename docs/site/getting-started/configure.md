@@ -325,9 +325,9 @@ If you wish to pass arguments containing quotes, you should use nested quotes e.
     `jj workspace root`.
 
     if [walk](#walk) is set to `auto` (the default), `treefmt` will check if the [working directory](#working-dir) is
-    inside a git worktree. If it is, `tree-root-cmd` will be defaulted as described above for `git`. If the [working
-    directory](#working-dir) is inside a jujutsu worktree the `tree-root-cmd` will be defaulted as described above for
-    `jujutsu`.
+    inside a jujutsu worktree. If it is, `tree-root-cmd` will be defaulted as described above for `jujutsu`. If the
+    [working directory](#working-dir) is inside a git worktree the `tree-root-cmd` will be defaulted as described above
+    for `git`. Jujutsu is checked first so that colocated jujutsu / git repositories are treated as jujutsu repositories.
 
 === "Flag"
 

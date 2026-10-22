@@ -264,10 +264,11 @@ func newUncachedReader(
 
 	switch walkType {
 	case Auto:
-		// for now, we keep it simple and try git first, jujutsu second, and filesystem last
-		reader, err = newUncachedReader(Git, root, pathFilters, statz)
+		// for now, we keep it simple and try jujutsu first, git second, and filesystem last.
+		// jujutsu is tried before git as colocated jujutsu repositories also contain a `.git` directory.
+		reader, err = newUncachedReader(Jujutsu, root, pathFilters, statz)
 		if err != nil {
-			reader, err = newUncachedReader(Jujutsu, root, pathFilters, statz)
+			reader, err = newUncachedReader(Git, root, pathFilters, statz)
 			if err != nil {
 				reader, err = newUncachedReader(Filesystem, root, pathFilters, statz)
 			}

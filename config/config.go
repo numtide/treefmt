@@ -330,21 +330,6 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 			cfg.TreeRoot = prjRoot
 		}
 
-		// attempt to resolve with git
-		if cfg.TreeRoot == "" && (cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Git.String()) {
-			logger.Infof("attempting to resolve tree root using git: %s", git.TreeRootCmd)
-
-			// attempt to resolve the tree root with git
-			cfg.TreeRoot, err = execTreeRootCmd(git.TreeRootCmd, cfg.WorkingDirectory)
-			if err != nil && cfg.Walk == walk.Git.String() {
-				return fmt.Errorf("failed to resolve tree root with git: %w", err)
-			}
-
-			if err != nil {
-				logger.Infof("failed to resolve tree root with git: %v", err)
-			}
-		}
-
 		// attempt to resolve with jujutsu
 		if cfg.TreeRoot == "" && (cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Jujutsu.String()) {
 			logger.Infof("attempting to resolve tree root using jujutsu: %s", jujutsu.TreeRootCmd)
@@ -357,6 +342,21 @@ func determineTreeRoot(v *viper.Viper, cfg *Config, logger *log.Logger) error {
 
 			if err != nil {
 				logger.Infof("failed to resolve tree root with jujutsu: %v", err)
+			}
+		}
+
+		// attempt to resolve with git
+		if cfg.TreeRoot == "" && (cfg.Walk == walk.Auto.String() || cfg.Walk == walk.Git.String()) {
+			logger.Infof("attempting to resolve tree root using git: %s", git.TreeRootCmd)
+
+			// attempt to resolve the tree root with git
+			cfg.TreeRoot, err = execTreeRootCmd(git.TreeRootCmd, cfg.WorkingDirectory)
+			if err != nil && cfg.Walk == walk.Git.String() {
+				return fmt.Errorf("failed to resolve tree root with git: %w", err)
+			}
+
+			if err != nil {
+				logger.Infof("failed to resolve tree root with git: %v", err)
 			}
 		}
 
