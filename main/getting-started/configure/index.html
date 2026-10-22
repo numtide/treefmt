@@ -2129,9 +2129,9 @@ If you wish to pass arguments containing quotes, you should use nested quotes e.
 <p>If <a href="#walk">walk</a> is set to <code>jujutsu</code> and no tree root option has been defined, <code>tree-root-cmd</code> will be defaulted to
 <code>jj workspace root</code>.</p>
 <p>if <a href="#walk">walk</a> is set to <code>auto</code> (the default), <code>treefmt</code> will check if the <a href="#working-dir">working directory</a> is
-inside a git worktree. If it is, <code>tree-root-cmd</code> will be defaulted as described above for <code>git</code>. If the <a href="#working-dir">working
-directory</a> is inside a jujutsu worktree the <code>tree-root-cmd</code> will be defaulted as described above for
-<code>jujutsu</code>.</p>
+inside a jujutsu worktree. If it is, <code>tree-root-cmd</code> will be defaulted as described above for <code>jujutsu</code>. If the
+<a href="#working-dir">working directory</a> is inside a git worktree the <code>tree-root-cmd</code> will be defaulted as described above
+for <code>git</code>. Jujutsu is checked first so that colocated jujutsu / git repositories are treated as jujutsu repositories.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:3"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><input id="__tabbed_14_3" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">Flag</label><label for="__tabbed_14_2">Env</label><label for="__tabbed_14_3">Config</label></div>
 <div class="tabbed-content">
