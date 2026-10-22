@@ -116,3 +116,36 @@ func TestJujutsuReaderUsesTreeRoot(t *testing.T) {
 	as.Equal("default.nix", files[0].RelPath)
 	as.Equal(1, statz.Value(stats.Traversed))
 }
+
+func TestAutoReaderPrefersJujutsuInColocatedRepo(t *testing.T) {
+	as := require.New(t)
+
+	test.SetenvXdgConfigDir(t)
+	tempDir := t.TempDir()
+
+	// init a colocated jujutsu / git repo, which creates both `.jj` and `.git`
+	cmd := exec.CommandContext(t.Context(), "jj", "git", "init", "--colocate")
+	cmd.Dir = tempDir
+	as.NoError(cmd.Run(), "failed to init colocated jujutsu repository")
+
+	// create a file without snapshotting it with jj: git would report it as untracked, whereas jujutsu (which is run
+	// with --ignore-working-copy) won't see it yet
+	as.NoError(os.WriteFile(filepath.Join(tempDir, "default.nix"), []byte("{}\n"), 0o600))
+
+	statz := stats.New()
+	reader, err := walk.NewReader(walk.Auto, tempDir, nil, nil, &statz)
+	as.NoError(err)
+
+	defer func() {
+		as.NoError(reader.Close())
+	}()
+
+	files := make([]*walk.File, 8)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	n, err := reader.Read(ctx, files)
+
+	cancel()
+
+	as.Equal(0, n, "expected the jujutsu walker to be used")
+	as.ErrorIs(err, io.EOF)
+}
