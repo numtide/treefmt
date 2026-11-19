@@ -133,7 +133,7 @@ func TestAutoReaderPrefersJujutsuInColocatedRepo(t *testing.T) {
 	as.NoError(os.WriteFile(filepath.Join(tempDir, "default.nix"), []byte("{}\n"), 0o600))
 
 	statz := stats.New()
-	reader, err := walk.NewReader(walk.Auto, tempDir, nil, nil, &statz)
+	reader, err := walk.NewReader(walk.BuiltinSelector(walk.Auto), tempDir, nil, nil, &statz)
 	as.NoError(err)
 
 	defer func() {
