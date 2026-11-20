@@ -3,8 +3,12 @@ package walk_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +17,43 @@ import (
 	"github.com/numtide/treefmt/v2/walk"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGitReaderEmitsUnmergedPathOnce(t *testing.T) {
+	dir := t.TempDir()
+	runGit := func(input string, args ...string) string {
+		t.Helper()
+		cmd := exec.CommandContext(t.Context(), "git", args...)
+		cmd.Dir = dir
+		cmd.Stdin = strings.NewReader(input)
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "%s", out)
+		return strings.TrimSpace(string(out))
+	}
+
+	runGit("", "init", "--quiet")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "conflict.txt"), []byte("conflict\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "untracked.txt"), []byte("untracked\n"), 0o600))
+	blob := runGit("conflict\n", "hash-object", "-w", "--stdin")
+	// Create the three index stages that Git records for an unresolved merge.
+	runGit(fmt.Sprintf("100644 %s 1\tconflict.txt\n100644 %s 2\tconflict.txt\n100644 %s 3\tconflict.txt\n", blob, blob, blob),
+		"update-index", "--index-info")
+
+	statz := stats.New()
+	reader, err := walk.NewGitReader(dir, nil, &statz)
+	require.NoError(t, err)
+
+	files := make([]*walk.File, 5)
+	n, err := reader.Read(t.Context(), files)
+	require.ErrorIs(t, err, io.EOF)
+	require.NoError(t, reader.Close())
+
+	var paths []string
+	for _, file := range files[:n] {
+		paths = append(paths, file.RelPath)
+	}
+	require.ElementsMatch(t, []string{"conflict.txt", "untracked.txt"}, paths)
+	require.Equal(t, 2, statz.Value(stats.Traversed))
+}
 
 func TestGitReader(t *testing.T) {
 	as := require.New(t)

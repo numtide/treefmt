@@ -27,7 +27,7 @@ func NewGitReader(
 	return NewPathStreamReader(root, statz, PathStreamConfig{
 		Name:        "git",
 		Command:     "git",
-		Options:     []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--full-name", "--"},
+		Options:     []string{"ls-files", "-z", "--cached", "--others", "--exclude-standard", "--deduplicate", "--full-name", "--"},
 		PathFilters: pathFilters,
 	})
 }
