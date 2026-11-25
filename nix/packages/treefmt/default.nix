@@ -32,7 +32,7 @@ in
         ];
       };
 
-    vendorHash = "sha256-W3UiSZJnevu5G2LeBvEDlW18ntmzhw53OV7diW7+zok=";
+    vendorHash = "sha256-ZuzNiLgUR9QxF3q0JWNtuJ9jPc5YFfFFYGFO3mDqJk0=";
 
     env.CGO_ENABLED = 0;
 
